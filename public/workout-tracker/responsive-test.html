@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тест адаптивности - CrossFit Tracker</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .test-info {
+            background: #1a1a1a;
+            border: 2px solid #333333;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .breakpoint {
+            background: #2a2a2a;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-left: 4px solid #ff3b30;
+            border-radius: 8px;
+        }
+
+        .breakpoint.active {
+            border-left-color: #30ff88;
+            background: rgba(48, 255, 136, 0.1);
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #ff3b30, #ffbd00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1rem;
+        }
+
+        h2 {
+            color: #ff3b30;
+            margin-top: 2rem;
+        }
+
+        code {
+            background: #2a2a2a;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            color: #30ff88;
+        }
+
+        .viewport-info {
+            background: #ff3b30;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            display: inline-block;
+            font-weight: 600;
+            margin: 1rem 0;
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        li {
+            padding: 0.5rem 0;
+            color: #a0a0a0;
+        }
+
+        li strong {
+            color: #ffffff;
+        }
+
+        .link-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff3b30, #ffbd00);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .link-btn:hover {
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="test-info">
+        <h1>📱 Тест адаптивности CrossFit Tracker</h1>
+
+        <div class="viewport-info">
+            Текущая ширина экрана: <span id="viewport-width"></span>px
+        </div>
+
+        <h2>Брейкпоинты:</h2>
+
+        <div class="breakpoint" id="bp-mobile">
+            <strong>📱 Мобильный (до 480px)</strong>
+            <ul>
+                <li>• Навигация переносится вниз, полная ширина</li>
+                <li>• Quick stats в 1 колонку</li>
+                <li>• Все карточки и формы на полную ширину</li>
+                <li>• Кнопки растянуты на всю ширину</li>
+                <li>• WOD упражнения в столбик</li>
+                <li>• Календарь - 1 месяц</li>
+            </ul>
+        </div>
+
+        <div class="breakpoint" id="bp-tablet">
+            <strong>📱 Планшет (481px - 768px)</strong>
+            <ul>
+                <li>• Quick stats в 2 колонки</li>
+                <li>• Логотип без текста</li>
+                <li>• Кнопка "Новая тренировка" без текста (только +)</li>
+                <li>• Календарь - 1 месяц</li>
+                <li>• Формы адаптируются</li>
+            </ul>
+        </div>
+
+        <div class="breakpoint" id="bp-medium">
+            <strong>💻 Средний экран (769px - 992px)</strong>
+            <ul>
+                <li>• Stats grid в 2 колонки</li>
+                <li>• Календарь в 2 колонки</li>
+                <li>• Улучшенная читаемость</li>
+            </ul>
+        </div>
+
+        <div class="breakpoint" id="bp-desktop">
+            <strong>🖥️ Десктоп (993px+)</strong>
+            <ul>
+                <li>• Полный функционал</li>
+                <li>• Stats grid в 4 колонки</li>
+                <li>• Календарь в 3 колонки</li>
+                <li>• Оригинальный дизайн</li>
+            </ul>
+        </div>
+
+        <h2>Как тестировать:</h2>
+        <ul>
+            <li><strong>1.</strong> Откройте DevTools (F12)</li>
+            <li><strong>2.</strong> Включите режим устройства (Ctrl+Shift+M)</li>
+            <li><strong>3.</strong> Протестируйте на разных размерах:</li>
+            <li style="padding-left: 2rem;">• 320px (iPhone SE)</li>
+            <li style="padding-left: 2rem;">• 375px (iPhone X)</li>
+            <li style="padding-left: 2rem;">• 768px (iPad вертикально)</li>
+            <li style="padding-left: 2rem;">• 1024px (iPad горизонтально)</li>
+            <li style="padding-left: 2rem;">• 1920px (Full HD)</li>
+        </ul>
+
+        <a href="mvp-index.html" class="link-btn">🚀 Открыть основную страницу</a>
+    </div>
+
+    <script>
+        function updateViewport() {
+            const width = window.innerWidth;
+            document.getElementById('viewport-width').textContent = width;
+
+            // Reset all
+            document.querySelectorAll('.breakpoint').forEach(el => el.classList.remove('active'));
+
+            // Highlight active breakpoint
+            if (width <= 480) {
+                document.getElementById('bp-mobile').classList.add('active');
+            } else if (width <= 768) {
+                document.getElementById('bp-tablet').classList.add('active');
+            } else if (width <= 992) {
+                document.getElementById('bp-medium').classList.add('active');
+            } else {
+                document.getElementById('bp-desktop').classList.add('active');
+            }
+        }
+
+        updateViewport();
+        window.addEventListener('resize', updateViewport);
+    </script>
+</body>
+
+</html>

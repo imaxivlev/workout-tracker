@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossFit Tracker - MVP</title>
+    <meta name="description" content="CrossFit Workout Tracker">
+    <meta name="theme-color" content="#0a0a0a">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root { --bg-dark: #0a0a0a; --bg-surface: #1a1a1a; --primary: #ff3b30; --secondary: #30ff88; --accent: #ffbd00; --text-main: #ffffff; --text-secondary: #a0a0a0; --border: #333333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg-dark); color: var(--text-main); min-height: 100vh; }
+        .header { background: var(--bg-surface); padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 24px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+        .nav { display: flex; gap: 24px; }
+        .nav-item { color: var(--text-secondary); text-decoration: none; font-size: 16px; }
+        .nav-item:hover, .nav-item.active { color: var(--text-main); }
+        .user-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 24px; }
+        .dashboard { display: grid; grid-template-columns: 1fr 300px; gap: 24px; }
+        .dashboard-section { background: var(--bg-surface); border-radius: 12px; padding: 24px; }
+        .dashboard-title { font-size: 24px; font-weight: 600; margin-bottom: 24px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-surface); border-radius: 8px; padding: 20px; text-align: center; }
+        .stat-value { font-size: 36px; font-weight: 700; color: var(--primary); margin-bottom: 8px; }
+        .stat-label { color: var(--text-secondary); font-size: 14px; }
+        .workout-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; border-bottom: 1px solid var(--border); }
+        .workout-item:last-child { border-bottom: none; }
+        .workout-info h3 { font-size: 16px; margin-bottom: 4px; }
+        .workout-info p { color: var(--text-secondary); font-size: 14px; }
+        .workout-result { font-size: 16px; font-weight: 600; color: var(--secondary); }
+        .calendar { background: var(--bg-surface); border-radius: 12px; padding: 24px; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        .day-name { text-align: center; color: var(--text-secondary); font-size: 14px; padding: 8px; }
+        .day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: var(--bg-dark); border-radius: 8px; font-size: 14px; cursor: pointer; }
+        .day:hover { background: var(--border); }
+        .day.completed { background: var(--secondary); color: var(--bg-dark); font-weight: 700; }
+        .day.today { border: 2px solid var(--primary); }
+        .day.empty { background: transparent; }
+        .legend { display: flex; gap: 16px; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .legend-color { width: 16px; height: 16px; border-radius: 4px; }
+        .btn { padding: 12px 24px; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; border: none; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #e0352a; }
+        .btn-secondary { background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border); }
+        .btn-secondary:hover { border-color: var(--text-secondary); }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+        .modal { background: var(--bg-surface); border-radius: 16px; padding: 32px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .modal-title { font-size: 24px; font-weight: 700; }
+        .close-btn { background: none; border: none; color: var(--text-secondary); font-size: 24px; cursor: pointer; }
+        .workout-type-selector { display: flex; gap: 16px; margin-bottom: 24px; }
+        .type-btn { flex: 1; padding: 20px; background: var(--bg-dark); border: 2px solid var(--border); border-radius: 12px; color: var(--text-main); font-size: 16px; cursor: pointer; }
+        .type-btn:hover { border-color: var(--primary); }
+        .type-btn.selected { background: var(--primary); border-color: var(--primary); }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; color: var(--text-secondary); font-size: 14px; }
+        .form-input { width: 100%; padding: 12px; background: var(--bg-dark); border: 1px solid var(--border); border-radius: 8px; color: var(--text-main); font-size: 16px; }
+        .form-input:focus { outline: none; border-color: var(--primary); }
+        .sets-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 8px; }
+        .set-input { text-align: center; }
+        .set-label { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+        .wod-exercises { display: flex; flex-direction: column; gap: 12px; }
+        .exercise-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; }
+        @media (max-width: 768px) { .dashboard { grid-template-columns: 1fr; } .stats-grid { grid-template-columns: 1fr; } .calendar-grid { gap: 4px; } .day { font-size: 12px; } .exercise-row { grid-template-columns: 1fr; } .workout-type-selector { flex-direction: column; } .nav { gap: 12px; } .nav-item { font-size: 14px; } }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo">CrossFit Tracker</div>
+        <nav class="nav">
+            <a href="#" class="nav-item active">Dashboard</a>
+            <a href="#" class="nav-item">Calendar</a>
+            <a href="#" class="nav-item">History</a>
+            <a href="#" class="nav-item">Profile</a>
+        </nav>
+        <div class="user-avatar">IV</div>
+    </header>
+    <main class="container">
+        <div class="dashboard">
+            <div class="dashboard-left">
+                <div class="dashboard-section">
+                    <h2 class="dashboard-title">Статистика</h2>
+                    <div class="stats-grid">
+                        <div class="stat-card"><div class="stat-value">15</div><div class="stat-label">Тренировок в месяце</div></div>
+                        <div class="stat-card"><div class="stat-value">10</div><div class="stat-label">Дней стрик</div></div>
+                        <div class="stat-card"><div class="stat-value">25</div><div class="stat-label">Всего тренировок</div></div>
+                    </div>
+                    <h3 style="font-size: 18px; margin-bottom: 16px;">Последние тренировки</h3>
+                    <div class="workout-item"><div class="workout-info"><h3>Fran</h3><p>AMRAP • 2 мин</p></div><div class="workout-result">3 раунда</div></div>
+                    <div class="workout-item"><div class="workout-info"><h3>Приседания</h3><p>Skill • 5x10-10-8-8-6</p></div><div class="workout-result">120kg</div></div>
+                    <div class="workout-item"><div class="workout-info"><h3>Deadlift</h3><p>Skill • 5x5-5-3-3-1</p></div><div class="workout-result">160kg</div></div>
+                </div>
+                <div class="calendar">
+                    <div class="calendar-header">
+                        <h2 class="dashboard-title">Февраль 2026</h2>
+                        <div><button class="btn btn-secondary" style="padding: 8px 16px;">←</button><button class="btn btn-secondary" style="padding: 8px 16px;">→</button></div>
+                    </div>
+                    <div class="calendar-grid">
+                        <div class="day-name">Пн</div><div class="day-name">Вт</div><div class="day-name">Ср</div><div class="day-name">Чт</div><div class="day-name">Пт</div><div class="day-name">Сб</div><div class="day-name">Вс</div>
+                        <div class="day empty"></div><div class="day empty"></div><div class="day">1</div><div class="day completed">2</div><div class="day completed">3</div><div class="day completed">4</div><div class="day completed">5</div>
+                        <div class="day">6</div><div class="day">7</div><div class="day">8</div><div class="day">9</div><div class="day">10</div><div class="day">11</div><div class="day today">12</div>
+                        <div class="day">13</div><div class="day">14</div><div class="day">15</div><div class="day">16</div><div class="day">17</div><div class="day">18</div><div class="day">19</div>
+                        <div class="day">20</div><div class="day">21</div><div class="day">22</div><div class="day">23</div><div class="day">24</div><div class="day">25</div><div class="day">26</div>
+                        <div class="day">27</div><div class="day">28</div><div class="day">29</div><div class="day empty"></div><div class="day empty"></div><div class="day empty"></div><div class="day empty"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="legend-color" style="background: var(--bg-dark); border: 1px solid var(--border);"></div><span>Не начато</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: var(--accent);"></div><span>В процессе</span></div>
+                        <div class="legend-item"><div class="legend-color" style="background: var(--secondary);"></div><span>Выполнено</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="dashboard-right">
+                <div class="dashboard-section">
+                    <h2 class="dashboard-title">Быстрые действия</h2>
+                    <button class="btn btn-primary" style="margin-bottom: 16px;" onclick="openModal()">+ Новая тренировка</button>
+                    <button class="btn btn-secondary" style="width: 100%; padding: 12px;" onclick="openModal()">+ Записать результат</button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <div class="modal-overlay" id="workoutModal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header"><h2 class="modal-title">Новая тренировка</h2><button class="close-btn" onclick="closeModal()">&times;</button></div>
+            <div class="workout-type-selector">
+                <button class="type-btn selected" onclick="selectType('skill', this)"><div style="font-size: 24px; margin-bottom: 8px;">🏋️</div>Skill<div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Отработка упражнения</div></button>
+                <button class="type-btn" onclick="selectType('wod', this)"><div style="font-size: 24px; margin-bottom: 8px;">🔥</div>WOD<div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Тренировка дня</div></button>
+            </div>
+            <div id="skillForm">
+                <div class="form-group"><label class="form-label">Название упражнения</label><input type="text" class="form-input" placeholder="Например: Приседания, Жим лежа..." list="exercises"><datalist id="exercises"><option value="Приседания"><option value="Жим лежа"><option value="Становая тяга"><option value="Тяга перетяг"><option value="Жим стоя"></datalist></div>
+                <div class="form-group"><label class="form-label">Схема подходов (5x10-10-8-8-6)</label><div class="sets-grid"><div><div class="set-label">Подход 1</div><input type="number" class="form-input set-input" placeholder="Повторения" value="10"></div><div><div class="set-label">Подход 2</div><input type="number" class="form-input set-input" placeholder="Повторения" value="10"></div><div><div class="set-label">Подход 3</div><input type="number" class="form-input set-input" placeholder="Повторения" value="8"></div><div><div class="set-label">Подход 4</div><input type="number" class="form-input set-input" placeholder="Повторения" value="8"></div><div><div class="set-label">Подход 5</div><input type="number" class="form-input set-input" placeholder="Повторения" value="6"></div></div></div>
+                <div class="form-group"><label class="form-label">Максимальный вес (кг)</label><input type="number" class="form-input" placeholder="Например: 100"></div>
+            </div>
+            <div id="wodForm" style="display: none;">
+                <div class="form-group"><label class="form-label">Название WOD</label><input type="text" class="form-input" placeholder="Например: Fran, Cindy..." list="wods"><datalist id="wods"><option value="Fran"><option value="Cindy"><option value="Grace"><option value="Fight Gone Bad"></datalist></div>
+                <div class="form-group"><label class="form-label">Тип WOD</label><select class="form-input"><option value="amrap">AMRAP (максимум раундов)</option><option value="emom">EMOM (каждую минуту)</option><option value="fortime">For Time (за время)</option><option value="forload">For Load (на вес)</option><option value="ladder">Ladder (лесенка)</option><option value="chipper">Chipper (длинная)</option><option value="tabata">Tabata (20/10)</option></select></div>
+                <div class="form-group"><label class="form-label">Время (минуты)</label><input type="number" class="form-input" placeholder="Например: 2"></div>
+                <div class="form-group"><label class="form-label">Упражнения</label><div class="wod-exercises"><div class="exercise-row"><input type="text" class="form-input" placeholder="Упражнение"><input type="number" class="form-input" placeholder="Повторения"><input type="number" class="form-input" placeholder="Вес"></div><div class="exercise-row"><input type="text" class="form-input" placeholder="Упражнение"><input type="number" class="form-input" placeholder="Повторения"><input type="number" class="form-input" placeholder="Вес"></div><div class="exercise-row"><input type="text" class="form-input" placeholder="Упражнение"><input type="number" class="form-input" placeholder="Повторения"><input type="number" class="form-input" placeholder="Вес"></div></div></div>
+            </div>
+            <button class="btn btn-primary" onclick="saveWorkout()">Сохранить тренировку</button>
+        </div>
+    </div>
+    <script>
+        function openModal() { document.getElementById('workoutModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('workoutModal').style.display = 'none'; }
+        function selectType(type, btn) { document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); if (type === 'skill') { document.getElementById('skillForm').style.display = 'block'; document.getElementById('wodForm').style.display = 'none'; } else { document.getElementById('skillForm').style.display = 'none'; document.getElementById('wodForm').style.display = 'block'; } }
+        function saveWorkout() { alert('Тренировка сохранена!'); closeModal(); }
+        document.getElementById('workoutModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    </script>
+</body>
+</html>

@@ -1,0 +1,796 @@
+како<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossFit Workout Tracker - Мокапы</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            background: #1a1a1a;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333333;
+        }
+
+        .header-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .header-back {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .header-icon {
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .content {
+            flex: 1;
+            padding: 24px 16px;
+            overflow-y: auto;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: #ff3b30;
+            color: #ffffff;
+        }
+
+        .btn-primary:hover {
+            background: #ff5a4a;
+        }
+
+        .btn-secondary {
+            background: #1a1a1a;
+            color: #ffffff;
+            border: 1px solid #333333;
+        }
+
+        .btn-secondary:hover {
+            background: #2a2a2a;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 12px;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #333333;
+        }
+
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+
+        .stat-label {
+            color: #a0a0a0;
+        }
+
+        .stat-value {
+            font-weight: 600;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            color: #ffffff;
+            font-size: 16px;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #ff3b30;
+        }
+
+        .nav-bottom {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            background: #1a1a1a;
+            border-top: 1px solid #333333;
+            padding: 12px 0;
+            position: sticky;
+            bottom: 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            padding: 8px 16px;
+            font-size: 12px;
+            color: #a0a0a0;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active {
+            color: #ff3b30;
+        }
+
+        .nav-item:hover {
+            color: #ffffff;
+        }
+
+        .nav-icon {
+            font-size: 24px;
+        }
+
+        .welcome-section {
+            margin-bottom: 24px;
+        }
+
+        .welcome-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .welcome-subtitle {
+            color: #a0a0a0;
+            font-size: 14px;
+        }
+
+        .type-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .type-card {
+            background: #1a1a1a;
+            border: 2px solid #333333;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .type-card:hover {
+            border-color: #ff3b30;
+            background: #2a1a1a;
+        }
+
+        .type-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+        }
+
+        .type-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .type-desc {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .recent-item {
+            background: #1a1a1a;
+            border: 1px solid #333333;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .recent-item:hover {
+            border-color: #ff3b30;
+        }
+
+        .recent-name {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .recent-meta {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #a0a0a0;
+            text-transform: uppercase;
+            margin-top: 24px;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background: #1a1a1a;
+            border: 2px solid #333333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin: 0 auto 16px;
+        }
+
+        .profile-name {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .profile-email {
+            text-align: center;
+            font-size: 14px;
+            color: #a0a0a0;
+            margin-bottom: 24px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .modal-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            font-size: 16px;
+            color: #a0a0a0;
+            margin-bottom: 24px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <button class="header-back" onclick="goBack()" style="visibility: hidden;">←</button>
+            <div class="header-title" id="headerTitle">CrossFit Tracker</div>
+            <div class="header-icon" onclick="showScreen('profile')">👤</div>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <!-- Screen: Home -->
+            <div class="screen active" id="screen-home">
+                <div class="welcome-section">
+                    <div class="welcome-title">Привет, Ivan!</div>
+                    <div class="welcome-subtitle">Сегодня: 13 февраля</div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Статистика</div>
+                    <div class="stat-row">
+                        <span class="stat-label">Стрик:</span>
+                        <span class="stat-value">10 дней</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Тренировок в месяце:</span>
+                        <span class="stat-value">15</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Всего тренировок:</span>
+                        <span class="stat-value">100</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="showScreen('workout-type')">➕ Новая тренировка</button>
+
+                <div class="section-title">📅 Последние тренировки</div>
+
+                <div class="recent-item" onclick="showScreen('history')">
+                    <div class="recent-name">✓ Back Squat (Skill)</div>
+                    <div class="recent-meta">13 февр | 120 кг</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('history')">
+                    <div class="recent-name">✓ Fran (WOD)</div>
+                    <div class="recent-meta">12 февр | 4:32</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('history')">
+                    <div class="recent-name">✓ Deadlift (Skill)</div>
+                    <div class="recent-meta">11 февр | 180 кг</div>
+                </div>
+            </div>
+
+            <!-- Screen: Workout Type Selection -->
+            <div class="screen" id="screen-workout-type">
+                <div class="section-title">Выберите тип тренировки</div>
+
+                <div class="type-selector">
+                    <div class="type-card" onclick="showScreen('skill-exercise')">
+                        <div class="type-icon">💪</div>
+                        <div class="type-name">Skill</div>
+                        <div class="type-desc">Отработка техники с максимальным весом</div>
+                    </div>
+
+                    <div class="type-card" onclick="showScreen('wod-exercise')">
+                        <div class="type-icon">🔥</div>
+                        <div class="type-name">WOD</div>
+                        <div class="type-desc">Workout of the Day</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Screen: Skill Exercise Selection -->
+            <div class="screen" id="screen-skill-exercise">
+                <div class="input-group">
+                    <label class="input-label">🔍 Выберите упражнение</label>
+                    <input type="text" class="input-field" placeholder="Back Squat">
+                </div>
+
+                <div class="section-title">Популярные</div>
+
+                <div class="recent-item" onclick="showScreen('skill-params')">
+                    <div class="recent-name">Back Squat</div>
+                    <div class="recent-meta">Последний раз: 13 февр | Результат: 120 кг</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('skill-params')">
+                    <div class="recent-name">Deadlift</div>
+                    <div class="recent-meta">Последний раз: 11 февр | Результат: 180 кг</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('skill-params')">
+                    <div class="recent-name">Front Squat</div>
+                    <div class="recent-meta">Последний раз: 5 февр | Результат: 100 кг</div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="showScreen('home')">➕ Добавить свое</button>
+            </div>
+
+            <!-- Screen: Skill Parameters -->
+            <div class="screen" id="screen-skill-params">
+                <div class="input-group">
+                    <label class="input-label">Количество подходов</label>
+                    <input type="number" class="input-field" value="5">
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Подход 1</div>
+                    <div class="input-group">
+                        <label class="input-label">Повторения</label>
+                        <input type="number" class="input-field" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Вес (кг)</label>
+                        <input type="number" class="input-field" value="100">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Подход 2</div>
+                    <div class="input-group">
+                        <label class="input-label">Повторения</label>
+                        <input type="number" class="input-field" value="10">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Вес (кг)</label>
+                        <input type="number" class="input-field" value="100">
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">Подход 3</div>
+                    <div class="input-group">
+                        <label class="input-label">Повторения</label>
+                        <input type="number" class="input-field" value="8">
+                    </div>
+                    <div class="input-group">
+                        <label class="input-label">Вес (кг)</label>
+                        <input type="number" class="input-field" value="110">
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="showRecord()">💾 Сохранить</button>
+            </div>
+
+            <!-- Screen: WOD Exercise Selection -->
+            <div class="screen" id="screen-wod-exercise">
+                <div class="input-group">
+                    <label class="input-label">🔍 Выберите WOD</label>
+                    <input type="text" class="input-field" placeholder="Fran">
+                </div>
+
+                <div class="section-title">Популярные</div>
+
+                <div class="recent-item" onclick="showScreen('wod-params')">
+                    <div class="recent-name">Fran</div>
+                    <div class="recent-meta">Последний раз: 12 февр | Результат: 4:32</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('wod-params')">
+                    <div class="recent-name">Cindy</div>
+                    <div class="recent-meta">Последний раз: 8 февр | Результат: 18 раундов</div>
+                </div>
+
+                <div class="recent-item" onclick="showScreen('wod-params')">
+                    <div class="recent-name">Helen</div>
+                    <div class="recent-meta">Последний раз: 5 февр | Результат: 11:45</div>
+                </div>
+
+                <button class="btn btn-secondary" onclick="showScreen('home')">➕ Добавить свой WOD</button>
+            </div>
+
+            <!-- Screen: WOD Parameters -->
+            <div class="screen" id="screen-wod-params">
+                <div class="input-group">
+                    <label class="input-label">Тип WOD</label>
+                    <select class="input-field">
+                        <option>AMRAP (As Many Rounds)</option>
+                        <option>EMOM (Every Minute On the Minute)</option>
+                        <option>For Time</option>
+                        <option>For Load</option>
+                        <option>Ladder</option>
+                        <option>Chipper</option>
+                        <option>Tabata</option>
+                    </select>
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Время (минуты)</label>
+                    <input type="number" class="input-field" value="20">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Раундов</label>
+                    <input type="number" class="input-field" value="12">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Повторений</label>
+                    <input type="number" class="input-field" value="3">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Вес (кг)</label>
+                    <input type="number" class="input-field" value="95">
+                </div>
+
+                <div class="input-group">
+                    <label class="input-label">Выполнение</label>
+                    <div style="display: flex; gap: 16px; margin-top: 8px;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="execution" checked> Rx (Regular)
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="execution"> Scaled
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="showRecord()">💾 Сохранить</button>
+            </div>
+
+            <!-- Screen: History -->
+            <div class="screen" id="screen-history">
+                <div class="input-group">
+                    <label class="input-label">Фильтры</label>
+                    <select class="input-field">
+                        <option>Все типы</option>
+                        <option>Skill</option>
+                        <option>WOD</option>
+                    </select>
+                </div>
+
+                <div class="recent-item">
+                    <div class="recent-name">✓ Back Squat (Skill)</div>
+                    <div class="recent-meta">13 февр | 120 кг | 5x10-10-8-8-6</div>
+                    <button class="btn btn-secondary" style="margin-top: 8px; padding: 8px;">Редактировать</button>
+                </div>
+
+                <div class="recent-item">
+                    <div class="recent-name">✓ Fran (WOD)</div>
+                    <div class="recent-meta">12 февр | 4:32 (Rx) | AMRAP 20 мин</div>
+                    <button class="btn btn-secondary" style="margin-top: 8px; padding: 8px;">Редактировать</button>
+                </div>
+
+                <div class="recent-item">
+                    <div class="recent-name">✓ Deadlift (Skill)</div>
+                    <div class="recent-meta">11 февр | 180 кг | 3x5</div>
+                    <button class="btn btn-secondary" style="margin-top: 8px; padding: 8px;">Редактировать</button>
+                </div>
+            </div>
+
+            <!-- Screen: Profile -->
+            <div class="screen" id="screen-profile">
+                <div class="profile-avatar">👤</div>
+                <div class="profile-name">Ivan Petrov</div>
+                <div class="profile-email">ivan@example.com</div>
+
+                <div class="card">
+                    <div class="card-title">📊 Статистика</div>
+                    <div class="stat-row">
+                        <span class="stat-label">Стрик:</span>
+                        <span class="stat-value">10 дней</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Тренировок в месяце:</span>
+                        <span class="stat-value">15</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Всего тренировок:</span>
+                        <span class="stat-value">100</span>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">🏆 Лучшие результаты</div>
+                    <div class="stat-row">
+                        <span class="stat-label">Back Squat:</span>
+                        <span class="stat-value">120 кг</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Deadlift:</span>
+                        <span class="stat-value">180 кг</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">Fran:</span>
+                        <span class="stat-value">4:32</span>
+                    </div>
+                </div>
+
+                <button class="btn btn-secondary">⚙️ Редактировать профиль</button>
+                <button class="btn btn-secondary">🚪 Выход</button>
+            </div>
+        </div>
+
+        <!-- BOTTOM NAVIGATION -->
+        <div class="nav-bottom">
+            <div class="nav-item active" onclick="showScreen('home'); updateNav(0)">
+                <div class="nav-icon">🏠</div>
+                <div>Home</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('calendar'); updateNav(1)">
+                <div class="nav-icon">📅</div>
+                <div>Calendar</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('history'); updateNav(2)">
+                <div class="nav-icon">📊</div>
+                <div>History</div>
+            </div>
+            <div class="nav-item" onclick="showScreen('profile'); updateNav(3)">
+                <div class="nav-icon">👤</div>
+                <div>Profile</div>
+            </div>
+        </div>
+
+        <!-- MODAL: Record -->
+        <div class="modal" id="modal-record">
+            <div class="modal-content">
+                <div class="modal-icon">🎉</div>
+                <div class="modal-title">Новый рекорд!</div>
+                <div class="modal-subtitle">Back Squat: 120 кг</div>
+                <div style="color: #a0a0a0; margin-bottom: 24px;">
+                    Предыдущий рекорд: 115 кг<br>
+                    Улучшение: +5 кг
+                </div>
+                <button class="btn btn-primary" onclick="closeModal('modal-record'); showScreen('home')">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('screen-' + screenId).classList.add('active');
+            
+            const titles = {
+                'home': 'CrossFit Tracker',
+                'workout-type': 'Новая тренировка',
+                'skill-exercise': 'Skill тренировка',
+                'skill-params': 'Back Squat',
+                'wod-exercise': 'WOD тренировка',
+                'wod-params': 'Fran',
+                'history': 'История',
+                'profile': 'Профиль',
+                'calendar': 'Календарь'
+            };
+            
+            document.getElementById('headerTitle').textContent = titles[screenId] || 'CrossFit Tracker';
+        }
+
+        function updateNav(index) {
+            document.querySelectorAll('.nav-item').forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+        }
+
+        function showRecord() {
+            document.getElementById('modal-record').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function goBack() {
+            showScreen('home');
+        }
+    </script>
+</body>
+</html>
+
+            <!-- Screen: Calendar -->
+            <div class="screen" id="screen-calendar">
+                <div class="section-title">Февраль 2026</div>
+
+                <div class="card">
+                    <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center;">
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Пн</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Вт</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Ср</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Чт</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Пт</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Сб</div>
+                        <div style="font-size: 12px; color: #a0a0a0; font-weight: 600;">Вс</div>
+
+                        <div></div>
+                        <div style="padding: 8px; cursor: pointer;">1</div>
+                        <div style="padding: 8px; cursor: pointer;">2</div>
+                        <div style="padding: 8px; cursor: pointer;">3</div>
+                        <div style="padding: 8px; cursor: pointer;">4</div>
+                        <div style="padding: 8px; cursor: pointer;">5</div>
+                        <div style="padding: 8px; cursor: pointer;">6</div>
+
+                        <div style="padding: 8px; cursor: pointer;">8</div>
+                        <div style="padding: 8px; cursor: pointer;">9</div>
+                        <div style="padding: 8px; cursor: pointer;">10</div>
+                        <div style="padding: 8px; cursor: pointer;">11</div>
+                        <div style="padding: 8px; cursor: pointer;">12</div>
+                        <div style="padding: 8px; cursor: pointer;">13</div>
+                        <div style="padding: 8px; cursor: pointer; background: #30ff88; color: #0a0a0a; border-radius: 4px; font-weight: 600;">14</div>
+
+                        <div style="padding: 8px; cursor: pointer;">15</div>
+                        <div style="padding: 8px; cursor: pointer;">16</div>
+                        <div style="padding: 8px; cursor: pointer;">17</div>
+                        <div style="padding: 8px; cursor: pointer;">18</div>
+                        <div style="padding: 8px; cursor: pointer;">19</div>
+                        <div style="padding: 8px; cursor: pointer;">20</div>
+                        <div style="padding: 8px; cursor: pointer;">21</div>
+
+                        <div style="padding: 8px; cursor: pointer;">22</div>
+                        <div style="padding: 8px; cursor: pointer;">23</div>
+                        <div style="padding: 8px; cursor: pointer;">24</div>
+                        <div style="padding: 8px; cursor: pointer;">25</div>
+                        <div style="padding: 8px; cursor: pointer;">26</div>
+                        <div style="padding: 8px; cursor: pointer;">27</div>
+                        <div style="padding: 8px; cursor: pointer;">28</div>
+                    </div>
+                </div>
+
+                <div class="section-title">Легенда</div>
+                <div style="display: flex; gap: 16px; font-size: 14px;">
+                    <div>● <span style="color: #a0a0a0;">Выполнено</span></div>
+                    <div>◐ <span style="color: #a0a0a0;">В процессе</span></div>
+                    <div>○ <span style="color: #a0a0a0;">Не начато</span></div>
+                </div>
+            </div>

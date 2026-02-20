@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Визуальная демонстрация адаптивности</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            background: linear-gradient(135deg, #ff3b30, #ffbd00);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .device-demo {
+            background: #1a1a1a;
+            border: 2px solid #333333;
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .device-demo:hover {
+            border-color: #ff3b30;
+            transform: translateY(-4px);
+        }
+
+        .device-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #ff3b30;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .device-size {
+            color: #a0a0a0;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .iframe-wrapper {
+            border: 2px solid #333333;
+            border-radius: 8px;
+            overflow: hidden;
+            background: white;
+            height: 400px;
+        }
+
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            transform-origin: 0 0;
+        }
+
+        .features-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 1rem;
+        }
+
+        .features-list li {
+            padding: 0.3rem 0;
+            color: #a0a0a0;
+            font-size: 0.85rem;
+        }
+
+        .features-list li::before {
+            content: '✅ ';
+            margin-right: 0.5rem;
+        }
+
+        .open-btn {
+            display: block;
+            background: linear-gradient(135deg, #ff3b30, #ffbd00);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: transform 0.3s ease;
+        }
+
+        .open-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Scale iframes to fit */
+        .iframe-wrapper.mobile iframe {
+            width: 375px;
+            height: 667px;
+            transform: scale(0.6);
+        }
+
+        .iframe-wrapper.tablet iframe {
+            width: 768px;
+            height: 1024px;
+            transform: scale(0.4);
+        }
+
+        .iframe-wrapper.desktop iframe {
+            width: 1920px;
+            height: 1080px;
+            transform: scale(0.25);
+        }
+
+        .note {
+            background: rgba(255, 59, 48, 0.1);
+            border: 2px solid #ff3b30;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            text-align: center;
+        }
+
+        .note h2 {
+            color: #ff3b30;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📱💻 Визуальная демонстрация адаптивности</h1>
+
+        <div class="note">
+            <h2>⚠️ Примечание</h2>
+            <p>Ниже показаны превью разных размеров экранов. Для полноценного тестирования используйте DevTools браузера
+                или откройте основную страницу напрямую.</p>
+        </div>
+
+        <div class="demo-grid">
+            <!-- Mobile -->
+            <div class="device-demo">
+                <div class="device-name">📱 Мобильный</div>
+                <div class="device-size">375x667 (iPhone X/12/13)</div>
+                <div class="iframe-wrapper mobile">
+                    <iframe src="mvp-index.html"></iframe>
+                </div>
+                <ul class="features-list">
+                    <li>Навигация внизу</li>
+                    <li>1 колонка везде</li>
+                    <li>Кнопки на полную ширину</li>
+                    <li>Скрыт текст логотипа</li>
+                </ul>
+                <a href="mvp-index.html" class="open-btn" target="_blank">Открыть в новой вкладке</a>
+            </div>
+
+            <!-- Tablet -->
+            <div class="device-demo">
+                <div class="device-name">📱 Планшет</div>
+                <div class="device-size">768x1024 (iPad)</div>
+                <div class="iframe-wrapper tablet">
+                    <iframe src="mvp-index.html"></iframe>
+                </div>
+                <ul class="features-list">
+                    <li>Quick stats: 2 колонки</li>
+                    <li>Календарь: 1 месяц</li>
+                    <li>Адаптивные формы</li>
+                    <li>Логотип без текста</li>
+                </ul>
+                <a href="mvp-index.html" class="open-btn" target="_blank">Открыть в новой вкладке</a>
+            </div>
+
+            <!-- Desktop -->
+            <div class="device-demo">
+                <div class="device-name">🖥️ Десктоп</div>
+                <div class="device-size">1920x1080 (Full HD)</div>
+                <div class="iframe-wrapper desktop">
+                    <iframe src="mvp-index.html"></iframe>
+                </div>
+                <ul class="features-list">
+                    <li>Оригинальный дизайн</li>
+                    <li>Stats: 4 колонки</li>
+                    <li>Календарь: 3 месяца</li>
+                    <li>Полный функционал</li>
+                </ul>
+                <a href="mvp-index.html" class="open-btn" target="_blank">Открыть в новой вкладке</a>
+            </div>
+        </div>
+
+        <div style="margin-top: 3rem; text-align: center;">
+            <a href="responsive-test.html" class="open-btn" style="max-width: 400px; margin: 0 auto;">
+                🧪 Открыть интерактивный тест
+            </a>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossFit Tracker - MVP v3</title>
+    <link rel="stylesheet" href="mvp-styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Additional styles for v3 */
+        .workout-blocks {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .workout-block {
+            border-left: 4px solid var(--border-color);
+            padding-left: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .workout-block.skill {
+            border-color: var(--color-secondary);
+        }
+
+        .workout-block.wod {
+            border-color: var(--color-primary);
+        }
+
+        .block-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sets-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .set-input {
+            width: 60px;
+            text-align: center;
+        }
+
+        .builder-actions {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .btn-add-block {
+            padding: 1.5rem;
+            background: var(--bg-secondary);
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-add-block:hover {
+            border-color: var(--color-primary);
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+
+        .added-blocks-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .added-block {
+            background: var(--bg-secondary);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .remove-block {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .remove-block:hover {
+            color: var(--color-primary);
+        }
+
+        .wod-exercise-row.no-weight {
+            grid-template-columns: 2fr 1fr auto;
+        }
+
+        .best-weight-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .best-weight-exercise {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .best-weight-date {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div style="display: flex; align-items: center; gap: 2rem;">
+                <div class="logo" onclick="showScreen('home')" style="cursor: pointer;">
+                    <span class="logo-icon">💪</span>
+                    <span class="logo-text">CrossFit Tracker</span>
+                </div>
+                <div class="nav-links">
+                    <a href="#" class="nav-link" data-screen="history">История</a>
+                    <a href="#" class="nav-link" data-screen="stats">Статистика</a>
+                </div>
+            </div>
+            <div class="nav-user">
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button class="btn-primary btn-sm" onclick="startNewWorkout()">
+                        <span>Новая тренировка</span>
+                    </button>
+                    <div class="user-avatar" onclick="showScreen('profile')" style="cursor: pointer;">
+                        <img src="https://ui-avatars.com/api/?name=Ivan+Petrovich&background=0D8ABC&color=fff"
+                            alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%;">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Mobile Bottom Navigation (shown only on mobile) -->
+    <nav class="mobile-bottom-nav">
+        <a href="#" class="mobile-nav-item active" data-screen="home"
+            onclick="showScreen('home'); setActiveMobileNav(this); return false;">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                <polyline points="9 22 9 12 15 12 15 22"></polyline>
+            </svg>
+            <span class="mobile-nav-label">Главная</span>
+        </a>
+        <a href="#" class="mobile-nav-item" onclick="startNewWorkout(); setActiveMobileNav(this); return false;">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span class="mobile-nav-label">Создать</span>
+        </a>
+        <a href="#" class="mobile-nav-item" data-screen="stats"
+            onclick="showScreen('stats'); setActiveMobileNav(this); return false;">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="20" x2="12" y2="10"></line>
+                <line x1="18" y1="20" x2="18" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="16"></line>
+            </svg>
+            <span class="mobile-nav-label">Статистика</span>
+        </a>
+        <a href="#" class="mobile-nav-item" data-screen="profile"
+            onclick="showScreen('profile'); setActiveMobileNav(this); return false;">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="mobile-nav-label">Профиль</span>
+        </a>
+    </nav>
+
+    <!-- Screen 1: Home -->
+    <div class="screen active" id="home-screen">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">Мои тренировки</h1>
+                <button class="btn-primary" onclick="showScreen('create')">
+                    <span class="btn-icon">➕</span>
+                    Новая тренировка
+                </button>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-mini">
+                    <div class="stat-mini-value">15</div>
+                    <div class="stat-mini-label">Тренировок<br>в этом месяце</div>
+                </div>
+                <div class="stat-mini best-weight-card">
+                    <div class="stat-mini-value">120 кг</div>
+                    <div class="best-weight-exercise">Back Squat</div>
+                    <div class="best-weight-date">12 фев</div>
+                    <div class="stat-mini-label">Лучший вес</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-value">🔥 7</div>
+                    <div class="stat-mini-label">Тренировочных дней<br>подряд</div>
+                </div>
+            </div>
+
+            <!-- Recent Workouts -->
+            <div class="workouts-section">
+                <div class="section-header">
+                    <h2 class="section-title">Последние тренировки</h2>
+                    <a href="#" class="link-all" onclick="showScreen('history'); return false;">Вся история →</a>
+                </div>
+
+                <div class="workout-list" id="recent-workouts-container">
+                    <!-- Populated by JS -->
+                    <div class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                        Загрузка...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Create Workout -->
+    <div class="screen" id="create-screen">
+        <div class="container">
+            <h1 class="page-title">Новая тренировка</h1>
+
+            <div class="added-blocks-list" id="workout-builder">
+                <div class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                    Пока пусто. Добавьте блок Skill или WOD.
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 2rem;">
+                <label>Комментарий к тренировке (необязательно)</label>
+                <textarea class="form-input" rows="3" placeholder="Как прошло? Самочувствие, нюансы..."></textarea>
+            </div>
+
+            <div class="builder-actions">
+                <button class="btn-add-block" onclick="addSkillBlock()">
+                    <span style="font-size: 2rem;">🏋️</span>
+                    Добавить Skill
+                </button>
+                <button class="btn-add-block" onclick="addWodBlock()">
+                    <span style="font-size: 2rem;">⚡</span>
+                    Добавить WOD
+                </button>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-secondary" onclick="showScreen('home')">Отмена</button>
+                <button class="btn-primary">Сохранить тренировку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Templates -->
+    <template id="skill-block-template">
+        <div class="added-block skill-block">
+            <button class="remove-block" onclick="this.parentElement.remove()">❌</button>
+            <h3 class="block-title" style="color: var(--color-secondary);">🏋️ Skill</h3>
+
+            <div class="form-group">
+                <label>Упражнение</label>
+                <input type="text" class="form-input exercise-search"
+                    placeholder="Начните вводить или кликните для списка" onfocus="showExerciseDropdown(this)">
+                <div class="autocomplete-dropdown">
+                    <div class="autocomplete-item"
+                        onclick="selectExercise(this, 'Приседания со штангой на спине (Back Squat)', 115, '05.02.2026')">
+                        Приседания со штангой на спине (Back Squat)</div>
+                    <div class="autocomplete-item"
+                        onclick="selectExercise(this, 'Фронтальные приседания (Front Squat)', 90, '01.02.2026')">
+                        Фронтальные приседания (Front Squat)</div>
+                    <div class="autocomplete-item"
+                        onclick="selectExercise(this, 'Становая тяга (Deadlift)', 140, '20.01.2026')">Становая тяга
+                        (Deadlift)</div>
+                    <div class="autocomplete-item"
+                        onclick="selectExercise(this, 'Жим лежа (Bench Press)', 95, '10.02.2026')">Жим лежа (Bench
+                        Press)</div>
+                    <div class="autocomplete-item"
+                        onclick="selectExercise(this, 'Жим стоя (Overhead Press)', null, null)">Жим стоя (Overhead
+                        Press)</div>
+                </div>
+                <div class="form-hint history-hint"
+                    style="display: none; color: var(--color-secondary); margin-top: 0.5rem;">
+                    ℹ️ В прошлый раз: 115 кг (05.02.2026)
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Количество подходов</label>
+                <select class="form-select sets-selector" onchange="updateSetsInputs(this)">
+                    <option value="1">1 подход</option>
+                    <option value="2">2 подхода</option>
+                    <option value="3">3 подхода</option>
+                    <option value="4">4 подхода</option>
+                    <option value="5" selected>5 подходов</option>
+                    <option value="6">6 подходов</option>
+                    <option value="7">7 подходов</option>
+                    <option value="8">8 подходов</option>
+                    <option value="9">9 подходов</option>
+                    <option value="10">10 подходов</option>
+                    <option value="11">11 подходов</option>
+                    <option value="12">12 подходов</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Повторения в подходах</label>
+                <div class="sets-inputs-container sets-container">
+                    <input type="number" class="form-input set-input" placeholder="1">
+                    <input type="number" class="form-input set-input" placeholder="2">
+                    <input type="number" class="form-input set-input" placeholder="3">
+                    <input type="number" class="form-input set-input" placeholder="4">
+                    <input type="number" class="form-input set-input" placeholder="5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Вес для каждого подхода (кг, необязательно)</label>
+                <div class="sets-inputs-container sets-container weight-inputs-container">
+                    <input type="number" class="form-input set-input" placeholder="1">
+                    <input type="number" class="form-input set-input" placeholder="2">
+                    <input type="number" class="form-input set-input" placeholder="3">
+                    <input type="number" class="form-input set-input" placeholder="4">
+                    <input type="number" class="form-input set-input" placeholder="5">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Максимальный вес (кг)</label>
+                <input type="number" class="form-input" style="width: 150px;" placeholder="120">
+            </div>
+        </div>
+    </template>
+
+    <template id="wod-block-template">
+        <div class="added-block wod-block">
+            <button class="remove-block" onclick="this.parentElement.remove()">❌</button>
+            <h3 class="block-title" style="color: var(--color-primary);">⚡ WOD</h3>
+
+            <!-- Removed Name field -->
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Тип</label>
+                    <select class="form-select">
+                        <option>For Time</option>
+                        <option>AMRAP</option>
+                        <option>EMOM</option>
+                        <option>Tabata</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Уровень</label>
+                    <select class="form-select">
+                        <option value="rx">Rx</option>
+                        <option value="sc">Sc</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Огр. времени, мин</label>
+                    <input type="number" class="form-input" placeholder="20">
+                </div>
+                <div class="form-group" style="display: flex; align-items: center; padding-top: 1.5rem;">
+                    <label class="checkbox-container" style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" onchange="toggleLadderMode(this)"
+                            style="width: 20px; height: 20px; margin-right: 10px;">
+                        <span style="font-weight: 600;">Лесенка</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Ladder Rounds Input (Hidden by default) -->
+            <div class="form-group ladder-rounds-container" style="display: none;">
+                <label>Количество раундов</label>
+                <select class="form-select" onchange="updateLadderRounds(this)">
+                    <option value="1">1 раунд</option>
+                    <option value="2">2 раунда</option>
+                    <option value="3">3 раунда</option>
+                    <option value="4">4 раунда</option>
+                    <option value="5" selected>5 раундов</option>
+                    <option value="6">6 раундов</option>
+                    <option value="7">7 раундов</option>
+                    <option value="8">8 раундов</option>
+                    <option value="9">9 раундов</option>
+                    <option value="10">10 раундов</option>
+                    <option value="11">11 раундов</option>
+                    <option value="12">12 раундов</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Упражнения</label>
+                <div class="wod-exercises-container">
+                    <div class="wod-exercise-row">
+                        <!-- SCROLLING WRAPPER -->
+                        <div class="wod-row-scroller">
+                            <input type="text" class="form-input-sm wod-exercise-name" placeholder="Упражнение"
+                                onfocus="showWodExerciseDropdown(this)" oninput="filterWodDropdown(this)">
+
+                            <div class="wod-fields-scroll">
+                                <div class="single-reps-container" style="display: flex;">
+                                    <input type="number" class="form-input-sm" placeholder="Повт.">
+                                </div>
+
+                                <div class="ladder-reps-container" style="display: none; gap: 0.5rem;">
+                                    <!-- Reps inputs will be injected here -->
+                                </div>
+
+                                <input type="number" class="form-input-sm wod-weight" placeholder="Вес, кг">
+                            </div>
+                        </div>
+
+                        <!-- FIXED BUTTON (Outside scroller) -->
+                        <button class="btn-icon" onclick="removeWodExercise(this)">❌</button>
+                    </div>
+                </div>
+                <button class="btn-add" onclick="addWodExerciseRow(this)">+ Добавить упражнение</button>
+            </div>
+
+            <div class="form-group" style="padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                <label>Результат</label>
+                <div class="form-row" style="gap: 0.5rem;">
+                    <select class="form-select" onchange="updateResultInput(this)">
+                        <option value="time">Время</option>
+                        <option value="reps">Количество повторений</option>
+                    </select>
+                    <input type="text" class="form-input result-input" placeholder="15:21">
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Screen 3: History -->
+    <div class="screen" id="history-screen">
+        <div class="container">
+            <h1 class="page-title">История тренировок</h1>
+
+            <div class="filters-section" style="margin-bottom: 2rem;">
+                <div class="date-filter-container" style="position: relative; margin-bottom: 1rem;">
+                    <label>Период</label>
+                    <button id="date-filter-btn" class="form-input" onclick="toggleDatePicker()"
+                        style="text-align: left; display: flex; align-items: center; justify-content: space-between; cursor: pointer;">
+                        <span id="date-filter-text">Выберите период</span>
+                        <span>📅</span>
+                    </button>
+
+                    <!-- Dropdown Modal -->
+                    <div id="date-picker-modal" class="date-picker-modal">
+                        <!-- Presets -->
+                        <div class="date-presets">
+                            <button class="preset-btn" onclick="selectDatePreset('today')">Сегодня</button>
+                            <button class="preset-btn" onclick="selectDatePreset('yesterday')">Вчера</button>
+                            <button class="preset-btn" onclick="selectDatePreset('week')">Неделя</button>
+                            <button class="preset-btn" onclick="selectDatePreset('month')">Месяц</button>
+                            <button class="preset-btn" onclick="selectDatePreset('quarter')">Квартал</button>
+                            <button class="preset-btn active" onclick="selectDatePreset('custom')">Период</button>
+                        </div>
+
+                        <!-- Calendar Navigation -->
+                        <div class="calendar-wrapper">
+                            <button class="nav-arrow" id="prev-month" onclick="changeMonth(-1)">❮</button>
+                            <div class="calendar-grid-container" id="calendar-container">
+                                <!-- 3 Calendars will be injected here -->
+                            </div>
+                            <button class="nav-arrow" id="next-month" onclick="changeMonth(1)" disabled>❯</button>
+                        </div>
+
+                        <div class="picker-actions">
+                            <button class="btn-secondary" onclick="toggleDatePicker()">Отмена</button>
+                            <button class="btn-primary"
+                                onclick="applyDateFilter(); toggleDatePicker();">Применить</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Фильтр по упражнению</label>
+                    <select class="form-select">
+                        <option>Все упражнения</option>
+                        <option>Приседания на спине (Back Squat)</option>
+                        <option>Фронтальные приседания (Front Squat)</option>
+                        <option>Становая тяга (Deadlift)</option>
+                        <option>Жим лежа (Bench Press)</option>
+                        <option>Рывок (Snatch)</option>
+                        <option>Толчок (Clean & Jerk)</option>
+                        <option>Трастеры (Thrusters)</option>
+                        <option>Подтягивания (Pull-ups)</option>
+                    </select>
+                </div>
+                <div class="period-selector">
+                    <button class="period-btn active">Все</button>
+                    <button class="period-btn">Skill</button>
+                    <button class="period-btn">WOD</button>
+                </div>
+            </div>
+
+            <div class="workout-list" id="history-container">
+                <!-- Populated by JS -->
+                <div class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 2rem;">
+                    Загрузка истории...
+                </div>
+            </div>
+            <div id="pagination-container" class="pagination-container"
+                style="margin-top: 2rem; display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Statistics -->
+    <div class="screen" id="stats-screen">
+        <div class="container">
+            <h1 class="page-title">Статистика</h1>
+
+            <div class="period-selector">
+                <button class="period-btn">Неделя</button>
+                <button class="period-btn active">Месяц</button>
+                <button class="period-btn">Год</button>
+                <button class="period-btn">Всё время</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">💪</div>
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Тренировок</div>
+                    <div class="stat-trend up">+3 к прошлому месяцу</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏋️</div>
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Skill сессий</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⚡</div>
+                    <div class="stat-value">7</div>
+                    <div class="stat-label">WOD сессий</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Новых PR</div>
+                    <div class="stat-trend up">Отличный прогресс!</div>
+                </div>
+            </div>
+
+            <div class="pr-section">
+                <h2 class="section-title">Личные рекорды</h2>
+                <div class="pr-list">
+                    <div class="pr-item">
+                        <div class="pr-exercise">
+                            <div class="pr-name">Back Squat</div>
+                            <div class="pr-date">12 фев 2026</div>
+                        </div>
+                        <div class="pr-value">120 кг</div>
+                    </div>
+                    <div class="pr-item">
+                        <div class="pr-exercise">
+                            <div class="pr-name">Deadlift</div>
+                            <div class="pr-date">08 фев 2026</div>
+                        </div>
+                        <div class="pr-value">150 кг</div>
+                    </div>
+                    <div class="pr-item">
+                        <div class="pr-exercise">
+                            <div class="pr-name">Bench Press</div>
+                            <div class="pr-date">05 фев 2026</div>
+                        </div>
+                        <div class="pr-value">90 кг</div>
+                    </div>
+                    <div class="pr-item">
+                        <div class="pr-exercise">
+                            <div class="pr-name">Fran</div>
+                            <div class="pr-date">11 фев 2026</div>
+                        </div>
+                        <div class="pr-value">8:45</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section">
+                <h2 class="section-title">Прогресс по упражнению</h2>
+                <select class="form-select" id="chart-exercise-select" style="max-width: 300px; margin-bottom: 0.5rem;">
+                    <option>Приседания на спине (Back Squat)</option>
+                    <option>Становая тяга (Deadlift)</option>
+                    <option>Жим лежа (Bench Press)</option>
+                    <option>Рывок (Snatch)</option>
+                    <option>Трастеры (Thrusters)</option>
+                </select>
+                <!-- Detail selector -->
+                <select class="form-select" id="chart-detail-select" style="max-width: 200px; margin-bottom: 1.5rem;">
+                    <option value="day">По дням</option>
+                    <option value="week">По неделям</option>
+                    <option value="month" selected>По месяцам</option>
+                </select>
+                <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
+                    <canvas id="progress-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen X: Details -->
+    <div class="screen" id="details-screen">
+        <div class="container">
+            <div class="page-header">
+                <button class="btn-secondary" onclick="showScreen('history')">← Назад</button>
+                <div style="flex: 1;"></div>
+                <button class="btn-primary" id="btn-edit-workout" onclick="editCurrentWorkout()">
+                    ✏️ Редактировать
+                </button>
+            </div>
+
+            <div id="details-content" class="details-content">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 5: Profile -->
+    <div class="screen" id="profile-screen">
+        <div class="container">
+            <h1 class="page-title">Профиль</h1>
+
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar-large">ИП</div>
+                    <div class="profile-info">
+                        <h2 class="profile-name">Иван Петрович</h2>
+                        <div class="profile-email">ivan.petrovich@example.com</div>
+                    </div>
+                    <button class="btn-danger">Выйти</button>
+                </div>
+
+                <div class="profile-form">
+                    <div class="form-group">
+                        <label>Имя</label>
+                        <input type="text" class="form-input" value="Иван Петрович">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Пол</label>
+                        <select class="form-select">
+                            <option selected>Мужской</option>
+                            <option>Женский</option>
+                        </select>
+                    </div>
+
+                    <div class="account-section"
+                        style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid var(--border-color);">
+                        <h3 class="section-title" style="font-size: 1.2rem; margin-bottom: 1rem;">Смена пароля</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Новый пароль</label>
+                                <input type="password" class="form-input" placeholder="••••••••">
+                            </div>
+                            <div class="form-group">
+                                <label>Подтвердите пароль</label>
+                                <input type="password" class="form-input" placeholder="••••••••">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button class="btn-primary">Сохранить изменения</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="mvp-script-v3.js"></script>
+</body>
+
+</html>

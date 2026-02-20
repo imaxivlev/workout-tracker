@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CrossFit Workout Tracker - Mockups</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">💪</span>
+                <span class="logo-text">CrossFit Tracker</span>
+            </div>
+            <div class="nav-links">
+                <a href="#" class="nav-link" data-screen="create">Создать</a>
+                <a href="#" class="nav-link" data-screen="calendar">Календарь</a>
+                <a href="#" class="nav-link" data-screen="leaderboard">Лидерборд</a>
+                <a href="#" class="nav-link" data-screen="profile">Профиль</a>
+            </div>
+            <div class="nav-user">
+                <div class="notification-icon">🔔</div>
+                <div class="user-avatar">ИП</div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Screen 1: Create Workout -->
+    <div class="screen active" id="create-screen">
+        <div class="container">
+            <h1 class="page-title">Создать тренировку</h1>
+            
+            <!-- Type Selection -->
+            <div class="type-selector">
+                <button class="type-btn active" data-type="skill">
+                    <span class="type-icon">🏋️</span>
+                    <span class="type-label">Skill</span>
+                    <span class="type-desc">Отработка техники</span>
+                </button>
+                <button class="type-btn" data-type="wod">
+                    <span class="type-icon">⚡</span>
+                    <span class="type-label">WOD</span>
+                    <span class="type-desc">Workout of the Day</span>
+                </button>
+            </div>
+
+            <!-- Skill Form -->
+            <div class="workout-form" id="skill-form">
+                <div class="form-group">
+                    <label>Название упражнения</label>
+                    <input type="text" class="form-input" placeholder="Начните вводить... (например: присед)" id="exercise-input">
+                    <div class="autocomplete-dropdown" id="autocomplete"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>Схема подходов</label>
+                    <input type="text" class="form-input" placeholder="Например: 5x10-10-8-8-6" value="5x10-10-8-8-6">
+                </div>
+
+                <div class="form-group">
+                    <label>Максимальный вес (кг)</label>
+                    <input type="number" class="form-input" placeholder="120" value="120">
+                </div>
+
+                <div class="notification-box">
+                    <span class="notification-icon">ℹ️</span>
+                    <div class="notification-content">
+                        <strong>В прошлый раз</strong> вы делали это упражнение 05.02.2026<br>
+                        Результат: 115 кг
+                        <button class="link-btn">Перейти к истории</button>
+                    </div>
+                </div>
+
+                <button class="btn-primary">Сохранить тренировку</button>
+            </div>
+
+            <!-- WOD Form -->
+            <div class="workout-form hidden" id="wod-form">
+                <div class="form-group">
+                    <label>Название WOD</label>
+                    <input type="text" class="form-input" placeholder="Например: Fran, Murph">
+                </div>
+
+                <div class="form-group">
+                    <label>Тип WOD</label>
+                    <select class="form-select">
+                        <option>EMOM</option>
+                        <option>AMRAP</option>
+                        <option selected>For Time</option>
+                        <option>For Load</option>
+                        <option>Ladder</option>
+                        <option>Chipper</option>
+                        <option>Tabata</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Время (мин)</label>
+                        <input type="number" class="form-input" placeholder="20" value="20">
+                    </div>
+                    <div class="form-group">
+                        <label>Раунды</label>
+                        <input type="number" class="form-input" placeholder="5" value="5">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Упражнения</label>
+                    <div class="exercise-list">
+                        <div class="exercise-item">
+                            <input type="text" class="form-input-sm" placeholder="Упражнение" value="Deadlift">
+                            <input type="number" class="form-input-sm" placeholder="Вес" value="135">
+                            <input type="number" class="form-input-sm" placeholder="Повт." value="21">
+                            <button class="btn-icon">❌</button>
+                        </div>
+                        <div class="exercise-item">
+                            <input type="text" class="form-input-sm" placeholder="Упражнение" value="Pull-ups">
+                            <input type="number" class="form-input-sm" placeholder="Вес">
+                            <input type="number" class="form-input-sm" placeholder="Повт." value="14">
+                            <button class="btn-icon">❌</button>
+                        </div>
+                    </div>
+                    <button class="btn-secondary">+ Добавить упражнение</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Инструмент</label>
+                    <div class="equipment-selector">
+                        <button class="equipment-btn">Штанга</button>
+                        <button class="equipment-btn active">Гантели</button>
+                        <button class="equipment-btn">Гиря</button>
+                        <button class="equipment-btn">Байк</button>
+                        <button class="equipment-btn">Гребля</button>
+                    </div>
+                </div>
+
+                <button class="btn-primary">Сохранить тренировку</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 2: Calendar -->
+    <div class="screen" id="calendar-screen">
+        <div class="container">
+            <h1 class="page-title">Календарь тренировок</h1>
+            
+            <div class="calendar-header">
+                <button class="calendar-nav">←</button>
+                <h2 class="calendar-month">Февраль 2026</h2>
+                <button class="calendar-nav">→</button>
+            </div>
+
+            <div class="calendar-filters">
+                <select class="filter-select">
+                    <option>Все клубы</option>
+                    <option>CrossFit Moscow</option>
+                    <option>Личные тренировки</option>
+                </select>
+            </div>
+
+            <div class="calendar-grid">
+                <div class="calendar-day-header">Пн</div>
+                <div class="calendar-day-header">Вт</div>
+                <div class="calendar-day-header">Ср</div>
+                <div class="calendar-day-header">Чт</div>
+                <div class="calendar-day-header">Пт</div>
+                <div class="calendar-day-header">Сб</div>
+                <div class="calendar-day-header">Вс</div>
+
+                <!-- Days -->
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day empty"></div>
+                <div class="calendar-day">
+                    <span class="day-number">1</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">2</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">3</span>
+                    <div class="workout-indicator completed">✓</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">4</span>
+                    <div class="workout-indicator completed">✓</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">5</span>
+                    <div class="workout-indicator in-progress">⏱</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">6</span>
+                    <div class="workout-indicator pending">○</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">7</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">8</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">9</span>
+                </div>
+                <div class="calendar-day today">
+                    <span class="day-number">10</span>
+                    <div class="workout-indicator pending">○</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">11</span>
+                    <div class="workout-indicator pending">○</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">12</span>
+                    <div class="workout-indicator pending">○</div>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">13</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">14</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">15</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">16</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">17</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">18</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">19</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">20</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">21</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">22</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">23</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">24</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">25</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">26</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">27</span>
+                </div>
+                <div class="calendar-day">
+                    <span class="day-number">28</span>
+                </div>
+            </div>
+
+            <div class="calendar-legend">
+                <div class="legend-item">
+                    <span class="legend-indicator completed">✓</span>
+                    <span>Выполнено</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-indicator in-progress">⏱</span>
+                    <span>В процессе</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-indicator pending">○</span>
+                    <span>Запланировано</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 3: Leaderboard -->
+    <div class="screen" id="leaderboard-screen">
+        <div class="container">
+            <h1 class="page-title">Лидерборд</h1>
+            
+            <div class="leaderboard-filters">
+                <div class="filter-group">
+                    <label>Период</label>
+                    <select class="filter-select">
+                        <option>День</option>
+                        <option>Неделя</option>
+                        <option selected>Месяц</option>
+                        <option>Год</option>
+                        <option>Все время</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Категория</label>
+                    <select class="filter-select">
+                        <option selected>Общий</option>
+                        <option>Мужчины</option>
+                        <option>Женщины</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Тип</label>
+                    <select class="filter-select">
+                        <option selected>Клубный</option>
+                        <option>Глобальный</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="leaderboard-table">
+                <div class="leaderboard-header">
+                    <div class="col-rank">Место</div>
+                    <div class="col-user">Участник</div>
+                    <div class="col-result">Результат</div>
+                    <div class="col-type">Тип</div>
+                    <div class="col-points">Очки</div>
+                </div>
+
+                <div class="leaderboard-row rank-1">
+                    <div class="col-rank">
+                        <span class="rank-medal">🥇</span>
+                        <span class="rank-number">1</span>
+                    </div>
+                    <div class="col-user">
+                        <div class="user-avatar-sm">АС</div>
+                        <div class="user-info">
+                            <div class="user-name">Алексей Смирнов</div>
+                            <div class="user-club">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff3b30'/%3E%3C/svg%3E" class="club-logo" alt="club">
+                                <span>CrossFit Moscow</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-result">
+                        <span class="result-value">150 кг</span>
+                    </div>
+                    <div class="col-type">
+                        <span class="badge-rx">Rx</span>
+                    </div>
+                    <div class="col-points">
+                        <span class="points">1250</span>
+                    </div>
+                </div>
+
+                <div class="leaderboard-row rank-2">
+                    <div class="col-rank">
+                        <span class="rank-medal">🥈</span>
+                        <span class="rank-number">2</span>
+                    </div>
+                    <div class="col-user">
+                        <div class="user-avatar-sm">ДП</div>
+                        <div class="user-info">
+                            <div class="user-name">Дмитрий Петров</div>
+                            <div class="user-club">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff3b30'/%3E%3C/svg%3E" class="club-logo" alt="club">
+                                <span>CrossFit Moscow</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-result">
+                        <span class="result-value">145 кг</span>
+                    </div>
+                    <div class="col-type">
+                        <span class="badge-rx">Rx</span>
+                    </div>
+                    <div class="col-points">
+                        <span class="points">1180</span>
+                    </div>
+                </div>
+
+                <div class="leaderboard-row rank-3">
+                    <div class="col-rank">
+                        <span class="rank-medal">🥉</span>
+                        <span class="rank-number">3</span>
+                    </div>
+                    <div class="col-user">
+                        <div class="user-avatar-sm">ЕИ</div>
+                        <div class="user-info">
+                            <div class="user-name">Елена Иванова</div>
+                            <div class="user-club">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%2330ff88'/%3E%3C/svg%3E" class="club-logo" alt="club">
+                                <span>CrossFit SPB</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-result">
+                        <span class="result-value">140 кг</span>
+                    </div>
+                    <div class="col-type">
+                        <span class="badge-rx">Rx</span>
+                    </div>
+                    <div class="col-points">
+                        <span class="points">1100</span>
+                    </div>
+                </div>
+
+                <div class="leaderboard-row">
+                    <div class="col-rank">
+                        <span class="rank-number">4</span>
+                    </div>
+                    <div class="col-user">
+                        <div class="user-avatar-sm">МК</div>
+                        <div class="user-info">
+                            <div class="user-name">Максим Козлов</div>
+                            <div class="user-club">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff3b30'/%3E%3C/svg%3E" class="club-logo" alt="club">
+                                <span>CrossFit Moscow</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-result">
+                        <span class="result-value">135 кг</span>
+                    </div>
+                    <div class="col-type">
+                        <span class="badge-scaled">Scaled</span>
+                    </div>
+                    <div class="col-points">
+                        <span class="points">980</span>
+                    </div>
+                </div>
+
+                <div class="leaderboard-row current-user">
+                    <div class="col-rank">
+                        <span class="rank-number">5</span>
+                    </div>
+                    <div class="col-user">
+                        <div class="user-avatar-sm">ИП</div>
+                        <div class="user-info">
+                            <div class="user-name">Иван Петрович (Вы)</div>
+                            <div class="user-club">
+                                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20'%3E%3Ccircle cx='10' cy='10' r='10' fill='%23ff3b30'/%3E%3C/svg%3E" class="club-logo" alt="club">
+                                <span>CrossFit Moscow</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-result">
+                        <span class="result-value">130 кг</span>
+                    </div>
+                    <div class="col-type">
+                        <span class="badge-rx">Rx</span>
+                    </div>
+                    <div class="col-points">
+                        <span class="points">950</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Screen 4: Profile -->
+    <div class="screen" id="profile-screen">
+        <div class="container">
+            <div class="profile-header">
+                <div class="profile-avatar-large">ИП</div>
+                <div class="profile-info">
+                    <h1 class="profile-name">Иван Петрович</h1>
+                    <div class="profile-club">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='12' fill='%23ff3b30'/%3E%3C/svg%3E" class="club-logo-lg" alt="club">
+                        <span>CrossFit Moscow</span>
+                    </div>
+                    <p class="profile-bio">CrossFit энтузиаст с 2020 года. Люблю тяжелую атлетику и функциональные тренировки.</p>
+                </div>
+                <button class="btn-edit">Редактировать профиль</button>
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">🔥</div>
+                    <div class="stat-value">7</div>
+                    <div class="stat-label">Дней подряд</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">💪</div>
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Тренировок в месяце</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">🏆</div>
+                    <div class="stat-value">150 кг</div>
+                    <div class="stat-label">Лучший результат</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">⭐</div>
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">Достижений</div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2 class="section-title">Достижения</h2>
+                <div class="badges-grid">
+                    <div class="badge-card earned">
+                        <div class="badge-icon">🎯</div>
+                        <div class="badge-name">First Workout</div>
+                        <div class="badge-desc">Первый шаг</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">💪</div>
+                        <div class="badge-name">5 Workouts</div>
+                        <div class="badge-desc">Начало пути</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">🔥</div>
+                        <div class="badge-name">Streak 7</div>
+                        <div class="badge-desc">Семь раз подряд</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">🏋️</div>
+                        <div class="badge-name">10 Workouts</div>
+                        <div class="badge-desc">Постоянный клиент</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">🎖️</div>
+                        <div class="badge-name">PR Hunter</div>
+                        <div class="badge-desc">Новый рекорд</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">📊</div>
+                        <div class="badge-name">Top 100 Club</div>
+                        <div class="badge-desc">Начало лидерборда</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">🌟</div>
+                        <div class="badge-name">All-Rounder</div>
+                        <div class="badge-desc">Универсал</div>
+                    </div>
+                    <div class="badge-card earned">
+                        <div class="badge-icon">⚡</div>
+                        <div class="badge-name">20 Workouts</div>
+                        <div class="badge-desc">Завсегдатай</div>
+                    </div>
+                    <div class="badge-card locked">
+                        <div class="badge-icon">🔒</div>
+                        <div class="badge-name">Streak 14</div>
+                        <div class="badge-desc">Две недели</div>
+                        <div class="badge-progress">7/14 дней</div>
+                    </div>
+                    <div class="badge-card locked">
+                        <div class="badge-icon">🔒</div>
+                        <div class="badge-name">Top 10 Club</div>
+                        <div class="badge-desc">Лучший в клубе</div>
+                        <div class="badge-progress">15/20 тренировок</div>
+                    </div>
+                    <div class="badge-card locked">
+                        <div class="badge-icon">🔒</div>
+                        <div class="badge-name">PR Master</div>
+                        <div class="badge-desc">Мастер рекордов</div>
+                        <div class="badge-progress">5/10 PR</div>
+                    </div>
+                    <div class="badge-card locked">
+                        <div class="badge-icon">🔒</div>
+                        <div class="badge-name">Streak 30</div>
+                        <div class="badge-desc">Марафон</div>
+                        <div class="badge-progress">7/30 дней</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2 class="section-title">Контакты</h2>
+                <div class="contact-info">
+                    <div class="contact-item">
+                        <span class="contact-icon">📧</span>
+                        <span class="contact-value">ivan.petrovich@example.com</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">📱</span>
+                        <span class="contact-value">+7 999 123-45-67</span>
+                    </div>
+                    <div class="contact-item">
+                        <span class="contact-icon">✈️</span>
+                        <span class="contact-value">@ivan_crossfit</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h2 class="section-title">Настройки приватности</h2>
+                <div class="privacy-settings">
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="all">
+                        <span>Показывать всем пользователям</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="club" checked>
+                        <span>Только пользователям моего клуба</span>
+                    </label>
+                    <label class="privacy-option">
+                        <input type="radio" name="privacy" value="none">
+                        <span>Скрыть от всех</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
