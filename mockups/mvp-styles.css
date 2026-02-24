@@ -1601,13 +1601,25 @@ input[type=number]::-webkit-outer-spin-button {
     /* Calendar wrapper stacks on mobile */
     .calendar-wrapper {
         flex-direction: column;
+        position: relative;
     }
 
-    /* Navigation arrows smaller */
+    /* Navigation arrows smaller and positioned at top */
     .nav-arrow {
         width: 28px;
         height: 28px;
         font-size: 0.9rem;
+        position: absolute;
+        top: 0;
+        z-index: 10;
+    }
+
+    #prev-month {
+        left: 0;
+    }
+
+    #next-month {
+        right: 0;
     }
 
     /* Month title smaller */
@@ -1615,9 +1627,9 @@ input[type=number]::-webkit-outer-spin-button {
         font-size: 0.95rem;
     }
 
-    /* Actions full width */
+    /* Actions full width, stacked reversed so Cancel is below Apply */
     .picker-actions {
-        flex-direction: column;
+        flex-direction: column-reverse;
         gap: 0.75rem;
     }
 

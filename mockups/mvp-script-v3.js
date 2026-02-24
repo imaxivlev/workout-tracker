@@ -1236,3 +1236,136 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// --- Custom Select Wrapper to match autocomplete-item styles ---
+document.addEventListener('DOMContentLoaded', () => {
+    function initCustomSelects(rootNode) {
+        const selects = rootNode.querySelectorAll('select.form-select:not([data-custom-setup])');
+        selects.forEach(select => {
+            select.setAttribute('data-custom-setup', 'true');
+
+            // Hide the original select
+            select.style.display = 'none';
+
+            // Create wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-select-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.width = '100%';
+
+            // Create trigger visible button
+            const trigger = document.createElement('div');
+            trigger.className = 'form-select custom-select-trigger';
+            trigger.style.cursor = 'pointer';
+            trigger.style.display = 'flex';
+            trigger.style.justifyContent = 'space-between';
+            trigger.style.alignItems = 'center';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'custom-select-text';
+            textSpan.textContent = select.options[select.selectedIndex]?.text || '';
+
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'custom-select-arrow';
+            arrowSpan.textContent = '▼';
+            arrowSpan.style.fontSize = '0.8rem';
+
+            trigger.appendChild(textSpan);
+            trigger.appendChild(arrowSpan);
+
+            // Create dropdown container same as autocomplete-dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'autocomplete-dropdown custom-select-dropdown';
+            dropdown.style.width = '100%';
+            dropdown.style.maxHeight = '200px';
+            dropdown.style.overflowY = 'auto';
+            dropdown.style.zIndex = '10001'; // Ensure it is above other elements
+
+            // Populate options
+            Array.from(select.options).forEach((opt, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item custom-select-item';
+                item.textContent = opt.text;
+                if (opt.selected) {
+                    item.style.backgroundColor = 'var(--bg-secondary)';
+                    item.style.color = 'var(--color-primary)';
+                }
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    select.selectedIndex = index;
+                    // Trigger change event for original select
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Update trigger text
+                    textSpan.textContent = opt.text;
+                    // Update active styles
+                    dropdown.querySelectorAll('.custom-select-item').forEach(i => {
+                        i.style.backgroundColor = '';
+                        i.style.color = '';
+                    });
+                    item.style.backgroundColor = 'var(--bg-secondary)';
+                    item.style.color = 'var(--color-primary)';
+                    // Close dropdown
+                    dropdown.classList.remove('active');
+                });
+                dropdown.appendChild(item);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Close all other dropdowns
+                document.querySelectorAll('.custom-select-dropdown.active').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('active');
+                });
+                dropdown.classList.toggle('active');
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(dropdown);
+
+            // Insert wrapper right after the select
+            select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+            // Listen to programmatic changes to the original select
+            select.addEventListener('change', () => {
+                textSpan.textContent = select.options[select.selectedIndex]?.text || '';
+                dropdown.querySelectorAll('.custom-select-item').forEach((i, idx) => {
+                    if (idx === select.selectedIndex) {
+                        i.style.backgroundColor = 'var(--bg-secondary)';
+                        i.style.color = 'var(--color-primary)';
+                    } else {
+                        i.style.backgroundColor = '';
+                        i.style.color = '';
+                    }
+                });
+            });
+        });
+    }
+
+    // Init existing
+    initCustomSelects(document);
+
+    // Observe for dynamically added selects
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) { // Element
+                    if (node.tagName === 'SELECT' && node.classList.contains('form-select')) {
+                        initCustomSelects(node.parentNode);
+                    } else if (node.querySelectorAll) {
+                        initCustomSelects(node);
+                    }
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+});

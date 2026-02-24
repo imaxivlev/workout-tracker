@@ -480,24 +480,24 @@ function toggleDatePicker() {
 
     if (datePickerState.isOpen) {
         modal.classList.add('active');
-        
+
         // Initialize displayedDate to show correct months (Requirement 9.2, 9.3)
         datePickerState.displayedDate = getInitialDisplayMonth();
-        
+
         // Setup input masks on first open
         const startInput = document.getElementById('start-date-input');
         const endInput = document.getElementById('end-date-input');
-        
+
         if (startInput && !startInput.dataset.maskInitialized) {
             setupDateInputMask(startInput);
             startInput.dataset.maskInitialized = 'true';
         }
-        
+
         if (endInput && !endInput.dataset.maskInitialized) {
             setupDateInputMask(endInput);
             endInput.dataset.maskInitialized = 'true';
         }
-        
+
         updateDateInputs();
         renderCalendar();
     } else {
@@ -512,12 +512,12 @@ function changeMonth(delta) {
 
     const today = new Date();
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+
     // Calculate the last displayed month using dynamic month count
     const monthsToShow = getMonthsToDisplay();
     const lastDisplayedMonth = new Date(newDate);
     lastDisplayedMonth.setMonth(lastDisplayedMonth.getMonth() + monthsToShow - 1);
-    
+
     // Prevent navigation if last displayed month would be after current month
     if (lastDisplayedMonth > currentMonth) {
         return;
@@ -577,9 +577,9 @@ function selectDatePreset(preset) {
 function updateDateInputs() {
     const startInput = document.getElementById('start-date-input');
     const endInput = document.getElementById('end-date-input');
-    
+
     if (!startInput || !endInput) return;
-    
+
     if (datePickerState.startDate) {
         const d = datePickerState.startDate;
         const day = String(d.getDate()).padStart(2, '0');
@@ -589,7 +589,7 @@ function updateDateInputs() {
     } else {
         startInput.value = '';
     }
-    
+
     if (datePickerState.endDate) {
         const d = datePickerState.endDate;
         const day = String(d.getDate()).padStart(2, '0');
@@ -611,15 +611,15 @@ function setupDateInputMask(inputElement) {
     // Format input as DD.MM.YYYY with protected separators
     inputElement.addEventListener('input', (event) => {
         let value = inputElement.value;
-        
+
         // Extract only digits
         let digits = value.replace(/\D/g, '');
-        
+
         // Limit to 8 digits (DDMMYYYY)
         if (digits.length > 8) {
             digits = digits.substring(0, 8);
         }
-        
+
         // Format with dots
         let formatted = '';
         if (digits.length >= 1) {
@@ -631,7 +631,7 @@ function setupDateInputMask(inputElement) {
         if (digits.length >= 5) {
             formatted += '.' + digits.substring(4, Math.min(8, digits.length));
         }
-        
+
         inputElement.value = formatted;
     });
 
@@ -640,7 +640,7 @@ function setupDateInputMask(inputElement) {
         if (event.key === 'Backspace' || event.key === 'Delete') {
             const cursorPos = inputElement.selectionStart;
             const value = inputElement.value;
-            
+
             // Check if cursor is right after a dot or on a dot
             if (event.key === 'Backspace' && cursorPos > 0 && value[cursorPos - 1] === '.') {
                 event.preventDefault();
@@ -659,22 +659,22 @@ function focusStartDate() {
     // When clicking on "От" field, allow user to type or select from calendar
     const startInput = document.getElementById('start-date-input');
     if (!startInput) return;
-    
+
     // Switch to custom mode
     if (datePickerState.selectedPreset !== 'custom') {
         selectDatePreset('custom');
     }
-    
+
     // Make input editable temporarily
     startInput.removeAttribute('readonly');
     startInput.focus();
     startInput.select(); // Select all text
-    
+
     // On blur, parse the date
-    const blurHandler = function() {
+    const blurHandler = function () {
         startInput.setAttribute('readonly', 'readonly');
         const value = startInput.value;
-        
+
         if (value) {
             // Try to parse dd.mm.yyyy format
             const parts = value.split('.');
@@ -682,7 +682,7 @@ function focusStartDate() {
                 const day = parseInt(parts[0]);
                 const month = parseInt(parts[1]) - 1;
                 const year = parseInt(parts[2]);
-                
+
                 if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
                     const date = new Date(year, month, day);
                     if (date.getDate() === day && date.getMonth() === month) {
@@ -693,10 +693,10 @@ function focusStartDate() {
                 }
             }
         }
-        
+
         startInput.removeEventListener('blur', blurHandler);
     };
-    
+
     startInput.addEventListener('blur', blurHandler);
 }
 
@@ -704,24 +704,24 @@ function focusEndDate() {
     // When clicking on "До" field, allow user to type or select from calendar
     const endInput = document.getElementById('end-date-input');
     if (!endInput) return;
-    
+
     // Switch to custom mode
     if (datePickerState.selectedPreset !== 'custom') {
         selectDatePreset('custom');
     }
-    
+
     // Removed check for startDate - allow selecting end date first (Requirement 2.1)
-    
+
     // Make input editable temporarily
     endInput.removeAttribute('readonly');
     endInput.focus();
     endInput.select(); // Select all text
-    
+
     // On blur, parse the date
-    const blurHandler = function() {
+    const blurHandler = function () {
         endInput.setAttribute('readonly', 'readonly');
         const value = endInput.value;
-        
+
         if (value) {
             // Try to parse dd.mm.yyyy format
             const parts = value.split('.');
@@ -729,7 +729,7 @@ function focusEndDate() {
                 const day = parseInt(parts[0]);
                 const month = parseInt(parts[1]) - 1;
                 const year = parseInt(parts[2]);
-                
+
                 if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
                     const date = new Date(year, month, day);
                     if (date.getDate() === day && date.getMonth() === month) {
@@ -747,10 +747,10 @@ function focusEndDate() {
                 }
             }
         }
-        
+
         endInput.removeEventListener('blur', blurHandler);
     };
-    
+
     endInput.addEventListener('blur', blurHandler);
 }
 
@@ -790,7 +790,7 @@ function selectDate(dateStr) {
 // --- Adaptive Calendar Display (Requirement 4) ---
 function getMonthsToDisplay() {
     const width = window.innerWidth;
-    
+
     if (width < 481) {
         return 1; // Mobile
     } else if (width >= 481 && width <= 768) {
@@ -802,12 +802,12 @@ function getMonthsToDisplay() {
 
 function getInitialDisplayMonth() {
     const monthsToShow = getMonthsToDisplay();
-    
+
     // If dates are selected, show the last selected month as the last in the row
     if (datePickerState.endDate) {
         const lastMonth = new Date(datePickerState.endDate);
         lastMonth.setDate(1); // Normalize to first day
-        
+
         // Calculate first month to display
         const firstMonth = new Date(lastMonth);
         firstMonth.setMonth(firstMonth.getMonth() - (monthsToShow - 1));
@@ -817,7 +817,7 @@ function getInitialDisplayMonth() {
         // This means we display: [current - (monthsToShow-1), ..., current]
         const today = new Date();
         const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        
+
         const firstMonth = new Date(currentMonth);
         firstMonth.setMonth(firstMonth.getMonth() - (monthsToShow - 1));
         return firstMonth;
@@ -830,7 +830,7 @@ function renderCalendar() {
 
     // Use dynamic number of months based on viewport (Requirement 4)
     const monthsToShow = getMonthsToDisplay();
-    
+
     // Update displayedDate to show appropriate months
     if (!datePickerState.displayedDate || datePickerState.displayedDate.toString() === 'Invalid Date') {
         datePickerState.displayedDate = getInitialDisplayMonth();
@@ -959,7 +959,7 @@ function updateNavButtons() {
     // Check if we can navigate forward (Requirement 3.2)
     const today = new Date();
     const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
+
     // Calculate last shown month based on displayedDate + dynamic number of months
     const monthsToShow = getMonthsToDisplay();
     const lastShownMonth = new Date(datePickerState.displayedDate);
@@ -976,7 +976,7 @@ function updateNavButtons() {
         nextBtn.style.opacity = '1';
         nextBtn.style.visibility = 'visible';
     }
-    
+
     // Previous button is always enabled (can always go back in history)
     prevBtn.disabled = false;
     prevBtn.style.opacity = '1';
@@ -1235,7 +1235,7 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleDatePicker();
         }
     });
-    
+
     // Handle window resize for adaptive calendar (Requirement 4.4)
     let resizeTimeout;
     window.addEventListener('resize', () => {
@@ -1514,4 +1514,137 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 100);
         });
     }
+});
+
+// --- Custom Select Wrapper to match autocomplete-item styles ---
+document.addEventListener('DOMContentLoaded', () => {
+    function initCustomSelects(rootNode) {
+        const selects = rootNode.querySelectorAll('select.form-select:not([data-custom-setup])');
+        selects.forEach(select => {
+            select.setAttribute('data-custom-setup', 'true');
+
+            // Hide the original select
+            select.style.display = 'none';
+
+            // Create wrapper
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-select-wrapper';
+            wrapper.style.position = 'relative';
+            wrapper.style.width = '100%';
+
+            // Create trigger visible button
+            const trigger = document.createElement('div');
+            trigger.className = 'form-select custom-select-trigger';
+            trigger.style.cursor = 'pointer';
+            trigger.style.display = 'flex';
+            trigger.style.justifyContent = 'space-between';
+            trigger.style.alignItems = 'center';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'custom-select-text';
+            textSpan.textContent = select.options[select.selectedIndex]?.text || '';
+
+            const arrowSpan = document.createElement('span');
+            arrowSpan.className = 'custom-select-arrow';
+            arrowSpan.textContent = '▼';
+            arrowSpan.style.fontSize = '0.8rem';
+
+            trigger.appendChild(textSpan);
+            trigger.appendChild(arrowSpan);
+
+            // Create dropdown container same as autocomplete-dropdown
+            const dropdown = document.createElement('div');
+            dropdown.className = 'autocomplete-dropdown custom-select-dropdown';
+            dropdown.style.width = '100%';
+            dropdown.style.maxHeight = '200px';
+            dropdown.style.overflowY = 'auto';
+            dropdown.style.zIndex = '10001'; // Ensure it is above other elements
+
+            // Populate options
+            Array.from(select.options).forEach((opt, index) => {
+                const item = document.createElement('div');
+                item.className = 'autocomplete-item custom-select-item';
+                item.textContent = opt.text;
+                if (opt.selected) {
+                    item.style.backgroundColor = 'var(--bg-secondary)';
+                    item.style.color = 'var(--color-primary)';
+                }
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    select.selectedIndex = index;
+                    // Trigger change event for original select
+                    select.dispatchEvent(new Event('change', { bubbles: true }));
+                    // Update trigger text
+                    textSpan.textContent = opt.text;
+                    // Update active styles
+                    dropdown.querySelectorAll('.custom-select-item').forEach(i => {
+                        i.style.backgroundColor = '';
+                        i.style.color = '';
+                    });
+                    item.style.backgroundColor = 'var(--bg-secondary)';
+                    item.style.color = 'var(--color-primary)';
+                    // Close dropdown
+                    dropdown.classList.remove('active');
+                });
+                dropdown.appendChild(item);
+            });
+
+            // Toggle dropdown
+            trigger.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Close all other dropdowns
+                document.querySelectorAll('.custom-select-dropdown.active').forEach(d => {
+                    if (d !== dropdown) d.classList.remove('active');
+                });
+                dropdown.classList.toggle('active');
+            });
+
+            // Close when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!wrapper.contains(e.target)) {
+                    dropdown.classList.remove('active');
+                }
+            });
+
+            wrapper.appendChild(trigger);
+            wrapper.appendChild(dropdown);
+
+            // Insert wrapper right after the select
+            select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+            // Listen to programmatic changes to the original select
+            select.addEventListener('change', () => {
+                textSpan.textContent = select.options[select.selectedIndex]?.text || '';
+                dropdown.querySelectorAll('.custom-select-item').forEach((i, idx) => {
+                    if (idx === select.selectedIndex) {
+                        i.style.backgroundColor = 'var(--bg-secondary)';
+                        i.style.color = 'var(--color-primary)';
+                    } else {
+                        i.style.backgroundColor = '';
+                        i.style.color = '';
+                    }
+                });
+            });
+        });
+    }
+
+    // Init existing
+    initCustomSelects(document);
+
+    // Observe for dynamically added selects
+    const observer = new MutationObserver((mutations) => {
+        mutations.forEach(mutation => {
+            mutation.addedNodes.forEach(node => {
+                if (node.nodeType === 1) { // Element
+                    if (node.tagName === 'SELECT' && node.classList.contains('form-select')) {
+                        initCustomSelects(node.parentNode);
+                    } else if (node.querySelectorAll) {
+                        initCustomSelects(node);
+                    }
+                }
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 });
