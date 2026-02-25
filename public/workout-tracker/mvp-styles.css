@@ -986,6 +986,31 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* Override for mobile - center modal with backdrop */
 
+.date-range-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.date-input-group {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 140px;
+    /* Чтобы переносились при сильной нехватке места */
+}
+
+.date-input-group label {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.date-input-group .form-input-sm {
+    width: 100%;
+}
+
 .date-presets {
     display: flex;
     gap: 0.5rem;
@@ -1004,6 +1029,7 @@ input[type=number]::-webkit-outer-spin-button {
     cursor: pointer;
     white-space: nowrap;
     transition: all 0.2s;
+    flex-shrink: 0;
 }
 
 .preset-btn:hover {
@@ -1210,87 +1236,86 @@ input[type=number]::-webkit-outer-spin-button {
 
 @media (min-width: 769px) {
 
-    /* PARENT RESET: Stop acting as a Grid (which crushes the inner scroller) */
     .wod-exercise-row {
-        display: block !important;
-        padding-right: 3rem !important;
-        /* Keep space for button */
-        grid-template-columns: none !important;
-        /* Just in case */
+        padding-right: 3rem;
     }
 
-    /* MASTER ROW: Split 50% Name / 50% Fields */
-    /* Target the scroller container which holds the inputs */
     .wod-row-scroller {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 0.5rem !important;
-        width: 100% !important;
-        align-items: center !important;
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+        align-items: center;
     }
 
-    /* 1. Exercise Name (Left Column) */
     .wod-exercise-row .wod-exercise-name {
-        width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        max-width: none !important;
+        flex: 1;
+        min-width: 200px;
+        width: 100%;
+        margin: 0;
     }
 
-    /* 2. Fields Wrapper (Right Column) - Nested Grid */
     .wod-exercise-row .wod-fields-scroll {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        /* 50% Reps / 50% Weight */
-        gap: 0.5rem !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        align-items: center !important;
-        /* Remove flex props */
-        flex: none !important;
+        flex: 1;
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+        min-width: 0;
+        align-items: center;
     }
 
-    /* REPS CONTAINER (Left Cell of Nested Grid) */
-    .single-reps-container,
-    .ladder-reps-container {
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        /* Remove flex props */
-        flex: none !important;
+    .single-reps-container {
+        flex: 1;
+        display: flex;
+        min-width: 0;
+        width: 100%;
     }
 
-    /* WEIGHT INPUT (Right Cell of Nested Grid) */
-    .wod-weight {
-        width: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        /* Remove flex props */
-        flex: none !important;
-    }
-
-    /* CARDIO MODE (No Weight) - Collapse Nested Grid to 1 Column */
-    .wod-exercise-row.no-weight .wod-fields-scroll {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* Single Reps Input - Fill Container */
     .single-reps-container input {
-        width: 100% !important;
+        width: 100%;
     }
 
-    /* Ladder Container - Flex content inside the grid cell */
+    .wod-weight {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .wod-exercise-row.no-weight .single-reps-container,
+    .wod-exercise-row.no-weight .ladder-reps-container {
+        flex: 2;
+        /* takes more space if no weight */
+    }
+
     .ladder-reps-container {
-        display: flex !important;
-        gap: 0.25rem !important;
+        flex: 1;
+        display: flex;
+        gap: 0.25rem;
         overflow-x: auto;
+        min-width: 0;
+        padding-bottom: 4px;
+        /* for custom scrollbar */
     }
 
     .ladder-reps-container input {
-        flex: 1 0 auto !important;
-        /* Grow to fill */
-        width: auto !important;
-        min-width: 40px;
+        flex: 1 1 50px;
+        min-width: 45px;
+        max-width: 70px;
+        /* Don't get too wide on small round counts */
+    }
+
+    /* Custom scrollbar for ladder */
+    .ladder-reps-container::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .ladder-reps-container::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+        border-radius: 4px;
+    }
+
+    .ladder-reps-container::-webkit-scrollbar-thumb {
+        background: var(--color-primary);
+        border-radius: 4px;
     }
 }
 

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CrossFit Tracker - MVP v3</title>
-    <link rel="stylesheet" href="mvp-styles.css">
+    <link rel="stylesheet" href="mvp-styles.css?v=2">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Additional styles for v3 */
@@ -484,11 +484,13 @@
                         <div class="date-range-inputs">
                             <div class="date-input-group">
                                 <label>От</label>
-                                <input type="text" id="start-date-input" class="form-input-sm" placeholder="дд.мм.гггг" readonly onclick="focusStartDate()">
+                                <input type="text" id="start-date-input" class="form-input-sm" placeholder="дд.мм.гггг"
+                                    readonly onclick="focusStartDate()">
                             </div>
                             <div class="date-input-group">
                                 <label>До</label>
-                                <input type="text" id="end-date-input" class="form-input-sm" placeholder="дд.мм.гггг" readonly onclick="focusEndDate()">
+                                <input type="text" id="end-date-input" class="form-input-sm" placeholder="дд.мм.гггг"
+                                    readonly onclick="focusEndDate()">
                             </div>
                         </div>
 
@@ -625,19 +627,23 @@
 
             <div class="chart-section">
                 <h2 class="section-title">Прогресс по упражнению</h2>
-                <select class="form-select" id="chart-exercise-select" style="max-width: 300px; margin-bottom: 0.5rem;">
-                    <option>Приседания на спине (Back Squat)</option>
-                    <option>Становая тяга (Deadlift)</option>
-                    <option>Жим лежа (Bench Press)</option>
-                    <option>Рывок (Snatch)</option>
-                    <option>Трастеры (Thrusters)</option>
-                </select>
-                <!-- Detail selector -->
-                <select class="form-select" id="chart-detail-select" style="max-width: 200px; margin-bottom: 1.5rem;">
-                    <option value="day">По дням</option>
-                    <option value="week">По неделям</option>
-                    <option value="month" selected>По месяцам</option>
-                </select>
+                <div class="chart-controls" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                    <select class="form-select" id="chart-exercise-select"
+                        style="flex: 1; min-width: 250px; max-width: 300px;">
+                        <option>Приседания на спине (Back Squat)</option>
+                        <option>Становая тяга (Deadlift)</option>
+                        <option>Жим лежа (Bench Press)</option>
+                        <option>Рывок (Snatch)</option>
+                        <option>Трастеры (Thrusters)</option>
+                    </select>
+                    <!-- Detail selector -->
+                    <select class="form-select" id="chart-detail-select"
+                        style="flex: 1; min-width: 150px; max-width: 200px;">
+                        <option value="day">По дням</option>
+                        <option value="week">По неделям</option>
+                        <option value="month" selected>По месяцам</option>
+                    </select>
+                </div>
                 <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
                     <canvas id="progress-chart"></canvas>
                 </div>
