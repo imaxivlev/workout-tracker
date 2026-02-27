@@ -301,9 +301,15 @@ function updateExerciseRowLadderInputs(row) {
 }
 
 function updateResultInput(select) {
-    const input = select.nextElementSibling;
+    // Input находится в том же form-row, но не является прямым соседом
+    const formRow = select.closest('.form-row');
+    const input = formRow ? formRow.querySelector('.result-input') : select.nextElementSibling;
+    
+    if (!input) return; // Если input не найден, выходим
+    
     if (select.value === 'time') {
         input.placeholder = '04:20';
+        input.value = ''; // Очистить поле при переключении
         // Add time mask MM:SS
         input.oninput = function (e) {
             let val = this.value.replace(/\D/g, '');
@@ -328,6 +334,7 @@ function updateResultInput(select) {
         };
     } else {
         input.placeholder = '420';
+        input.value = ''; // Очистить поле при переключении
         // Remove time mask
         input.oninput = null;
         input.onkeydown = null;
