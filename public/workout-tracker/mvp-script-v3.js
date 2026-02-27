@@ -127,6 +127,13 @@ function addWodBlock() {
     if (emptyState) emptyState.remove();
 
     container.appendChild(clone);
+
+    // Initialize result input (mask and placeholder for last added block)
+    const addedBlock = container.lastElementChild;
+    const resultSelect = addedBlock ? addedBlock.querySelector('select[onchange="updateResultInput(this)"]') : null;
+    if (resultSelect) {
+        updateResultInput(resultSelect);
+    }
 }
 
 // --- Sets Logic ---
@@ -296,9 +303,34 @@ function updateExerciseRowLadderInputs(row) {
 function updateResultInput(select) {
     const input = select.nextElementSibling;
     if (select.value === 'time') {
-        input.placeholder = '15:21';
+        input.placeholder = '04:20';
+        // Add time mask MM:SS
+        input.oninput = function (e) {
+            let val = this.value.replace(/\D/g, '');
+            if (val.length > 4) val = val.substring(0, 4);
+            let formatted = '';
+            if (val.length > 0) formatted = val.substring(0, Math.min(2, val.length));
+            if (val.length > 2) formatted += ':' + val.substring(2, 4);
+            this.value = formatted;
+        };
+        input.onkeydown = function (e) {
+            if (e.key === 'Backspace' || e.key === 'Delete') {
+                const cursorPos = this.selectionStart;
+                const match = this.value;
+                if (e.key === 'Backspace' && cursorPos > 0 && match[cursorPos - 1] === ':') {
+                    e.preventDefault();
+                    this.setSelectionRange(cursorPos - 1, cursorPos - 1);
+                } else if (e.key === 'Delete' && cursorPos < match.length && match[cursorPos] === ':') {
+                    e.preventDefault();
+                    this.setSelectionRange(cursorPos + 1, cursorPos + 1);
+                }
+            }
+        };
     } else {
         input.placeholder = '187';
+        // Remove time mask
+        input.oninput = null;
+        input.onkeydown = null;
     }
 }
 
@@ -460,7 +492,44 @@ function removeWodExercise(button) {
     if (container.children.length > 1) {
         row.remove();
     } else {
-        alert('Должно быть хотя бы одно упражнение');
+        // Show tooltip instead of alert
+        let tooltip = button.querySelector('.delete-tooltip');
+        if (!tooltip) {
+            tooltip = document.createElement('div');
+            tooltip.className = 'delete-tooltip';
+            tooltip.textContent = 'Должно быть хотя бы одно упражнение';
+            tooltip.style.position = 'absolute';
+            tooltip.style.right = '100%';
+            tooltip.style.top = '50%';
+            tooltip.style.transform = 'translateY(-50%)';
+            tooltip.style.marginRight = '8px';
+            tooltip.style.padding = '4px 8px';
+            tooltip.style.background = 'var(--text-color)';
+            tooltip.style.color = 'var(--bg-color)';
+            tooltip.style.borderRadius = '4px';
+            tooltip.style.fontSize = '12px';
+            tooltip.style.whiteSpace = 'nowrap';
+            tooltip.style.pointerEvents = 'none';
+            tooltip.style.opacity = '0';
+            tooltip.style.transition = 'opacity 0.2s';
+            tooltip.style.zIndex = '10';
+            // Make sure button has relative positioning
+            if (getComputedStyle(button).position === 'static') {
+                button.style.position = 'relative';
+            }
+            button.appendChild(tooltip);
+        }
+
+        // Show tooltip
+        // Trigger reflow
+        void tooltip.offsetWidth;
+        tooltip.style.opacity = '1';
+
+        // Hide after 2s
+        if (button.tooltipTimeout) clearTimeout(button.tooltipTimeout);
+        button.tooltipTimeout = setTimeout(() => {
+            tooltip.style.opacity = '0';
+        }, 2000);
     }
 }
 

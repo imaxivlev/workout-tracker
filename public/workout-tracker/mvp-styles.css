@@ -470,13 +470,28 @@ input[type=number]::-webkit-outer-spin-button {
     overflow-y: auto;
     display: none;
     z-index: 10000;
-    /* Increased z-index */
     width: calc(100% - 4px);
     top: 100%;
-    /* Ensure it starts exactly below the input */
     left: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    /* Add shadow for better visibility */
+}
+
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 .autocomplete-dropdown.active {
@@ -493,43 +508,88 @@ input[type=number]::-webkit-outer-spin-button {
     background: var(--bg-secondary);
 }
 
-/* WOD Exercise Rows */
+/* WOD Exercise Rows Fix for Desktop */
 
 .wod-exercise-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 100px 40px;
+    position: relative;
+    margin-bottom: 0.75rem;
+}
+
+.wod-row-scroller {
+    display: flex;
     gap: 0.5rem;
     align-items: center;
-    margin-bottom: 0.75rem;
+    width: 100%;
+    padding-right: 45px;
+    /* space for delete button */
+}
+
+/* Base without ladder */
+.wod-exercise-row .wod-exercise-name {
+    flex: 1.5;
+    min-width: 150px;
+}
+
+.wod-exercise-row .wod-fields-scroll {
+    display: flex;
+    flex: 2;
+    /* Reps and Weight share the rest */
+    gap: 0.5rem;
+    align-items: center;
+    min-width: 0;
+}
+
+.wod-exercise-row .single-reps-container {
+    flex: 1;
+    min-width: 0;
+}
+
+.wod-exercise-row .single-reps-container input {
+    width: 100%;
+}
+
+.wod-exercise-row .wod-weight {
+    flex: 1;
+    min-width: 90px;
 }
 
 /* Ladder Mode: adjust columns */
 
-.wod-exercise-row.ladder-mode {
-    grid-template-columns: 225px 1fr 100px 40px;
+.wod-exercise-row.ladder-mode .wod-exercise-name {
+    flex: 0 0 225px;
+    /* Fixed width */
 }
 
-/* Containers inside the row */
-
-.single-reps-container,
-.ladder-reps-container {
-    min-width: 0;
-    /* Allow flex items to shrink */
+.wod-exercise-row.ladder-mode .wod-fields-scroll {
+    flex: 1;
 }
 
-.ladder-reps-container {
+.wod-exercise-row.ladder-mode .ladder-reps-container {
+    flex: 1;
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
     padding: 2px 0;
 }
 
-.ladder-reps-container input {
+.wod-exercise-row.ladder-mode .ladder-reps-container input {
     width: auto;
     max-width: none;
     min-width: 45px;
     flex-grow: 1;
     flex-shrink: 1;
+}
+
+.wod-exercise-row.ladder-mode .wod-weight {
+    flex: 0 0 90px;
+    /* Pinned 90px minimum */
+}
+
+.wod-exercise-row .btn-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 /* Exercise List */
@@ -990,25 +1050,30 @@ input[type=number]::-webkit-outer-spin-button {
     display: flex;
     flex-wrap: wrap;
     gap: 1rem;
+    align-items: flex-end;
     margin-bottom: 1rem;
 }
 
 .date-input-group {
-    flex: 1;
+    flex: 0 0 auto;
+    /* Don't stretch - fit content */
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-width: 140px;
-    /* Чтобы переносились при сильной нехватке места */
 }
 
 .date-input-group label {
     margin-bottom: 0;
     flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
 
 .date-input-group .form-input-sm {
-    width: 100%;
+    width: 120px;
+    /* Exact width for дд.мм.гггг */
+    flex: 0 0 120px;
+    text-align: center;
 }
 
 .date-presets {
@@ -1764,113 +1829,107 @@ input[type=number]::-webkit-outer-spin-button {
         font-size: 1.2rem;
     }
 
-    /* WOD exercise fields - optimized for mobile V5 PINNED BUTTON */
+    /* WOD exercise fields - mobile: wrap rows layout */
     .wod-exercise-row {
-        display: flex !important;
-        flex-wrap: nowrap !important;
         position: relative !important;
-        padding: 0.75rem !important;
-        padding-right: 3rem !important;
-        /* Space for fixed button */
+        padding: 0.5rem !important;
+        padding-right: 2.5rem !important;
         margin-bottom: 1rem !important;
         overflow: visible !important;
-        /* Row itself does NOT scroll */
-        align-items: center !important;
-    }
-
-    .wod-exercise-row.no-weight {
-        display: flex !important;
+        align-items: flex-start !important;
     }
 
     /* Fixed Delete Button */
     .wod-exercise-row .btn-icon {
         position: absolute !important;
-        top: 50% !important;
-        right: 0.5rem !important;
-        transform: translateY(-50%) !important;
+        top: 0.5rem !important;
+        right: 0.25rem !important;
+        transform: none !important;
         z-index: 20 !important;
         background: var(--bg-secondary) !important;
-        /* Cover scroll content */
     }
 
-    /* SCROLLING WRAPPER */
+    /* SCROLLING WRAPPER becomes a column by default */
     .wod-row-scroller {
         display: flex !important;
+        flex-direction: column !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
+        overflow-x: visible !important;
+        align-items: stretch !important;
+        gap: 0.4rem !important;
         flex: 1 !important;
-        /* Take remaining space */
         width: 100% !important;
-        -webkit-overflow-scrolling: touch !important;
-        /* Hide scrollbar if desired, or keep */
-        scrollbar-width: none;
+        scrollbar-width: auto;
     }
 
-    .wod-row-scroller::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Exercise name - Inside Scroller */
+    /* Row 1: Exercise name */
     .wod-exercise-name {
-        flex: 0 0 140px !important;
-        width: 140px !important;
-        min-width: 140px !important;
-        max-width: 140px !important;
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
         margin-bottom: 0 !important;
-        margin-right: 0 !important;
     }
 
-    /* Fields container - Inside Scroller */
+    /* Row 2+3: Fields container wraps */
     .wod-fields-scroll {
         display: flex !important;
-        flex-wrap: nowrap !important;
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
+        flex-wrap: wrap !important;
+        flex: none !important;
+        gap: 0.4rem !important;
         align-items: center !important;
         overflow: visible !important;
-        padding-bottom: 0 !important;
-        margin-bottom: 0 !important;
         min-width: 0 !important;
     }
 
-    /* Single reps container */
-    .single-reps-container {
-        display: flex;
-        /* Removed !important */
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
-        width: 80px !important;
-        min-width: 80px !important;
+    /* Without ladder: reps + weight in one row (50%/50%) */
+    .wod-exercise-row:not(.ladder-mode) .single-reps-container {
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
     }
 
-    .single-reps-container input {
-        width: 80px !important;
-        min-width: 80px !important;
-        flex: 0 0 auto !important;
+    .wod-exercise-row:not(.ladder-mode) .single-reps-container input {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 !important;
     }
 
-    /* Ladder reps container */
-    .ladder-reps-container {
-        display: flex;
-        /* Removed !important */
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
+    .wod-exercise-row:not(.ladder-mode) .wod-weight {
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
     }
 
-    .ladder-reps-container input {
-        width: 50px !important;
+    /* With ladder: reps row scrolls horizontally, weight on its own row */
+    .wod-exercise-row.ladder-mode .wod-fields-scroll {
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+    }
+
+    .wod-exercise-row.ladder-mode .single-reps-container {
+        display: none !important;
+    }
+
+    .wod-exercise-row.ladder-mode .ladder-reps-container {
+        display: flex !important;
+        flex: none !important;
+        gap: 0.4rem !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+    }
+
+    .wod-exercise-row.ladder-mode .ladder-reps-container input {
+        flex: 1 1 50px !important;
         min-width: 50px !important;
-        flex: 0 0 auto !important;
+        max-width: none !important;
     }
 
-    /* Weight input */
-    .wod-weight {
-        flex: 0 0 auto !important;
-        width: 90px !important;
-        min-width: 90px !important;
-        max-width: none !important;
+    .wod-exercise-row.ladder-mode .wod-weight {
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     /* Set inputs container - scroll */
