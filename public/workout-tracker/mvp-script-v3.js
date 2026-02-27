@@ -327,7 +327,7 @@ function updateResultInput(select) {
             }
         };
     } else {
-        input.placeholder = '187';
+        input.placeholder = '420';
         // Remove time mask
         input.oninput = null;
         input.onkeydown = null;
@@ -497,22 +497,23 @@ function removeWodExercise(button) {
         if (!tooltip) {
             tooltip = document.createElement('div');
             tooltip.className = 'delete-tooltip';
-            tooltip.textContent = 'Должно быть хотя бы одно упражнение';
+            tooltip.textContent = 'Нельзя удалить единственное упражнение';
             tooltip.style.position = 'absolute';
             tooltip.style.right = '100%';
             tooltip.style.top = '50%';
             tooltip.style.transform = 'translateY(-50%)';
             tooltip.style.marginRight = '8px';
-            tooltip.style.padding = '4px 8px';
-            tooltip.style.background = 'var(--text-color)';
-            tooltip.style.color = 'var(--bg-color)';
-            tooltip.style.borderRadius = '4px';
-            tooltip.style.fontSize = '12px';
+            tooltip.style.padding = '8px 12px';
+            tooltip.style.background = 'rgba(255, 59, 48, 0.95)'; // Полупрозрачная красная подложка
+            tooltip.style.color = '#ffffff';
+            tooltip.style.borderRadius = '8px';
+            tooltip.style.fontSize = '13px';
             tooltip.style.whiteSpace = 'nowrap';
             tooltip.style.pointerEvents = 'none';
             tooltip.style.opacity = '0';
-            tooltip.style.transition = 'opacity 0.2s';
-            tooltip.style.zIndex = '10';
+            tooltip.style.transition = 'opacity 0.3s ease';
+            tooltip.style.zIndex = '1000';
+            tooltip.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.3)';
             // Make sure button has relative positioning
             if (getComputedStyle(button).position === 'static') {
                 button.style.position = 'relative';
@@ -520,16 +521,60 @@ function removeWodExercise(button) {
             button.appendChild(tooltip);
         }
 
+        // Clear previous timeout and handlers if exist
+        if (button.tooltipTimeout) clearTimeout(button.tooltipTimeout);
+        if (button.tooltipHandlers) {
+            window.removeEventListener('scroll', button.tooltipHandlers.scroll);
+            document.removeEventListener('click', button.tooltipHandlers.click);
+            button.tooltipHandlers = null;
+        }
+
         // Show tooltip
-        // Trigger reflow
-        void tooltip.offsetWidth;
+        void tooltip.offsetWidth; // Trigger reflow
         tooltip.style.opacity = '1';
 
-        // Hide after 2s
-        if (button.tooltipTimeout) clearTimeout(button.tooltipTimeout);
-        button.tooltipTimeout = setTimeout(() => {
-            tooltip.style.opacity = '0';
-        }, 2000);
+        // Create hide function
+        const hideTooltip = () => {
+            if (tooltip) {
+                tooltip.style.opacity = '0';
+            }
+            // Clean up
+            if (button.tooltipTimeout) {
+                clearTimeout(button.tooltipTimeout);
+                button.tooltipTimeout = null;
+            }
+            if (button.tooltipHandlers) {
+                window.removeEventListener('scroll', button.tooltipHandlers.scroll);
+                document.removeEventListener('click', button.tooltipHandlers.click);
+                button.tooltipHandlers = null;
+            }
+        };
+
+        // Auto-hide after 5 seconds
+        button.tooltipTimeout = setTimeout(hideTooltip, 5000);
+
+        // Hide on scroll
+        const scrollHandler = () => hideTooltip();
+        
+        // Hide on click outside
+        const clickHandler = (e) => {
+            if (!button.contains(e.target) && !tooltip.contains(e.target)) {
+                hideTooltip();
+            }
+        };
+
+        // Store handlers for cleanup
+        button.tooltipHandlers = {
+            scroll: scrollHandler,
+            click: clickHandler
+        };
+
+        // Add event listeners
+        window.addEventListener('scroll', scrollHandler, { once: true });
+        // Delay click handler to avoid immediate trigger
+        setTimeout(() => {
+            document.addEventListener('click', clickHandler, { once: true });
+        }, 100);
     }
 }
 
@@ -596,6 +641,30 @@ function changeMonth(delta) {
     renderCalendar();
 }
 
+// Функция для получения даты первой тренировки
+function getFirstWorkoutDate() {
+    if (!workouts || workouts.length === 0) {
+        return new Date(); // Если тренировок нет, возвращаем сегодняшнюю дату
+    }
+    
+    // Находим самую раннюю дату среди всех тренировок
+    let earliestDate = new Date(workouts[0].date);
+    
+    for (let i = 1; i < workouts.length; i++) {
+        try {
+            const workoutDate = new Date(workouts[i].date);
+            if (workoutDate < earliestDate) {
+                earliestDate = workoutDate;
+            }
+        } catch (e) {
+            // Пропускаем тренировки с некорректными датами
+            console.warn('Некорректная дата тренировки:', workouts[i].date);
+        }
+    }
+    
+    return earliestDate;
+}
+
 function selectDatePreset(preset) {
     datePickerState.selectedPreset = preset;
 
@@ -630,6 +699,11 @@ function selectDatePreset(preset) {
         case 'quarter':
             // User requested "last 4 months (quarter)" - interpreted as last 3 months back from today
             start.setMonth(today.getMonth() - 3);
+            break;
+        case 'alltime':
+            // За все время - с первой тренировки до сегодня
+            start = getFirstWorkoutDate();
+            end = new Date(today);
             break;
         case 'custom':
             return; // Don't change dates, just mode
@@ -826,7 +900,7 @@ function focusEndDate() {
 function getPresetName(preset) {
     const map = {
         'today': 'Сегодня', 'yesterday': 'Вчера', 'week': 'Неделя',
-        'month': 'Месяц', 'quarter': 'Квартал', 'custom': 'Период'
+        'month': 'Месяц', 'quarter': 'Квартал', 'alltime': 'За все время', 'custom': 'Период'
     };
     return map[preset] || preset;
 }
