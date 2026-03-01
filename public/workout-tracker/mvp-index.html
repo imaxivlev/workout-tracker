@@ -169,6 +169,13 @@
             </svg>
             <span class="mobile-nav-label">Главная</span>
         </a>
+        <a href="#" class="mobile-nav-item" data-screen="history"
+            onclick="showScreen('history'); setActiveMobileNav(this); return false;">
+            <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="mobile-nav-label">История</span>
+        </a>
         <a href="#" class="mobile-nav-item" onclick="startNewWorkout(); setActiveMobileNav(this); return false;">
             <svg class="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -620,19 +627,21 @@
 
             <div class="chart-section">
                 <h2 class="section-title">Прогресс по упражнению</h2>
-                <select class="form-select" id="chart-exercise-select" style="max-width: 300px; margin-bottom: 0.5rem;">
-                    <option>Приседания на спине (Back Squat)</option>
-                    <option>Становая тяга (Deadlift)</option>
-                    <option>Жим лежа (Bench Press)</option>
-                    <option>Рывок (Snatch)</option>
-                    <option>Трастеры (Thrusters)</option>
-                </select>
-                <!-- Detail selector -->
-                <select class="form-select" id="chart-detail-select" style="max-width: 200px; margin-bottom: 1.5rem;">
-                    <option value="day">По дням</option>
-                    <option value="week">По неделям</option>
-                    <option value="month" selected>По месяцам</option>
-                </select>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+                    <select class="form-select" id="chart-exercise-select" style="max-width: 300px;">
+                        <option>Приседания на спине (Back Squat)</option>
+                        <option>Становая тяга (Deadlift)</option>
+                        <option>Жим лежа (Bench Press)</option>
+                        <option>Рывок (Snatch)</option>
+                        <option>Трастеры (Thrusters)</option>
+                    </select>
+                    <!-- Detail selector -->
+                    <select class="form-select" id="chart-detail-select" style="max-width: 200px;">
+                        <option value="day">По дням</option>
+                        <option value="week">По неделям</option>
+                        <option value="month" selected>По месяцам</option>
+                    </select>
+                </div>
                 <div class="chart-container" style="position: relative; height: 400px; width: 100%;">
                     <canvas id="progress-chart"></canvas>
                 </div>
