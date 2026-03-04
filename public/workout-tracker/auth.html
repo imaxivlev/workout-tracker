@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CrossFit Tracker - Вход</title>
+    <link rel="stylesheet" href="mvp-styles.css">
+</head>
+
+<body class="auth-page">
+
+    <div class="auth-container">
+        <!-- Logo -->
+        <div class="auth-logo-wrapper">
+            <img src="images/logo.png" alt="Кроссфит Трекер" class="auth-logo">
+        </div>
+
+        <div class="card auth-card">
+            <!-- Tabs -->
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('login')">Вход</button>
+                <button class="auth-tab" onclick="switchAuthTab('register')">Регистрация</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form active" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="login-email" class="form-input" placeholder="your@email.com">
+                    <div class="form-error-msg" id="login-email-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="••••••••">
+                    <div class="form-error-msg" id="login-password-error"></div>
+                </div>
+
+                <div class="auth-actions">
+                    <label class="remember-me">
+                        <input type="checkbox" id="login-remember"> Запомнить меня
+                    </label>
+                    <a href="#" class="forgot-password" onclick="switchAuthTab('reset')">Забыли пароль?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block"
+                    style="margin-top: 1.5rem; width: 100%;">Войти</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="auth-form" onsubmit="handleRegister(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Имя</label>
+                        <input type="text" id="reg-firstname" class="form-input" placeholder="Иван">
+                        <div class="form-error-msg" id="reg-firstname-error"></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Фамилия</label>
+                        <input type="text" id="reg-lastname" class="form-input" placeholder="Иванов">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="reg-email" class="form-input" placeholder="your@email.com">
+                    <div class="form-error-msg" id="reg-email-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Пароль</label>
+                    <input type="password" id="reg-password" class="form-input" placeholder="Минимум 8 символов">
+                    <div class="form-error-msg" id="reg-password-error"></div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Подтверждение пароля</label>
+                    <input type="password" id="reg-password-confirm" class="form-input" placeholder="Повторите пароль">
+                    <div class="form-error-msg" id="reg-password-confirm-error"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem; width: 100%;">Создать
+                    аккаунт</button>
+            </form>
+
+            <!-- Reset Password Form -->
+            <form id="reset-form" class="auth-form" onsubmit="handleReset(event)">
+                <div
+                    style="text-align: center; margin-bottom: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    Введите ваш email, и мы отправим ссылку для восстановления пароля.
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" id="reset-email" class="form-input" placeholder="your@email.com">
+                    <div class="form-error-msg" id="reset-email-error"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block"
+                    style="margin-top: 1.5rem; margin-bottom: 1rem; width: 100%;">Восстановить пароль</button>
+                <div style="text-align: center;">
+                    <a href="#" class="forgot-password" onclick="switchAuthTab('login')">Вернуться ко входу</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <script src="auth-script.js"></script>
+</body>
+
+</html>
