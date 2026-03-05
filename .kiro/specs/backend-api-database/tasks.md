@@ -27,7 +27,7 @@
 
 **Примечание:** Задачи, помеченные `*`, являются опциональными и могут быть пропущены для более быстрого MVP.
 
-- [-] 1. Настройка проекта и базы данных (локальная разработка)
+- [x] 1. Настройка проекта и базы данных (локальная разработка)
   - Установить зависимости: @prisma/client, prisma, bcrypt, jsonwebtoken, zod
   - Настроить переменные окружения для локальной разработки (DATABASE_URL для локального PostgreSQL, JWT_SECRET)
   - Создать prisma/schema.prisma с полной схемой БД (User, ExerciseDict, Workout, SkillBlock, SkillSet, WodBlock, WodExercise)
@@ -38,7 +38,7 @@
   - _Примечание: Email Service и деплой будут настроены позже (задачи 16-17)_
 
 - [ ] 2. Реализация User Service и аутентификации
-  - [~] 2.1 Создать lib/services/user.service.ts с классом UserService
+  - [x] 2.1 Создать lib/services/user.service.ts с классом UserService
     - Реализовать hashPassword() с bcrypt (cost factor 12)
     - Реализовать verifyPassword() для проверки хеша
     - Реализовать generateJWT() с payload {userId, email}, срок действия 7 дней
