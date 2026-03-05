@@ -51,7 +51,7 @@
     - **Свойство 11: Уникальность хешей паролей с солью**
     - **Валидирует: Требования 2.1, 2.4**
 
-  - [~] 2.3 Создать lib/auth/middleware.ts с функцией authenticateRequest()
+  - [x] 2.3 Создать lib/auth/middleware.ts с функцией authenticateRequest()
     - Извлечение JWT токена из HTTP-only cookie
     - Валидация токена (подпись, срок действия)
     - Извлечение userId и email из payload
