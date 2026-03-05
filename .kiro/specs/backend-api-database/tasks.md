@@ -63,7 +63,7 @@
     - **Свойство 6: Валидность JWT токенов**
     - **Валидирует: Требования 3.3-3.5**
 
-  - [~] 2.5 Создать lib/auth/rate-limiter.ts с функцией rateLimit()
+  - [x] 2.5 Создать lib/auth/rate-limiter.ts с функцией rateLimit()
     - Реализовать rate limiting для auth endpoints (5 попыток за 15 минут)
     - Реализовать rate limiting для API endpoints (100 запросов за минуту)
     - Реализовать rate limiting для migration endpoint (1 запрос за 5 минут)
