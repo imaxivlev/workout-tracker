@@ -1,0 +1,150 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  avatar        String?
+  verified      Boolean   @default(false)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  
+  workouts      Workout[]
+  exercises     ExerciseDict[]
+  
+  @@map("users")
+  @@index([email])
+}
+
+model ExerciseDict {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  isGlobal  Boolean  @default(false) @map("is_global")
+  userId    String?  @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  
+  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillBlocks   SkillBlock[]
+  wodExercises  WodExercise[]
+  
+  @@unique([name, userId])
+  @@map("exercises_dict")
+  @@index([name])
+  @@index([userId])
+}
+
+model Workout {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  date      String   // YYYY-MM-DD format
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillBlocks SkillBlock[]
+  wodBlocks   WodBlock[]
+  
+  @@map("workouts")
+  @@index([userId, date])
+  @@index([date])
+}
+
+model SkillBlock {
+  id             String   @id @default(uuid()) @db.Uuid
+  workoutId      String   @map("workout_id") @db.Uuid
+  exerciseDictId String   @map("exercise_dict_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+  
+  workout      Workout        @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise     ExerciseDict   @relation(fields: [exerciseDictId], references: [id])
+  sets         SkillSet[]
+  
+  @@map("skill_blocks")
+  @@index([workoutId])
+  @@index([exerciseDictId])
+}
+
+model SkillSet {
+  id           String  @id @default(uuid()) @db.Uuid
+  skillBlockId String  @map("skill_block_id") @db.Uuid
+  setNumber    Int     @map("set_number")
+  reps         Int
+  weight       Decimal @db.Decimal(6, 2) // Max 9999.99 kg
+  
+  skillBlock SkillBlock @relation(fields: [skillBlockId], references: [id], onDelete: Cascade)
+  
+  @@map("skill_sets")
+  @@index([skillBlockId])
+}
+
+enum WodType {
+  FOR_TIME
+  AMRAP
+  EMOM
+  TABATA
+  
+  @@map("wod_type")
+}
+
+enum WodLevel {
+  RX
+  SCALED
+  
+  @@map("wod_level")
+}
+
+enum ResultType {
+  TIME
+  REPS
+  WEIGHT
+  
+  @@map("result_type")
+}
+
+model WodBlock {
+  id               String     @id @default(uuid()) @db.Uuid
+  workoutId        String     @map("workout_id") @db.Uuid
+  wodType          WodType    @map("wod_type")
+  level            WodLevel
+  timeCapSeconds   Int?       @map("time_cap_seconds")
+  isLadder         Boolean    @default(false) @map("is_ladder")
+  resultType       ResultType @map("result_type")
+  resultDisplay    String     @map("result_display") // "15:30" or "5+12"
+  resultSeconds    Int?       @map("result_seconds") // For TIME type
+  resultTotalReps  Int?       @map("result_total_reps") // For AMRAP type
+  createdAt        DateTime   @default(now()) @map("created_at")
+  
+  workout   Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercises WodExercise[]
+  
+  @@map("wod_blocks")
+  @@index([workoutId])
+}
+
+model WodExercise {
+  id             String  @id @default(uuid()) @db.Uuid
+  wodBlockId     String  @map("wod_block_id") @db.Uuid
+  exerciseDictId String  @map("exercise_dict_id") @db.Uuid
+  reps           Int
+  weight         Decimal? @db.Decimal(6, 2)
+  orderIndex     Int     @map("order_index") // For maintaining exercise order
+  
+  wodBlock WodBlock     @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
+  exercise ExerciseDict @relation(fields: [exerciseDictId], references: [id])
+  
+  @@map("wod_exercises")
+  @@index([wodBlockId])
+  @@index([exerciseDictId])
+}
