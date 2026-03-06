@@ -315,15 +315,15 @@
     - Возврат списка упражнений с флагом isGlobal
     - _Требования: 6.1-6.5_
 
-- [ ] 10. Реализация Migration Service
-  - [~] 10.1 Создать lib/services/migration.service.ts с классом MigrationService
+- [x] 10. Реализация Migration Service
+  - [x] 10.1 Создать lib/services/migration.service.ts с классом MigrationService
     - Реализовать normalizeExerciseName() для нормализации названий
     - Реализовать parseWodResult() для парсинга результатов WOD
     - Реализовать mapWodType() для маппинга типов WOD
     - Реализовать mapWodLevel() для маппинга уровней (RX/SCALED)
     - _Требования: 16.5_
 
-  - [~] 10.2 Реализовать migrateWorkouts()
+  - [x] 10.2 Реализовать migrateWorkouts()
     - Обработка массива тренировок из localStorage
     - Валидация структуры каждой тренировки
     - Нормализация названий упражнений
@@ -334,11 +334,11 @@
     - Возврат {imported, failed, errors[]}
     - _Требования: 16.1-16.6_
 
-  - [~] 10.3 Написать property тест для миграции
+  - [x] 10.3 Написать property тест для миграции
     - **Свойство 21: Сохранение оригинальных дат при миграции**
     - **Валидирует: Требование 16.6**
 
-  - [~] 10.4 Создать app/api/migration/route.ts
+  - [x] 10.4 Создать app/api/migration/route.ts
     - POST endpoint для миграции данных
     - Применение auth middleware
     - Применение rate limiting (1 запрос за 5 минут)
