@@ -324,6 +324,7 @@ export class UserService {
    * @throws Error если пользователь не найден
    * 
    * Требования: 4.3
+   * Свойство 23: Срок действия токенов верификации (1 час)
    */
   async requestPasswordReset(email: string): Promise<string> {
     // Поиск пользователя
@@ -338,7 +339,22 @@ export class UserService {
     // Генерация токена сброса (32 байта случайных данных)
     const resetToken = this.generateVerificationToken();
     
-    // TODO: Сохранить токен в БД с временем истечения 1 час (задача 3.5)
+    // Удаление старых токенов сброса для этого пользователя
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId: user.id }
+    });
+    
+    // Создание нового токена сброса со сроком действия 1 час
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+    
+    await prisma.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        token: resetToken,
+        expiresAt
+      }
+    });
     
     return resetToken;
   }
