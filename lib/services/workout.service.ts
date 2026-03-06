@@ -445,6 +445,105 @@ export class WorkoutService {
   }
 
   /**
+   * Получение одной тренировки по ID
+   * 
+   * Алгоритм:
+   * 1. Получение тренировки по ID с вложенными данными
+   * 2. Проверка существования тренировки (404 Not Found)
+   * 3. Проверка прав доступа (userId совпадает, 403 Forbidden)
+   * 4. Возврат полного объекта тренировки
+   * 
+   * @param workoutId - ID тренировки
+   * @param userId - ID пользователя
+   * @returns Полный объект тренировки или null
+   * 
+   * Требования: 10.1-10.3
+   * Свойство 2: Изоляция данных пользователей
+   */
+  async getWorkoutById(
+    workoutId: string,
+    userId: string
+  ): Promise<WorkoutResponse | null> {
+    // Требование 10.1: Получение тренировки с вложенными данными
+    const workout = await prisma.workout.findUnique({
+      where: { id: workoutId },
+      include: {
+        skillBlocks: {
+          include: {
+            exercise: true,
+            sets: {
+              orderBy: { setNumber: 'asc' }
+            }
+          }
+        },
+        wodBlocks: {
+          include: {
+            exercises: {
+              include: { exercise: true },
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        }
+      }
+    });
+
+    // Требование 10.3: Возврат null для несуществующей тренировки
+    if (!workout) {
+      return null;
+    }
+
+    // Требование 10.2: Проверка прав доступа (userId совпадает)
+    // Если userId не совпадает, выбрасываем ошибку 403 Forbidden
+    if (workout.userId !== userId) {
+      throw new Error('FORBIDDEN');
+    }
+
+    // Преобразование в формат ответа
+    return {
+      id: workout.id,
+      userId: workout.userId,
+      date: workout.date,
+      comment: workout.comment,
+      skillBlocks: workout.skillBlocks.map(sb => ({
+        id: sb.id,
+        exercise: {
+          id: sb.exercise.id,
+          name: sb.exercise.name
+        },
+        sets: sb.sets.map(s => ({
+          id: s.id,
+          setNumber: s.setNumber,
+          reps: s.reps,
+          weight: Number(s.weight)
+        }))
+      })),
+      wodBlocks: workout.wodBlocks.map(wb => ({
+        id: wb.id,
+        wodType: wb.wodType,
+        level: wb.level,
+        timeCapSeconds: wb.timeCapSeconds,
+        isLadder: wb.isLadder,
+        resultType: wb.resultType,
+        resultDisplay: wb.resultDisplay,
+        resultSeconds: wb.resultSeconds,
+        resultTotalReps: wb.resultTotalReps,
+        exercises: wb.exercises.map(e => ({
+          id: e.id,
+          exercise: {
+            id: e.exercise.id,
+            name: e.exercise.name
+          },
+          reps: e.reps,
+          weight: e.weight ? Number(e.weight) : null,
+          orderIndex: e.orderIndex
+        }))
+      })),
+      createdAt: workout.createdAt.toISOString(),
+      updatedAt: workout.updatedAt.toISOString()
+    };
+  }
+
+  /**
    * Загрузка тренировки со всеми вложенными данными
    * 
    * @param workoutId - ID тренировки
