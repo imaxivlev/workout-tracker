@@ -544,6 +544,159 @@ export class WorkoutService {
   }
 
   /**
+   * Обновление тренировки
+   *
+   * Алгоритм:
+   * 1. Проверка существования тренировки
+   * 2. Проверка прав доступа (userId совпадает)
+   * 3. Обновление данных тренировки в транзакции
+   * 4. Удаление старых блоков и создание новых (если переданы)
+   * 5. Возврат обновленного объекта
+   *
+   * @param workoutId - ID тренировки
+   * @param userId - ID пользователя
+   * @param data - Данные для обновления (частичные)
+   * @returns Обновленный объект тренировки
+   *
+   * Требования: 10.4
+   */
+  async updateWorkout(
+    workoutId: string,
+    userId: string,
+    data: Partial<CreateWorkoutRequest>
+  ): Promise<WorkoutResponse> {
+    try {
+      // Начало транзакции Prisma
+      const result = await prisma.$transaction(async (tx) => {
+        // Шаг 1: Проверка существования тренировки
+        const existingWorkout = await tx.workout.findUnique({
+          where: { id: workoutId }
+        });
+
+        if (!existingWorkout) {
+          throw new Error('NOT_FOUND');
+        }
+
+        // Шаг 2: Требование 10.4 - Проверка прав доступа (userId совпадает)
+        if (existingWorkout.userId !== userId) {
+          throw new Error('FORBIDDEN');
+        }
+
+        // Шаг 3: Обновление основных полей тренировки
+        const updateData: any = {};
+        if (data.date !== undefined) {
+          updateData.date = data.date;
+        }
+        if (data.comment !== undefined) {
+          updateData.comment = data.comment || null;
+        }
+
+        const workout = await tx.workout.update({
+          where: { id: workoutId },
+          data: updateData
+        });
+
+        // Шаг 4: Обновление Skill блоков (если переданы)
+        if (data.skillBlocks !== undefined) {
+          // Удаление старых skill блоков (каскадно удалятся и sets)
+          await tx.skillBlock.deleteMany({
+            where: { workoutId: workoutId }
+          });
+
+          // Создание новых skill блоков
+          if (data.skillBlocks.length > 0) {
+            for (const skillBlock of data.skillBlocks) {
+              const exerciseId = await this.resolveExerciseIdInTransaction(
+                tx,
+                skillBlock.exerciseName,
+                userId
+              );
+
+              const createdSkillBlock = await tx.skillBlock.create({
+                data: {
+                  workoutId: workout.id,
+                  exerciseDictId: exerciseId
+                }
+              });
+
+              let setNumber = 1;
+              for (const set of skillBlock.sets) {
+                await tx.skillSet.create({
+                  data: {
+                    skillBlockId: createdSkillBlock.id,
+                    setNumber: setNumber,
+                    reps: set.reps,
+                    weight: set.weight
+                  }
+                });
+                setNumber++;
+              }
+            }
+          }
+        }
+
+        // Шаг 5: Обновление WOD блоков (если переданы)
+        if (data.wodBlocks !== undefined) {
+          // Удаление старых wod блоков (каскадно удалятся и exercises)
+          await tx.wodBlock.deleteMany({
+            where: { workoutId: workoutId }
+          });
+
+          // Создание новых wod блоков
+          if (data.wodBlocks.length > 0) {
+            for (const wodBlock of data.wodBlocks) {
+              const createdWodBlock = await tx.wodBlock.create({
+                data: {
+                  workoutId: workout.id,
+                  wodType: wodBlock.wodType,
+                  level: wodBlock.level,
+                  timeCapSeconds: wodBlock.timeCapSeconds || null,
+                  isLadder: wodBlock.isLadder,
+                  resultType: this.determineResultType(wodBlock.wodType),
+                  resultDisplay: wodBlock.resultDisplay,
+                  resultSeconds: wodBlock.resultSeconds || null,
+                  resultTotalReps: wodBlock.resultTotalReps || null
+                }
+              });
+
+              let orderIndex = 1;
+              for (const exercise of wodBlock.exercises) {
+                const exerciseId = await this.resolveExerciseIdInTransaction(
+                  tx,
+                  exercise.exerciseName,
+                  userId
+                );
+
+                await tx.wodExercise.create({
+                  data: {
+                    wodBlockId: createdWodBlock.id,
+                    exerciseDictId: exerciseId,
+                    reps: exercise.reps,
+                    weight: exercise.weight || null,
+                    orderIndex: orderIndex
+                  }
+                });
+                orderIndex++;
+              }
+            }
+          }
+        }
+
+        return workout.id;
+      });
+
+      // Загрузка полного объекта с вложенными данными
+      const fullWorkout = await this.loadWorkoutWithRelations(result);
+
+      return fullWorkout;
+    } catch (error) {
+      // Транзакция автоматически откатывается при ошибке
+      throw error;
+    }
+  }
+
+
+  /**
    * Загрузка тренировки со всеми вложенными данными
    * 
    * @param workoutId - ID тренировки

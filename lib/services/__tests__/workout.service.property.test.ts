@@ -885,4 +885,785 @@ describe('WorkoutService - Property-Based Tests', () => {
       );
     });
   });
+
+  /**
+   * Свойство 2: Изоляция данных пользователей
+   * 
+   * Для любых двух пользователей user1 и user2, если тренировка принадлежит 
+   * user1 и user1 ≠ user2, то user2 не может получить доступ к этой тренировке.
+   * 
+   * **Validates: Requirements 9.1, 10.2, 21.3**
+   */
+  describe('Свойство 2: Изоляция данных пользователей', () => {
+    it('user2 не может получить доступ к тренировке user1 через getWorkoutById', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
+            skillBlocks: fc.array(
+              fc.record({
+                exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                  .filter(s => s.trim().length > 0),
+                sets: fc.array(
+                  fc.record({
+                    reps: fc.integer({ min: 1, max: 20 }),
+                    weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                      .map(w => Math.round(w * 2) / 2)
+                  }),
+                  { minLength: 1, maxLength: 3 }
+                )
+              }),
+              { minLength: 1, maxLength: 2 }
+            )
+          }),
+          async ([email1, email2], workoutData) => {
+            // Создаем двух разных пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // user1 создает тренировку
+            const workout = await workoutService.createWorkout(user1.id, workoutData);
+            
+            // Проверяем, что тренировка принадлежит user1
+            expect(workout.userId).toBe(user1.id);
+            
+            // user1 может получить доступ к своей тренировке
+            const user1Workout = await workoutService.getWorkoutById(workout.id, user1.id);
+            expect(user1Workout).not.toBeNull();
+            expect(user1Workout?.id).toBe(workout.id);
+            
+            // user2 НЕ может получить доступ к тренировке user1 (должна быть ошибка FORBIDDEN)
+            await expect(
+              workoutService.getWorkoutById(workout.id, user2.id)
+            ).rejects.toThrow('FORBIDDEN');
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('getWorkouts возвращает только тренировки текущего пользователя', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          fc.integer({ min: 1, max: 3 }), // Количество тренировок для user1
+          fc.integer({ min: 1, max: 3 }), // Количество тренировок для user2
+          async ([email1, email2], user1WorkoutsCount, user2WorkoutsCount) => {
+            // Создаем двух пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем тренировки для user1
+            const user1WorkoutIds: string[] = [];
+            for (let i = 0; i < user1WorkoutsCount; i++) {
+              const workout = await workoutService.createWorkout(user1.id, {
+                date: new Date(2024, 0, i + 1).toISOString().split('T')[0],
+                skillBlocks: [
+                  {
+                    exerciseName: `User1 Exercise ${i}`,
+                    sets: [{ reps: 5, weight: 50 }]
+                  }
+                ]
+              });
+              user1WorkoutIds.push(workout.id);
+            }
+            
+            // Создаем тренировки для user2
+            const user2WorkoutIds: string[] = [];
+            for (let i = 0; i < user2WorkoutsCount; i++) {
+              const workout = await workoutService.createWorkout(user2.id, {
+                date: new Date(2024, 1, i + 1).toISOString().split('T')[0],
+                skillBlocks: [
+                  {
+                    exerciseName: `User2 Exercise ${i}`,
+                    sets: [{ reps: 5, weight: 60 }]
+                  }
+                ]
+              });
+              user2WorkoutIds.push(workout.id);
+            }
+            
+            // user1 получает свои тренировки
+            const user1Result = await workoutService.getWorkouts(user1.id, {
+              page: 1,
+              limit: 100
+            });
+            
+            // user2 получает свои тренировки
+            const user2Result = await workoutService.getWorkouts(user2.id, {
+              page: 1,
+              limit: 100
+            });
+            
+            // Проверяем, что user1 видит только свои тренировки
+            expect(user1Result.workouts.length).toBe(user1WorkoutsCount);
+            expect(user1Result.total).toBe(user1WorkoutsCount);
+            
+            const user1ReturnedIds = user1Result.workouts.map(w => w.id);
+            for (const id of user1WorkoutIds) {
+              expect(user1ReturnedIds).toContain(id);
+            }
+            for (const id of user2WorkoutIds) {
+              expect(user1ReturnedIds).not.toContain(id);
+            }
+            
+            // Проверяем, что user2 видит только свои тренировки
+            expect(user2Result.workouts.length).toBe(user2WorkoutsCount);
+            expect(user2Result.total).toBe(user2WorkoutsCount);
+            
+            const user2ReturnedIds = user2Result.workouts.map(w => w.id);
+            for (const id of user2WorkoutIds) {
+              expect(user2ReturnedIds).toContain(id);
+            }
+            for (const id of user1WorkoutIds) {
+              expect(user2ReturnedIds).not.toContain(id);
+            }
+            
+            // Проверяем, что все тренировки принадлежат правильным пользователям
+            for (const workout of user1Result.workouts) {
+              expect(workout.userId).toBe(user1.id);
+            }
+            for (const workout of user2Result.workouts) {
+              expect(workout.userId).toBe(user2.id);
+            }
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+    
+    it('пользователь не может получить доступ к несуществующей тренировке', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.uuid(),
+          async (email, nonExistentWorkoutId) => {
+            // Создаем пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Проверяем, что тренировка с таким ID не существует
+            const existingWorkout = await prisma.workout.findUnique({
+              where: { id: nonExistentWorkoutId }
+            });
+            
+            if (existingWorkout) {
+              // Если тренировка существует, пропускаем этот тест-кейс
+              return;
+            }
+            
+            // Попытка получить несуществующую тренировку должна вернуть null
+            const result = await workoutService.getWorkoutById(
+              nonExistentWorkoutId,
+              user.id
+            );
+            
+            expect(result).toBeNull();
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('изоляция данных сохраняется при фильтрации по упражнению', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          fc.string({ minLength: 3, maxLength: 30 })
+            .filter(s => s.trim().length > 0),
+          async ([email1, email2], sharedExerciseName) => {
+            // Создаем двух пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Оба пользователя создают тренировки с одинаковым упражнением
+            const user1Workout = await workoutService.createWorkout(user1.id, {
+              date: new Date(2024, 0, 1).toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: sharedExerciseName,
+                  sets: [{ reps: 5, weight: 50 }]
+                }
+              ]
+            });
+            
+            const user2Workout = await workoutService.createWorkout(user2.id, {
+              date: new Date(2024, 0, 2).toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: sharedExerciseName,
+                  sets: [{ reps: 10, weight: 60 }]
+                }
+              ]
+            });
+            
+            // Получаем ID упражнения для user1
+            const user1ExerciseId = user1Workout.skillBlocks[0].exercise.id;
+            
+            // Получаем ID упражнения для user2
+            const user2ExerciseId = user2Workout.skillBlocks[0].exercise.id;
+            
+            // Фильтруем тренировки user1 по его упражнению
+            const user1Result = await workoutService.getWorkouts(user1.id, {
+              page: 1,
+              limit: 100,
+              exerciseId: user1ExerciseId
+            });
+            
+            // Фильтруем тренировки user2 по его упражнению
+            const user2Result = await workoutService.getWorkouts(user2.id, {
+              page: 1,
+              limit: 100,
+              exerciseId: user2ExerciseId
+            });
+            
+            // user1 должен видеть только свою тренировку
+            expect(user1Result.workouts.length).toBeGreaterThan(0);
+            for (const workout of user1Result.workouts) {
+              expect(workout.userId).toBe(user1.id);
+              expect(workout.id).not.toBe(user2Workout.id);
+            }
+            
+            // user2 должен видеть только свою тренировку
+            expect(user2Result.workouts.length).toBeGreaterThan(0);
+            for (const workout of user2Result.workouts) {
+              expect(workout.userId).toBe(user2.id);
+              expect(workout.id).not.toBe(user1Workout.id);
+            }
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+    
+    it('изоляция данных сохраняется при фильтрации по датам', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          fc.date({ min: new Date('2024-01-01'), max: new Date('2024-01-31') })
+            .map(d => d.toISOString().split('T')[0]),
+          async ([email1, email2], sharedDate) => {
+            // Создаем двух пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Оба пользователя создают тренировки на одну и ту же дату
+            const user1Workout = await workoutService.createWorkout(user1.id, {
+              date: sharedDate,
+              skillBlocks: [
+                {
+                  exerciseName: 'User1 Exercise',
+                  sets: [{ reps: 5, weight: 50 }]
+                }
+              ]
+            });
+            
+            const user2Workout = await workoutService.createWorkout(user2.id, {
+              date: sharedDate,
+              skillBlocks: [
+                {
+                  exerciseName: 'User2 Exercise',
+                  sets: [{ reps: 10, weight: 60 }]
+                }
+              ]
+            });
+            
+            // Фильтруем тренировки user1 по дате
+            const user1Result = await workoutService.getWorkouts(user1.id, {
+              page: 1,
+              limit: 100,
+              startDate: sharedDate,
+              endDate: sharedDate
+            });
+            
+            // Фильтруем тренировки user2 по дате
+            const user2Result = await workoutService.getWorkouts(user2.id, {
+              page: 1,
+              limit: 100,
+              startDate: sharedDate,
+              endDate: sharedDate
+            });
+            
+            // user1 должен видеть только свою тренировку
+            expect(user1Result.workouts.length).toBeGreaterThan(0);
+            for (const workout of user1Result.workouts) {
+              expect(workout.userId).toBe(user1.id);
+              expect(workout.id).not.toBe(user2Workout.id);
+            }
+            
+            // user2 должен видеть только свою тренировку
+            expect(user2Result.workouts.length).toBeGreaterThan(0);
+            for (const workout of user2Result.workouts) {
+              expect(workout.userId).toBe(user2.id);
+              expect(workout.id).not.toBe(user1Workout.id);
+            }
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+  });
 });
+
+/**
+ * Свойство 2: Изоляция данных пользователей
+ *
+ * Для любых двух пользователей user1 и user2, если тренировка принадлежит
+ * user1 и user1 ≠ user2, то user2 не может получить доступ к этой тренировке.
+ *
+ * **Validates: Requirements 9.1, 10.2, 21.3**
+ */
+describe('Свойство 2: Изоляция данных пользователей', () => {
+  it('user2 не может получить доступ к тренировке user1 через getWorkoutById', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.tuple(
+          fc.emailAddress(),
+          fc.emailAddress()
+        ).filter(([email1, email2]) => email1 !== email2),
+        fc.record({
+          date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            .map(d => d.toISOString().split('T')[0]),
+          comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
+          skillBlocks: fc.array(
+            fc.record({
+              exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                .filter(s => s.trim().length > 0),
+              sets: fc.array(
+                fc.record({
+                  reps: fc.integer({ min: 1, max: 20 }),
+                  weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                    .map(w => Math.round(w * 2) / 2)
+                }),
+                { minLength: 1, maxLength: 3 }
+              )
+            }),
+            { minLength: 1, maxLength: 2 }
+          )
+        }),
+        async ([email1, email2], workoutData) => {
+          // Создаем двух разных пользователей
+          const user1 = await prisma.user.create({
+            data: {
+              email: email1,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          const user2 = await prisma.user.create({
+            data: {
+              email: email2,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          // user1 создает тренировку
+          const workout = await workoutService.createWorkout(user1.id, workoutData);
+
+          // Проверяем, что тренировка принадлежит user1
+          expect(workout.userId).toBe(user1.id);
+
+          // user1 может получить доступ к своей тренировке
+          const user1Workout = await workoutService.getWorkoutById(workout.id, user1.id);
+          expect(user1Workout).not.toBeNull();
+          expect(user1Workout?.id).toBe(workout.id);
+
+          // user2 НЕ может получить доступ к тренировке user1 (должна быть ошибка FORBIDDEN)
+          await expect(
+            workoutService.getWorkoutById(workout.id, user2.id)
+          ).rejects.toThrow('FORBIDDEN');
+        }
+      ),
+      { numRuns: 20 }
+    );
+  });
+
+  it('getWorkouts возвращает только тренировки текущего пользователя', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.tuple(
+          fc.emailAddress(),
+          fc.emailAddress()
+        ).filter(([email1, email2]) => email1 !== email2),
+        fc.integer({ min: 1, max: 3 }), // Количество тренировок для user1
+        fc.integer({ min: 1, max: 3 }), // Количество тренировок для user2
+        async ([email1, email2], user1WorkoutsCount, user2WorkoutsCount) => {
+          // Создаем двух пользователей
+          const user1 = await prisma.user.create({
+            data: {
+              email: email1,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          const user2 = await prisma.user.create({
+            data: {
+              email: email2,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          // Создаем тренировки для user1
+          const user1WorkoutIds: string[] = [];
+          for (let i = 0; i < user1WorkoutsCount; i++) {
+            const workout = await workoutService.createWorkout(user1.id, {
+              date: new Date(2024, 0, i + 1).toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: `User1 Exercise ${i}`,
+                  sets: [{ reps: 5, weight: 50 }]
+                }
+              ]
+            });
+            user1WorkoutIds.push(workout.id);
+          }
+
+          // Создаем тренировки для user2
+          const user2WorkoutIds: string[] = [];
+          for (let i = 0; i < user2WorkoutsCount; i++) {
+            const workout = await workoutService.createWorkout(user2.id, {
+              date: new Date(2024, 1, i + 1).toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: `User2 Exercise ${i}`,
+                  sets: [{ reps: 5, weight: 60 }]
+                }
+              ]
+            });
+            user2WorkoutIds.push(workout.id);
+          }
+
+          // user1 получает свои тренировки
+          const user1Result = await workoutService.getWorkouts(user1.id, {
+            page: 1,
+            limit: 100
+          });
+
+          // user2 получает свои тренировки
+          const user2Result = await workoutService.getWorkouts(user2.id, {
+            page: 1,
+            limit: 100
+          });
+
+          // Проверяем, что user1 видит только свои тренировки
+          expect(user1Result.workouts.length).toBe(user1WorkoutsCount);
+          expect(user1Result.total).toBe(user1WorkoutsCount);
+
+          const user1ReturnedIds = user1Result.workouts.map(w => w.id);
+          for (const id of user1WorkoutIds) {
+            expect(user1ReturnedIds).toContain(id);
+          }
+          for (const id of user2WorkoutIds) {
+            expect(user1ReturnedIds).not.toContain(id);
+          }
+
+          // Проверяем, что user2 видит только свои тренировки
+          expect(user2Result.workouts.length).toBe(user2WorkoutsCount);
+          expect(user2Result.total).toBe(user2WorkoutsCount);
+
+          const user2ReturnedIds = user2Result.workouts.map(w => w.id);
+          for (const id of user2WorkoutIds) {
+            expect(user2ReturnedIds).toContain(id);
+          }
+          for (const id of user1WorkoutIds) {
+            expect(user2ReturnedIds).not.toContain(id);
+          }
+
+          // Проверяем, что все тренировки принадлежат правильным пользователям
+          for (const workout of user1Result.workouts) {
+            expect(workout.userId).toBe(user1.id);
+          }
+          for (const workout of user2Result.workouts) {
+            expect(workout.userId).toBe(user2.id);
+          }
+        }
+      ),
+      { numRuns: 15 }
+    );
+  });
+
+  it('пользователь не может получить доступ к несуществующей тренировке', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.emailAddress(),
+        fc.uuid(),
+        async (email, nonExistentWorkoutId) => {
+          // Создаем пользователя
+          const user = await prisma.user.create({
+            data: {
+              email,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          // Проверяем, что тренировка с таким ID не существует
+          const existingWorkout = await prisma.workout.findUnique({
+            where: { id: nonExistentWorkoutId }
+          });
+
+          if (existingWorkout) {
+            // Если тренировка существует, пропускаем этот тест-кейс
+            return;
+          }
+
+          // Попытка получить несуществующую тренировку должна вернуть null
+          const result = await workoutService.getWorkoutById(
+            nonExistentWorkoutId,
+            user.id
+          );
+
+          expect(result).toBeNull();
+        }
+      ),
+      { numRuns: 20 }
+    );
+  });
+
+  it('изоляция данных сохраняется при фильтрации по упражнению', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.tuple(
+          fc.emailAddress(),
+          fc.emailAddress()
+        ).filter(([email1, email2]) => email1 !== email2),
+        fc.string({ minLength: 3, maxLength: 30 })
+          .filter(s => s.trim().length > 0),
+        async ([email1, email2], sharedExerciseName) => {
+          // Создаем двух пользователей
+          const user1 = await prisma.user.create({
+            data: {
+              email: email1,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          const user2 = await prisma.user.create({
+            data: {
+              email: email2,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          // Оба пользователя создают тренировки с одинаковым упражнением
+          const user1Workout = await workoutService.createWorkout(user1.id, {
+            date: new Date(2024, 0, 1).toISOString().split('T')[0],
+            skillBlocks: [
+              {
+                exerciseName: sharedExerciseName,
+                sets: [{ reps: 5, weight: 50 }]
+              }
+            ]
+          });
+
+          const user2Workout = await workoutService.createWorkout(user2.id, {
+            date: new Date(2024, 0, 2).toISOString().split('T')[0],
+            skillBlocks: [
+              {
+                exerciseName: sharedExerciseName,
+                sets: [{ reps: 10, weight: 60 }]
+              }
+            ]
+          });
+
+          // Получаем ID упражнения для user1
+          const user1ExerciseId = user1Workout.skillBlocks[0].exercise.id;
+
+          // Получаем ID упражнения для user2
+          const user2ExerciseId = user2Workout.skillBlocks[0].exercise.id;
+
+          // Фильтруем тренировки user1 по его упражнению
+          const user1Result = await workoutService.getWorkouts(user1.id, {
+            page: 1,
+            limit: 100,
+            exerciseId: user1ExerciseId
+          });
+
+          // Фильтруем тренировки user2 по его упражнению
+          const user2Result = await workoutService.getWorkouts(user2.id, {
+            page: 1,
+            limit: 100,
+            exerciseId: user2ExerciseId
+          });
+
+          // user1 должен видеть только свою тренировку
+          expect(user1Result.workouts.length).toBeGreaterThan(0);
+          for (const workout of user1Result.workouts) {
+            expect(workout.userId).toBe(user1.id);
+            expect(workout.id).not.toBe(user2Workout.id);
+          }
+
+          // user2 должен видеть только свою тренировку
+          expect(user2Result.workouts.length).toBeGreaterThan(0);
+          for (const workout of user2Result.workouts) {
+            expect(workout.userId).toBe(user2.id);
+            expect(workout.id).not.toBe(user1Workout.id);
+          }
+        }
+      ),
+      { numRuns: 15 }
+    );
+  });
+
+  it('изоляция данных сохраняется при фильтрации по датам', async () => {
+    await fc.assert(
+      fc.asyncProperty(
+        fc.tuple(
+          fc.emailAddress(),
+          fc.emailAddress()
+        ).filter(([email1, email2]) => email1 !== email2),
+        fc.date({ min: new Date('2024-01-01'), max: new Date('2024-01-31') })
+          .map(d => d.toISOString().split('T')[0]),
+        async ([email1, email2], sharedDate) => {
+          // Создаем двух пользователей
+          const user1 = await prisma.user.create({
+            data: {
+              email: email1,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          const user2 = await prisma.user.create({
+            data: {
+              email: email2,
+              passwordHash: 'test-hash',
+              verified: true
+            }
+          });
+
+          // Оба пользователя создают тренировки на одну и ту же дату
+          const user1Workout = await workoutService.createWorkout(user1.id, {
+            date: sharedDate,
+            skillBlocks: [
+              {
+                exerciseName: 'User1 Exercise',
+                sets: [{ reps: 5, weight: 50 }]
+              }
+            ]
+          });
+
+          const user2Workout = await workoutService.createWorkout(user2.id, {
+            date: sharedDate,
+            skillBlocks: [
+              {
+                exerciseName: 'User2 Exercise',
+                sets: [{ reps: 10, weight: 60 }]
+              }
+            ]
+          });
+
+          // Фильтруем тренировки user1 по дате
+          const user1Result = await workoutService.getWorkouts(user1.id, {
+            page: 1,
+            limit: 100,
+            startDate: sharedDate,
+            endDate: sharedDate
+          });
+
+          // Фильтруем тренировки user2 по дате
+          const user2Result = await workoutService.getWorkouts(user2.id, {
+            page: 1,
+            limit: 100,
+            startDate: sharedDate,
+            endDate: sharedDate
+          });
+
+          // user1 должен видеть только свою тренировку
+          expect(user1Result.workouts.length).toBeGreaterThan(0);
+          for (const workout of user1Result.workouts) {
+            expect(workout.userId).toBe(user1.id);
+            expect(workout.id).not.toBe(user2Workout.id);
+          }
+
+          // user2 должен видеть только свою тренировку
+          expect(user2Result.workouts.length).toBeGreaterThan(0);
+          for (const workout of user2Result.workouts) {
+            expect(workout.userId).toBe(user2.id);
+            expect(workout.id).not.toBe(user1Workout.id);
+          }
+        }
+      ),
+      { numRuns: 15 }
+    );
+  });
+});
+
