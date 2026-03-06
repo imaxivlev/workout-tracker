@@ -217,7 +217,7 @@
     - Обработка ошибок БД (500 Internal Server Error с откатом транзакции)
     - _Требования: 7.1-7.6, 8.1-8.8, 25.1-25.2_
 
-  - [~] 6.2 Добавить GET endpoint в app/api/workouts/route.ts
+  - [x] 6.2 Добавить GET endpoint в app/api/workouts/route.ts
     - Применение auth middleware
     - Парсинг query параметров (page, limit, startDate, endDate, exerciseId)
     - Вызов WorkoutService.getWorkouts()

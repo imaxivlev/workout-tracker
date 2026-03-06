@@ -5,6 +5,138 @@ import { authenticateRequest } from '@/lib/auth/middleware';
 import { rateLimit, RATE_LIMIT_CONFIGS } from '@/lib/auth/rate-limiter';
 
 /**
+ * GET /api/workouts
+ * 
+ * Получение списка тренировок с пагинацией и фильтрацией
+ * 
+ * Требования: 9.1-9.6
+ * Свойство 2: Изоляция данных пользователей
+ * 
+ * Query параметры:
+ * - page: номер страницы (по умолчанию 1)
+ * - limit: количество тренировок на странице (по умолчанию 10, максимум 100)
+ * - startDate: начальная дата фильтрации (YYYY-MM-DD)
+ * - endDate: конечная дата фильтрации (YYYY-MM-DD)
+ * - exerciseId: ID упражнения для фильтрации
+ * 
+ * @param request - HTTP запрос с query параметрами
+ * @returns 200 OK со списком тренировок и метаданными пагинации
+ */
+export async function GET(request: NextRequest) {
+  try {
+    // Шаг 1: Аутентификация пользователя
+    const authResult = await authenticateRequest(request);
+    
+    if ('error' in authResult) {
+      return NextResponse.json(
+        {
+          error: 'Требуется аутентификация',
+          code: 'UNAUTHORIZED'
+        },
+        { status: 401 }
+      );
+    }
+    
+    const { user } = authResult;
+    
+    // Шаг 2: Rate limiting (100 запросов за минуту)
+    const isRateLimited = await rateLimit(user.id, RATE_LIMIT_CONFIGS.api);
+    
+    if (isRateLimited) {
+      return NextResponse.json(
+        {
+          error: 'Слишком много запросов. Попробуйте позже.',
+          code: 'RATE_LIMIT_EXCEEDED'
+        },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60' // 1 минута в секундах
+          }
+        }
+      );
+    }
+    
+    // Шаг 3: Парсинг query параметров
+    const { searchParams } = new URL(request.url);
+    
+    // Требование 9.2: Параметр page (по умолчанию 1)
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    
+    // Требование 9.3: Параметр limit (по умолчанию 10, максимум 100)
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '10', 10)));
+    
+    // Требование 9.4: Параметры диапазона дат
+    const startDate = searchParams.get('startDate') || undefined;
+    const endDate = searchParams.get('endDate') || undefined;
+    
+    // Требование 9.5: Параметр фильтрации по упражнению
+    const exerciseId = searchParams.get('exerciseId') || undefined;
+    
+    // Валидация формата дат (если указаны)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (startDate && !dateRegex.test(startDate)) {
+      return NextResponse.json(
+        {
+          error: 'Параметр startDate должен быть в формате YYYY-MM-DD',
+          code: 'INVALID_DATE_FORMAT'
+        },
+        { status: 400 }
+      );
+    }
+    
+    if (endDate && !dateRegex.test(endDate)) {
+      return NextResponse.json(
+        {
+          error: 'Параметр endDate должен быть в формате YYYY-MM-DD',
+          code: 'INVALID_DATE_FORMAT'
+        },
+        { status: 400 }
+      );
+    }
+    
+    // Шаг 4: Получение списка тренировок через WorkoutService
+    const workoutService = new WorkoutService();
+    
+    const result = await workoutService.getWorkouts(user.id, {
+      page,
+      limit,
+      startDate,
+      endDate,
+      exerciseId
+    });
+    
+    // Требование 9.1-9.6: Возврат списка тренировок с метаданными пагинации
+    return NextResponse.json(
+      {
+        workouts: result.workouts,
+        pagination: {
+          page,
+          limit,
+          total: result.total,
+          hasMore: result.hasMore,
+          totalPages: Math.ceil(result.total / limit)
+        }
+      },
+      { status: 200 }
+    );
+    
+  } catch (error) {
+    // Логирование ошибки
+    console.error('Ошибка при получении списка тренировок:', error);
+    
+    // Возврат 500 Internal Server Error
+    return NextResponse.json(
+      {
+        error: 'Внутренняя ошибка сервера',
+        code: 'INTERNAL_SERVER_ERROR'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+/**
  * POST /api/workouts
  * 
  * Создание новой тренировки
