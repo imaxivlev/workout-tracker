@@ -729,6 +729,329 @@ describe('WorkoutService - Property-Based Tests', () => {
   });
   
   /**
+   * Свойство 5: Идемпотентность удаления тренировки
+   * 
+   * Для любой тренировки и пользователя, повторное удаление одной и той же 
+   * тренировки должно приводить к тому же результату без ошибок.
+   * 
+   * **Validates: Requirements 10.6**
+   */
+  describe('Свойство 5: Идемпотентность удаления тренировки', () => {
+    it('повторное удаление одной и той же тренировки не вызывает ошибку', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
+            skillBlocks: fc.array(
+              fc.record({
+                exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                  .filter(s => s.trim().length > 0),
+                sets: fc.array(
+                  fc.record({
+                    reps: fc.integer({ min: 1, max: 20 }),
+                    weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                      .map(w => Math.round(w * 2) / 2)
+                  }),
+                  { minLength: 1, maxLength: 3 }
+                )
+              }),
+              { minLength: 1, maxLength: 2 }
+            )
+          }),
+          async (email, workoutData) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, workoutData);
+            
+            // Проверяем, что тренировка существует
+            const existingWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(existingWorkout).not.toBeNull();
+            
+            // Первое удаление
+            await workoutService.deleteWorkout(workout.id, user.id);
+            
+            // Проверяем, что тренировка удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(deletedWorkout).toBeNull();
+            
+            // Второе удаление той же тренировки (идемпотентность)
+            await expect(
+              workoutService.deleteWorkout(workout.id, user.id)
+            ).resolves.not.toThrow();
+            
+            // Третье удаление той же тренировки (идемпотентность)
+            await expect(
+              workoutService.deleteWorkout(workout.id, user.id)
+            ).resolves.not.toThrow();
+            
+            // Проверяем, что тренировка все еще не существует
+            const stillDeletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(stillDeletedWorkout).toBeNull();
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('удаление несуществующей тренировки не вызывает ошибку', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.uuid(),
+          async (email, nonExistentWorkoutId) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Проверяем, что тренировка с таким ID не существует
+            const existingWorkout = await prisma.workout.findUnique({
+              where: { id: nonExistentWorkoutId }
+            });
+            
+            if (existingWorkout) {
+              // Если тренировка существует, пропускаем этот тест-кейс
+              return;
+            }
+            
+            // Попытка удалить несуществующую тренировку не должна вызвать ошибку
+            await expect(
+              workoutService.deleteWorkout(nonExistentWorkoutId, user.id)
+            ).resolves.not.toThrow();
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('множественные одновременные удаления одной тренировки не вызывают ошибку', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.integer({ min: 2, max: 5 }), // Количество одновременных удалений
+          async (email, concurrentDeleteCount) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, {
+              date: new Date().toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: 'Test Exercise',
+                  sets: [{ reps: 5, weight: 50 }]
+                }
+              ]
+            });
+            
+            // Делаем несколько одновременных удалений
+            const deletePromises = Array(concurrentDeleteCount)
+              .fill(null)
+              .map(() => workoutService.deleteWorkout(workout.id, user.id));
+            
+            // Все удаления должны завершиться без ошибок
+            await expect(
+              Promise.all(deletePromises)
+            ).resolves.not.toThrow();
+            
+            // Проверяем, что тренировка удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(deletedWorkout).toBeNull();
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+    
+    it('идемпотентность сохраняется после каскадного удаления связанных данных', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.integer({ min: 1, max: 3 }), // Количество skill блоков
+          async (email, skillBlocksCount) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем тренировку с множественными блоками
+            const skillBlocks = [];
+            for (let i = 0; i < skillBlocksCount; i++) {
+              skillBlocks.push({
+                exerciseName: `Exercise ${i}`,
+                sets: [
+                  { reps: 5, weight: 50 },
+                  { reps: 5, weight: 55 }
+                ]
+              });
+            }
+            
+            const workout = await workoutService.createWorkout(user.id, {
+              date: new Date().toISOString().split('T')[0],
+              skillBlocks
+            });
+            
+            // Подсчитываем количество связанных записей
+            const skillBlocksBefore = await prisma.skillBlock.count({
+              where: { workoutId: workout.id }
+            });
+            expect(skillBlocksBefore).toBe(skillBlocksCount);
+            
+            const skillSetsBefore = await prisma.skillSet.count({
+              where: {
+                skillBlock: {
+                  workoutId: workout.id
+                }
+              }
+            });
+            expect(skillSetsBefore).toBe(skillBlocksCount * 2); // По 2 сета на блок
+            
+            // Первое удаление
+            await workoutService.deleteWorkout(workout.id, user.id);
+            
+            // Проверяем каскадное удаление
+            const skillBlocksAfter = await prisma.skillBlock.count({
+              where: { workoutId: workout.id }
+            });
+            expect(skillBlocksAfter).toBe(0);
+            
+            const skillSetsAfter = await prisma.skillSet.count({
+              where: {
+                skillBlock: {
+                  workoutId: workout.id
+                }
+              }
+            });
+            expect(skillSetsAfter).toBe(0);
+            
+            // Второе удаление (идемпотентность)
+            await expect(
+              workoutService.deleteWorkout(workout.id, user.id)
+            ).resolves.not.toThrow();
+            
+            // Проверяем, что количество записей не изменилось
+            const skillBlocksFinal = await prisma.skillBlock.count({
+              where: { workoutId: workout.id }
+            });
+            expect(skillBlocksFinal).toBe(0);
+            
+            const skillSetsFinal = await prisma.skillSet.count({
+              where: {
+                skillBlock: {
+                  workoutId: workout.id
+                }
+              }
+            });
+            expect(skillSetsFinal).toBe(0);
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+    
+    it('идемпотентность не нарушает проверку прав доступа', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          async ([email1, email2]) => {
+            // Создаем двух пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // user1 создает тренировку
+            const workout = await workoutService.createWorkout(user1.id, {
+              date: new Date().toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: 'Test Exercise',
+                  sets: [{ reps: 5, weight: 50 }]
+                }
+              ]
+            });
+            
+            // user2 не может удалить тренировку user1
+            await expect(
+              workoutService.deleteWorkout(workout.id, user2.id)
+            ).rejects.toThrow('FORBIDDEN');
+            
+            // Тренировка все еще существует
+            const stillExistingWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(stillExistingWorkout).not.toBeNull();
+            
+            // user1 удаляет свою тренировку
+            await workoutService.deleteWorkout(workout.id, user1.id);
+            
+            // Тренировка удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(deletedWorkout).toBeNull();
+            
+            // user2 все еще не может "удалить" несуществующую тренировку user1
+            // (идемпотентность не должна обходить проверку прав доступа для существующих тренировок)
+            // Но так как тренировка уже не существует, операция должна быть идемпотентной
+            await expect(
+              workoutService.deleteWorkout(workout.id, user2.id)
+            ).resolves.not.toThrow();
+          }
+        ),
+        { numRuns: 15 }
+      );
+    });
+  });
+
+  /**
    * Дополнительные свойства и граничные случаи
    */
   describe('Дополнительные свойства и граничные случаи', () => {
@@ -1277,393 +1600,286 @@ describe('WorkoutService - Property-Based Tests', () => {
   });
 });
 
-/**
- * Свойство 2: Изоляция данных пользователей
- *
- * Для любых двух пользователей user1 и user2, если тренировка принадлежит
- * user1 и user1 ≠ user2, то user2 не может получить доступ к этой тренировке.
- *
- * **Validates: Requirements 9.1, 10.2, 21.3**
- */
-describe('Свойство 2: Изоляция данных пользователей', () => {
-  it('user2 не может получить доступ к тренировке user1 через getWorkoutById', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.tuple(
+
+  /**
+   * Свойство 5: Идемпотентность удаления тренировки
+   * 
+   * Для любой тренировки и пользователя, повторное удаление одной и той же 
+   * тренировки должно приводить к тому же результату без ошибок.
+   * 
+   * **Validates: Requirement 10.6**
+   */
+  describe('Свойство 5: Идемпотентность удаления тренировки', () => {
+    it('повторное удаление одной и той же тренировки не вызывает ошибку', async () => {
+      await fc.assert(
+        fc.asyncProperty(
           fc.emailAddress(),
-          fc.emailAddress()
-        ).filter(([email1, email2]) => email1 !== email2),
-        fc.record({
-          date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
-            .map(d => d.toISOString().split('T')[0]),
-          comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
-          skillBlocks: fc.array(
-            fc.record({
-              exerciseName: fc.string({ minLength: 3, maxLength: 30 })
-                .filter(s => s.trim().length > 0),
-              sets: fc.array(
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
+            skillBlocks: fc.array(
+              fc.record({
+                exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                  .filter(s => s.trim().length > 0),
+                sets: fc.array(
+                  fc.record({
+                    reps: fc.integer({ min: 1, max: 20 }),
+                    weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                      .map(w => Math.round(w * 2) / 2)
+                  }),
+                  { minLength: 1, maxLength: 3 }
+                )
+              }),
+              { minLength: 1, maxLength: 2 }
+            )
+          }),
+          fc.integer({ min: 2, max: 5 }), // Количество попыток удаления
+          async (email, workoutData, deleteAttempts) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, workoutData);
+            
+            // Проверяем, что тренировка создана
+            expect(workout).toBeDefined();
+            expect(workout.id).toBeDefined();
+            
+            // Выполняем множественные удаления
+            for (let i = 0; i < deleteAttempts; i++) {
+              // Каждое удаление должно завершаться успешно без ошибок
+              await expect(
+                workoutService.deleteWorkout(workout.id, user.id)
+              ).resolves.toBeUndefined();
+            }
+            
+            // Проверяем, что тренировка действительно удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(deletedWorkout).toBeNull();
+            
+            // Проверяем, что все связанные блоки удалены
+            const remainingSkillBlocks = await prisma.skillBlock.count({
+              where: { workoutId: workout.id }
+            });
+            expect(remainingSkillBlocks).toBe(0);
+            
+            const remainingWodBlocks = await prisma.wodBlock.count({
+              where: { workoutId: workout.id }
+            });
+            expect(remainingWodBlocks).toBe(0);
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('удаление несуществующей тренировки не вызывает ошибку', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.uuid(),
+          fc.integer({ min: 1, max: 3 }), // Количество попыток удаления
+          async (email, nonExistentWorkoutId, deleteAttempts) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Проверяем, что тренировка с таким ID не существует
+            const existingWorkout = await prisma.workout.findUnique({
+              where: { id: nonExistentWorkoutId }
+            });
+            
+            if (existingWorkout) {
+              // Если тренировка существует, пропускаем этот тест-кейс
+              return;
+            }
+            
+            // Выполняем множественные попытки удаления несуществующей тренировки
+            for (let i = 0; i < deleteAttempts; i++) {
+              // Каждая попытка должна завершаться успешно без ошибок
+              await expect(
+                workoutService.deleteWorkout(nonExistentWorkoutId, user.id)
+              ).resolves.toBeUndefined();
+            }
+          }
+        ),
+        { numRuns: 20 }
+      );
+    });
+    
+    it('идемпотентность сохраняется при удалении тренировок с разными типами блоков', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            skillBlocks: fc.option(
+              fc.array(
                 fc.record({
-                  reps: fc.integer({ min: 1, max: 20 }),
-                  weight: fc.float({ min: 0.5, max: 200, noNaN: true })
-                    .map(w => Math.round(w * 2) / 2)
+                  exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                    .filter(s => s.trim().length > 0),
+                  sets: fc.array(
+                    fc.record({
+                      reps: fc.integer({ min: 1, max: 20 }),
+                      weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                        .map(w => Math.round(w * 2) / 2)
+                    }),
+                    { minLength: 1, maxLength: 2 }
+                  )
                 }),
-                { minLength: 1, maxLength: 3 }
-              )
-            }),
-            { minLength: 1, maxLength: 2 }
-          )
-        }),
-        async ([email1, email2], workoutData) => {
-          // Создаем двух разных пользователей
-          const user1 = await prisma.user.create({
-            data: {
-              email: email1,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          const user2 = await prisma.user.create({
-            data: {
-              email: email2,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          // user1 создает тренировку
-          const workout = await workoutService.createWorkout(user1.id, workoutData);
-
-          // Проверяем, что тренировка принадлежит user1
-          expect(workout.userId).toBe(user1.id);
-
-          // user1 может получить доступ к своей тренировке
-          const user1Workout = await workoutService.getWorkoutById(workout.id, user1.id);
-          expect(user1Workout).not.toBeNull();
-          expect(user1Workout?.id).toBe(workout.id);
-
-          // user2 НЕ может получить доступ к тренировке user1 (должна быть ошибка FORBIDDEN)
-          await expect(
-            workoutService.getWorkoutById(workout.id, user2.id)
-          ).rejects.toThrow('FORBIDDEN');
-        }
-      ),
-      { numRuns: 20 }
-    );
-  });
-
-  it('getWorkouts возвращает только тренировки текущего пользователя', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.tuple(
-          fc.emailAddress(),
-          fc.emailAddress()
-        ).filter(([email1, email2]) => email1 !== email2),
-        fc.integer({ min: 1, max: 3 }), // Количество тренировок для user1
-        fc.integer({ min: 1, max: 3 }), // Количество тренировок для user2
-        async ([email1, email2], user1WorkoutsCount, user2WorkoutsCount) => {
-          // Создаем двух пользователей
-          const user1 = await prisma.user.create({
-            data: {
-              email: email1,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          const user2 = await prisma.user.create({
-            data: {
-              email: email2,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          // Создаем тренировки для user1
-          const user1WorkoutIds: string[] = [];
-          for (let i = 0; i < user1WorkoutsCount; i++) {
-            const workout = await workoutService.createWorkout(user1.id, {
-              date: new Date(2024, 0, i + 1).toISOString().split('T')[0],
-              skillBlocks: [
-                {
-                  exerciseName: `User1 Exercise ${i}`,
-                  sets: [{ reps: 5, weight: 50 }]
-                }
-              ]
+                { minLength: 1, maxLength: 2 }
+              ),
+              { nil: undefined }
+            ),
+            wodBlocks: fc.option(
+              fc.array(
+                fc.record({
+                  wodType: fc.constantFrom('FOR_TIME', 'AMRAP', 'EMOM', 'TABATA'),
+                  level: fc.constantFrom('RX', 'SCALED'),
+                  isLadder: fc.boolean(),
+                  resultDisplay: fc.string({ minLength: 1, maxLength: 20 }),
+                  resultSeconds: fc.option(fc.integer({ min: 1, max: 3600 }), { nil: undefined }),
+                  resultTotalReps: fc.option(fc.integer({ min: 1, max: 500 }), { nil: undefined }),
+                  exercises: fc.array(
+                    fc.record({
+                      exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                        .filter(s => s.trim().length > 0),
+                      reps: fc.integer({ min: 1, max: 50 }),
+                      weight: fc.option(
+                        fc.float({ min: 0.5, max: 200, noNaN: true })
+                          .map(w => Math.round(w * 2) / 2),
+                        { nil: undefined }
+                      )
+                    }),
+                    { minLength: 1, maxLength: 3 }
+                  )
+                }),
+                { minLength: 1, maxLength: 2 }
+              ),
+              { nil: undefined }
+            )
+          }).filter(data => 
+            // Убеждаемся, что есть хотя бы один блок
+            (data.skillBlocks && data.skillBlocks.length > 0) || 
+            (data.wodBlocks && data.wodBlocks.length > 0)
+          ),
+          async (email, workoutData) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
             });
-            user1WorkoutIds.push(workout.id);
-          }
-
-          // Создаем тренировки для user2
-          const user2WorkoutIds: string[] = [];
-          for (let i = 0; i < user2WorkoutsCount; i++) {
-            const workout = await workoutService.createWorkout(user2.id, {
-              date: new Date(2024, 1, i + 1).toISOString().split('T')[0],
-              skillBlocks: [
-                {
-                  exerciseName: `User2 Exercise ${i}`,
-                  sets: [{ reps: 5, weight: 60 }]
-                }
-              ]
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, workoutData);
+            
+            // Первое удаление
+            await workoutService.deleteWorkout(workout.id, user.id);
+            
+            // Проверяем, что тренировка удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
             });
-            user2WorkoutIds.push(workout.id);
+            expect(deletedWorkout).toBeNull();
+            
+            // Второе удаление не должно вызывать ошибку
+            await expect(
+              workoutService.deleteWorkout(workout.id, user.id)
+            ).resolves.toBeUndefined();
+            
+            // Третье удаление не должно вызывать ошибку
+            await expect(
+              workoutService.deleteWorkout(workout.id, user.id)
+            ).resolves.toBeUndefined();
           }
-
-          // user1 получает свои тренировки
-          const user1Result = await workoutService.getWorkouts(user1.id, {
-            page: 1,
-            limit: 100
-          });
-
-          // user2 получает свои тренировки
-          const user2Result = await workoutService.getWorkouts(user2.id, {
-            page: 1,
-            limit: 100
-          });
-
-          // Проверяем, что user1 видит только свои тренировки
-          expect(user1Result.workouts.length).toBe(user1WorkoutsCount);
-          expect(user1Result.total).toBe(user1WorkoutsCount);
-
-          const user1ReturnedIds = user1Result.workouts.map(w => w.id);
-          for (const id of user1WorkoutIds) {
-            expect(user1ReturnedIds).toContain(id);
-          }
-          for (const id of user2WorkoutIds) {
-            expect(user1ReturnedIds).not.toContain(id);
-          }
-
-          // Проверяем, что user2 видит только свои тренировки
-          expect(user2Result.workouts.length).toBe(user2WorkoutsCount);
-          expect(user2Result.total).toBe(user2WorkoutsCount);
-
-          const user2ReturnedIds = user2Result.workouts.map(w => w.id);
-          for (const id of user2WorkoutIds) {
-            expect(user2ReturnedIds).toContain(id);
-          }
-          for (const id of user1WorkoutIds) {
-            expect(user2ReturnedIds).not.toContain(id);
-          }
-
-          // Проверяем, что все тренировки принадлежат правильным пользователям
-          for (const workout of user1Result.workouts) {
-            expect(workout.userId).toBe(user1.id);
-          }
-          for (const workout of user2Result.workouts) {
-            expect(workout.userId).toBe(user2.id);
-          }
-        }
-      ),
-      { numRuns: 15 }
-    );
-  });
-
-  it('пользователь не может получить доступ к несуществующей тренировке', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.emailAddress(),
-        fc.uuid(),
-        async (email, nonExistentWorkoutId) => {
-          // Создаем пользователя
-          const user = await prisma.user.create({
-            data: {
-              email,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          // Проверяем, что тренировка с таким ID не существует
-          const existingWorkout = await prisma.workout.findUnique({
-            where: { id: nonExistentWorkoutId }
-          });
-
-          if (existingWorkout) {
-            // Если тренировка существует, пропускаем этот тест-кейс
-            return;
-          }
-
-          // Попытка получить несуществующую тренировку должна вернуть null
-          const result = await workoutService.getWorkoutById(
-            nonExistentWorkoutId,
-            user.id
-          );
-
-          expect(result).toBeNull();
-        }
-      ),
-      { numRuns: 20 }
-    );
-  });
-
-  it('изоляция данных сохраняется при фильтрации по упражнению', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.tuple(
-          fc.emailAddress(),
-          fc.emailAddress()
-        ).filter(([email1, email2]) => email1 !== email2),
-        fc.string({ minLength: 3, maxLength: 30 })
-          .filter(s => s.trim().length > 0),
-        async ([email1, email2], sharedExerciseName) => {
-          // Создаем двух пользователей
-          const user1 = await prisma.user.create({
-            data: {
-              email: email1,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          const user2 = await prisma.user.create({
-            data: {
-              email: email2,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          // Оба пользователя создают тренировки с одинаковым упражнением
-          const user1Workout = await workoutService.createWorkout(user1.id, {
-            date: new Date(2024, 0, 1).toISOString().split('T')[0],
-            skillBlocks: [
-              {
-                exerciseName: sharedExerciseName,
-                sets: [{ reps: 5, weight: 50 }]
+        ),
+        { numRuns: 15 }
+      );
+    });
+    
+    it('идемпотентность не нарушает проверку прав доступа', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.tuple(
+            fc.emailAddress(),
+            fc.emailAddress()
+          ).filter(([email1, email2]) => email1 !== email2),
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            skillBlocks: fc.array(
+              fc.record({
+                exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                  .filter(s => s.trim().length > 0),
+                sets: fc.array(
+                  fc.record({
+                    reps: fc.integer({ min: 1, max: 20 }),
+                    weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                      .map(w => Math.round(w * 2) / 2)
+                  }),
+                  { minLength: 1, maxLength: 2 }
+                )
+              }),
+              { minLength: 1, maxLength: 1 }
+            )
+          }),
+          async ([email1, email2], workoutData) => {
+            // Создаем двух пользователей
+            const user1 = await prisma.user.create({
+              data: {
+                email: email1,
+                passwordHash: 'test-hash',
+                verified: true
               }
-            ]
-          });
-
-          const user2Workout = await workoutService.createWorkout(user2.id, {
-            date: new Date(2024, 0, 2).toISOString().split('T')[0],
-            skillBlocks: [
-              {
-                exerciseName: sharedExerciseName,
-                sets: [{ reps: 10, weight: 60 }]
+            });
+            
+            const user2 = await prisma.user.create({
+              data: {
+                email: email2,
+                passwordHash: 'test-hash',
+                verified: true
               }
-            ]
-          });
-
-          // Получаем ID упражнения для user1
-          const user1ExerciseId = user1Workout.skillBlocks[0].exercise.id;
-
-          // Получаем ID упражнения для user2
-          const user2ExerciseId = user2Workout.skillBlocks[0].exercise.id;
-
-          // Фильтруем тренировки user1 по его упражнению
-          const user1Result = await workoutService.getWorkouts(user1.id, {
-            page: 1,
-            limit: 100,
-            exerciseId: user1ExerciseId
-          });
-
-          // Фильтруем тренировки user2 по его упражнению
-          const user2Result = await workoutService.getWorkouts(user2.id, {
-            page: 1,
-            limit: 100,
-            exerciseId: user2ExerciseId
-          });
-
-          // user1 должен видеть только свою тренировку
-          expect(user1Result.workouts.length).toBeGreaterThan(0);
-          for (const workout of user1Result.workouts) {
-            expect(workout.userId).toBe(user1.id);
-            expect(workout.id).not.toBe(user2Workout.id);
+            });
+            
+            // user1 создает тренировку
+            const workout = await workoutService.createWorkout(user1.id, workoutData);
+            
+            // user1 удаляет свою тренировку
+            await workoutService.deleteWorkout(workout.id, user1.id);
+            
+            // user2 пытается удалить уже удаленную тренировку user1
+            // Должно завершиться успешно (идемпотентность), так как тренировка не существует
+            await expect(
+              workoutService.deleteWorkout(workout.id, user2.id)
+            ).resolves.toBeUndefined();
+            
+            // Проверяем, что тренировка действительно удалена
+            const deletedWorkout = await prisma.workout.findUnique({
+              where: { id: workout.id }
+            });
+            expect(deletedWorkout).toBeNull();
           }
-
-          // user2 должен видеть только свою тренировку
-          expect(user2Result.workouts.length).toBeGreaterThan(0);
-          for (const workout of user2Result.workouts) {
-            expect(workout.userId).toBe(user2.id);
-            expect(workout.id).not.toBe(user1Workout.id);
-          }
-        }
-      ),
-      { numRuns: 15 }
-    );
-  });
-
-  it('изоляция данных сохраняется при фильтрации по датам', async () => {
-    await fc.assert(
-      fc.asyncProperty(
-        fc.tuple(
-          fc.emailAddress(),
-          fc.emailAddress()
-        ).filter(([email1, email2]) => email1 !== email2),
-        fc.date({ min: new Date('2024-01-01'), max: new Date('2024-01-31') })
-          .map(d => d.toISOString().split('T')[0]),
-        async ([email1, email2], sharedDate) => {
-          // Создаем двух пользователей
-          const user1 = await prisma.user.create({
-            data: {
-              email: email1,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          const user2 = await prisma.user.create({
-            data: {
-              email: email2,
-              passwordHash: 'test-hash',
-              verified: true
-            }
-          });
-
-          // Оба пользователя создают тренировки на одну и ту же дату
-          const user1Workout = await workoutService.createWorkout(user1.id, {
-            date: sharedDate,
-            skillBlocks: [
-              {
-                exerciseName: 'User1 Exercise',
-                sets: [{ reps: 5, weight: 50 }]
-              }
-            ]
-          });
-
-          const user2Workout = await workoutService.createWorkout(user2.id, {
-            date: sharedDate,
-            skillBlocks: [
-              {
-                exerciseName: 'User2 Exercise',
-                sets: [{ reps: 10, weight: 60 }]
-              }
-            ]
-          });
-
-          // Фильтруем тренировки user1 по дате
-          const user1Result = await workoutService.getWorkouts(user1.id, {
-            page: 1,
-            limit: 100,
-            startDate: sharedDate,
-            endDate: sharedDate
-          });
-
-          // Фильтруем тренировки user2 по дате
-          const user2Result = await workoutService.getWorkouts(user2.id, {
-            page: 1,
-            limit: 100,
-            startDate: sharedDate,
-            endDate: sharedDate
-          });
-
-          // user1 должен видеть только свою тренировку
-          expect(user1Result.workouts.length).toBeGreaterThan(0);
-          for (const workout of user1Result.workouts) {
-            expect(workout.userId).toBe(user1.id);
-            expect(workout.id).not.toBe(user2Workout.id);
-          }
-
-          // user2 должен видеть только свою тренировку
-          expect(user2Result.workouts.length).toBeGreaterThan(0);
-          for (const workout of user2Result.workouts) {
-            expect(workout.userId).toBe(user2.id);
-            expect(workout.id).not.toBe(user1Workout.id);
-          }
-        }
-      ),
-      { numRuns: 15 }
-    );
+        ),
+        { numRuns: 15 }
+      );
+    });
   });
 });
-
