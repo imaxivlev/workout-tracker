@@ -111,7 +111,7 @@
     - Возврат 200 OK
     - _Требования: 4.3_
 
-  - [~] 3.6 Создать app/api/auth/reset-password/confirm/route.ts
+  - [x] 3.6 Создать app/api/auth/reset-password/confirm/route.ts
     - POST endpoint для установки нового пароля
     - Проверка токена сброса
     - Хеширование нового пароля

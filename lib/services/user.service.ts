@@ -364,7 +364,7 @@ export class UserService {
    * 
    * @param token - Токен сброса пароля
    * @param newPassword - Новый пароль
-   * @returns true если сброс успешен, false если токен невалиден
+   * @returns true если сброс успешен, false если токен невалиден или истек
    * @throws Error если пароль невалиден
    * 
    * Требования: 4.4, 4.5
@@ -374,8 +374,42 @@ export class UserService {
     // Валидация нового пароля
     this.validatePassword(newPassword);
     
-    // TODO: Проверить токен в БД, обновить пароль, удалить токен (задача 3.6)
-    throw new Error('Метод resetPassword будет реализован в задаче 3.6');
+    // Поиск токена в базе данных
+    const resetToken = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      include: { user: true }
+    });
+    
+    // Токен не найден
+    if (!resetToken) {
+      return false;
+    }
+    
+    // Проверка срока действия токена (1 час)
+    const now = new Date();
+    if (resetToken.expiresAt < now) {
+      // Токен истек - удаляем его
+      await prisma.passwordResetToken.delete({
+        where: { id: resetToken.id }
+      });
+      return false;
+    }
+    
+    // Хеширование нового пароля
+    const newPasswordHash = await this.hashPassword(newPassword);
+    
+    // Токен валиден - обновляем пароль и удаляем токен (одноразовость)
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash: newPasswordHash }
+      }),
+      prisma.passwordResetToken.delete({
+        where: { id: resetToken.id }
+      })
+    ]);
+    
+    return true;
   }
   
   /**
