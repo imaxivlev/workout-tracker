@@ -37,7 +37,7 @@
   - _Требования: 5.1-5.9, 20.1-20.11_
   - _Примечание: Email Service и деплой будут настроены позже (задачи 16-17)_
 
-- [ ] 2. Реализация User Service и аутентификации
+- [x] 2. Реализация User Service и аутентификации
   - [x] 2.1 Создать lib/services/user.service.ts с классом UserService
     - Реализовать hashPassword() с bcrypt (cost factor 12)
     - Реализовать verifyPassword() для проверки хеша
@@ -74,7 +74,7 @@
     - **Свойство 25: Rate Limiting для auth endpoints**
     - **Валидирует: Требования 1.7, 17.1**
 
-- [ ] 3. Реализация Auth API Routes
+- [-] 3. Реализация Auth API Routes
   - [x] 3.1 Создать app/api/auth/register/route.ts
     - POST endpoint для регистрации пользователя
     - Валидация email и пароля с использованием Zod
@@ -92,13 +92,13 @@
     - Возврат 401 Unauthorized при неверных учетных данных
     - _Требования: 1.4, 1.6, 21.5-21.6_
 
-  - [-] 3.3 Создать app/api/auth/logout/route.ts
+  - [x] 3.3 Создать app/api/auth/logout/route.ts
     - POST endpoint для выхода из системы
     - Удаление JWT cookie
     - Возврат 200 OK
     - _Требования: 1.5_
 
-  - [~] 3.4 Создать app/api/auth/verify/route.ts
+  - [x] 3.4 Создать app/api/auth/verify/route.ts
     - GET endpoint для подтверждения email
     - Проверка токена верификации
     - Установка флага verified = true

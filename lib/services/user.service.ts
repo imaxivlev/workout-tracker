@@ -150,7 +150,7 @@ export class UserService {
    * @returns Объект с данными пользователя и токеном верификации
    * @throws Error если email уже используется или пароль невалиден
    * 
-   * Требования: 1.2, 2.1-2.4
+   * Требования: 1.2, 2.1-2.4, 4.1
    * Свойство 9: Уникальность email пользователей
    * Свойство 11: Уникальность хешей паролей с солью
    */
@@ -173,15 +173,32 @@ export class UserService {
     // Генерация токена верификации (32 байта случайных данных)
     const verificationToken = this.generateVerificationToken();
     
-    // Создание пользователя
-    const user = await prisma.user.create({
-      data: {
-        email: data.email,
-        passwordHash,
-        firstName: data.firstName || null,
-        lastName: data.lastName || null,
-        verified: false
-      }
+    // Создание пользователя и токена верификации в одной транзакции
+    const user = await prisma.$transaction(async (tx) => {
+      // Создание пользователя
+      const newUser = await tx.user.create({
+        data: {
+          email: data.email,
+          passwordHash,
+          firstName: data.firstName || null,
+          lastName: data.lastName || null,
+          verified: false
+        }
+      });
+      
+      // Создание токена верификации со сроком действия 1 час
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+      
+      await tx.verificationToken.create({
+        data: {
+          userId: newUser.id,
+          token: verificationToken,
+          expiresAt
+        }
+      });
+      
+      return newUser;
     });
     
     return {
@@ -258,17 +275,45 @@ export class UserService {
    * Подтверждение email
    * 
    * @param token - Токен верификации
-   * @returns true если верификация успешна, false если токен невалиден
+   * @returns true если верификация успешна, false если токен невалиден или истек
    * 
-   * Требования: 4.2
+   * Требования: 4.2, 4.5
+   * Свойство 23: Срок действия токенов верификации
    */
   async verifyEmail(token: string): Promise<boolean> {
-    // В реальной реализации токен должен храниться в отдельной таблице
-    // с привязкой к пользователю и сроком действия
-    // Для MVP упрощаем: токен не сохраняется, верификация происходит сразу
+    // Поиск токена в базе данных
+    const verificationToken = await prisma.verificationToken.findUnique({
+      where: { token },
+      include: { user: true }
+    });
     
-    // TODO: Реализовать хранение токенов в БД (задача 3.4)
-    throw new Error('Метод verifyEmail будет реализован в задаче 3.4');
+    // Токен не найден
+    if (!verificationToken) {
+      return false;
+    }
+    
+    // Проверка срока действия токена (1 час)
+    const now = new Date();
+    if (verificationToken.expiresAt < now) {
+      // Токен истек - удаляем его
+      await prisma.verificationToken.delete({
+        where: { id: verificationToken.id }
+      });
+      return false;
+    }
+    
+    // Токен валиден - обновляем статус пользователя и удаляем токен
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: verificationToken.userId },
+        data: { verified: true }
+      }),
+      prisma.verificationToken.delete({
+        where: { id: verificationToken.id }
+      })
+    ]);
+    
+    return true;
   }
   
   /**
