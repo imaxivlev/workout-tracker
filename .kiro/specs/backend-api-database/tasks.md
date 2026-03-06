@@ -105,7 +105,7 @@
     - Возврат 200 OK или 400 Bad Request при истекшем токене
     - _Требования: 4.2, 4.5_
 
-  - [-] 3.5 Создать app/api/auth/reset-password/route.ts
+  - [x] 3.5 Создать app/api/auth/reset-password/route.ts
     - POST endpoint для запроса сброса пароля
     - Генерация одноразового токена сброса (срок действия 1 час)
     - Возврат 200 OK
