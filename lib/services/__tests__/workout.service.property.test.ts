@@ -515,6 +515,220 @@ describe('WorkoutService - Property-Based Tests', () => {
   });
   
   /**
+   * Свойство 1: Атомарность транзакций создания тренировки
+   * 
+   * Для любой попытки создания тренировки, если транзакция начата и любой 
+   * шаг завершается ошибкой, то все изменения должны быть откачены; если 
+   * все шаги успешны, то все изменения должны быть зафиксированы.
+   * 
+   * **Validates: Requirements 7.2, 7.3**
+   */
+  describe('Свойство 1: Атомарность транзакций создания тренировки', () => {
+    it('успешная транзакция фиксирует все изменения', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.record({
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+              .map(d => d.toISOString().split('T')[0]),
+            comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
+            skillBlocks: fc.array(
+              fc.record({
+                exerciseName: fc.string({ minLength: 3, maxLength: 30 })
+                  .filter(s => s.trim().length > 0),
+                sets: fc.array(
+                  fc.record({
+                    reps: fc.integer({ min: 1, max: 20 }),
+                    weight: fc.float({ min: 0.5, max: 200, noNaN: true })
+                      .map(w => Math.round(w * 2) / 2) // Округление до 0.5
+                  }),
+                  { minLength: 1, maxLength: 3 }
+                )
+              }),
+              { minLength: 1, maxLength: 2 }
+            )
+          }),
+          async (email, workoutData) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Подсчитываем ожидаемое количество записей
+            const expectedSkillBlocks = workoutData.skillBlocks?.length || 0;
+            const expectedSkillSets = workoutData.skillBlocks?.reduce(
+              (sum, block) => sum + block.sets.length, 
+              0
+            ) || 0;
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, workoutData);
+            
+            // Проверяем, что тренировка создана
+            expect(workout).toBeDefined();
+            expect(workout.id).toBeDefined();
+            expect(workout.date).toBe(workoutData.date);
+            expect(workout.comment).toBe(workoutData.comment || null);
+            
+            // Проверяем, что все skill блоки созданы
+            const skillBlocks = await prisma.skillBlock.findMany({
+              where: { workoutId: workout.id },
+              include: { sets: true }
+            });
+            expect(skillBlocks.length).toBe(expectedSkillBlocks);
+            
+            // Проверяем, что все skill sets созданы
+            const totalSkillSets = skillBlocks.reduce(
+              (sum, block) => sum + block.sets.length,
+              0
+            );
+            expect(totalSkillSets).toBe(expectedSkillSets);
+            
+            // Проверяем, что упражнения резолвлены в справочник
+            const uniqueExerciseNames = new Set(
+              workoutData.skillBlocks?.map(b => b.exerciseName.trim()) || []
+            );
+            
+            for (const exerciseName of uniqueExerciseNames) {
+              const exercise = await prisma.exerciseDict.findFirst({
+                where: {
+                  name: {
+                    equals: exerciseName,
+                    mode: 'insensitive'
+                  },
+                  OR: [
+                    { isGlobal: true },
+                    { userId: user.id }
+                  ]
+                }
+              });
+              
+              expect(exercise).not.toBeNull();
+            }
+          }
+        ),
+        { numRuns: 10 }
+      );
+    });
+    
+    it('ошибка при резолве упражнения откатывает всю транзакцию', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          async (email) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Подсчитываем начальное количество записей
+            const initialWorkouts = await prisma.workout.count({
+              where: { userId: user.id }
+            });
+            const initialSkillBlocks = await prisma.skillBlock.count();
+            const initialSkillSets = await prisma.skillSet.count();
+            
+            // Создаем данные с пустым названием упражнения (вызовет ошибку)
+            const invalidWorkoutData = {
+              date: new Date().toISOString().split('T')[0],
+              skillBlocks: [
+                {
+                  exerciseName: '   ', // Пустое название после trim
+                  sets: [
+                    { reps: 5, weight: 50 }
+                  ]
+                }
+              ]
+            };
+            
+            // Попытка создать тренировку
+            try {
+              await workoutService.createWorkout(user.id, invalidWorkoutData);
+              expect.fail('Ожидалась ошибка при пустом названии упражнения');
+            } catch (error) {
+              expect(error).toBeDefined();
+            }
+            
+            // Проверяем, что транзакция откачена
+            const finalWorkouts = await prisma.workout.count({
+              where: { userId: user.id }
+            });
+            const finalSkillBlocks = await prisma.skillBlock.count();
+            const finalSkillSets = await prisma.skillSet.count();
+            
+            expect(finalWorkouts).toBe(initialWorkouts);
+            expect(finalSkillBlocks).toBe(initialSkillBlocks);
+            expect(finalSkillSets).toBe(initialSkillSets);
+          }
+        ),
+        { numRuns: 10 }
+      );
+    });
+    
+    it('успешная транзакция с множественными блоками создает все записи атомарно', async () => {
+      await fc.assert(
+        fc.asyncProperty(
+          fc.emailAddress(),
+          fc.integer({ min: 2, max: 3 }), // Количество skill блоков
+          async (email, skillBlocksCount) => {
+            // Создаем тестового пользователя
+            const user = await prisma.user.create({
+              data: {
+                email,
+                passwordHash: 'test-hash',
+                verified: true
+              }
+            });
+            
+            // Создаем данные с множественными блоками
+            const skillBlocks = [];
+            for (let i = 0; i < skillBlocksCount; i++) {
+              skillBlocks.push({
+                exerciseName: `Skill Exercise ${i}`,
+                sets: [
+                  { reps: 5, weight: 50 + i * 5 },
+                  { reps: 5, weight: 55 + i * 5 }
+                ]
+              });
+            }
+            
+            const workoutData = {
+              date: new Date().toISOString().split('T')[0],
+              skillBlocks
+            };
+            
+            // Создаем тренировку
+            const workout = await workoutService.createWorkout(user.id, workoutData);
+            
+            // Проверяем, что ВСЕ блоки созданы
+            const createdSkillBlocks = await prisma.skillBlock.findMany({
+              where: { workoutId: workout.id },
+              include: { sets: true }
+            });
+            expect(createdSkillBlocks.length).toBe(skillBlocksCount);
+            
+            // Проверяем, что все sets созданы
+            const totalSets = createdSkillBlocks.reduce(
+              (sum, block) => sum + block.sets.length,
+              0
+            );
+            expect(totalSets).toBe(skillBlocksCount * 2); // По 2 сета на блок
+          }
+        ),
+        { numRuns: 10 }
+      );
+    });
+  });
+  
+  /**
    * Дополнительные свойства и граничные случаи
    */
   describe('Дополнительные свойства и граничные случаи', () => {

@@ -1,0 +1,10 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.18 [39m[90mD:/Program Files/projects-kiro/main-project[39m
+
+ [2m[90m↓[39m[22m lib/services/__tests__/workout.service.property.test.ts [2m([22m[2m15 tests[22m[2m | [22m[33m15 skipped[39m[2m)[22m
+
+[2m Test Files [22m [33m1 skipped[39m[90m (1)[39m
+[2m      Tests [22m [33m15 skipped[39m[90m (15)[39m
+[2m   Start at [22m 15:28:43
+[2m   Duration [22m 632ms[2m (transform 100ms, setup 0ms, import 423ms, tests 0ms, environment 0ms)[22m
+

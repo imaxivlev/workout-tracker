@@ -283,6 +283,168 @@ export class WorkoutService {
   }
 
   /**
+   * Получение списка тренировок с пагинацией и фильтрацией
+   * 
+   * Алгоритм:
+   * 1. Фильтрация по userId (изоляция данных)
+   * 2. Применение фильтров (диапазон дат, упражнение)
+   * 3. Сортировка по дате в порядке убывания
+   * 4. Пагинация с параметрами page и limit
+   * 5. Eager loading всех вложенных данных
+   * 
+   * @param userId - ID пользователя
+   * @param options - Параметры пагинации и фильтрации
+   * @returns Список тренировок с метаданными пагинации
+   * 
+   * Требования: 9.1-9.6
+   * Свойство 2: Изоляция данных пользователей
+   */
+  async getWorkouts(
+    userId: string,
+    options: {
+      page: number;
+      limit: number;
+      startDate?: string;
+      endDate?: string;
+      exerciseId?: string;
+    }
+  ): Promise<{
+    workouts: WorkoutResponse[];
+    total: number;
+    hasMore: boolean;
+  }> {
+    const { page, limit, startDate, endDate, exerciseId } = options;
+
+    // Построение условий фильтрации
+    const where: any = {
+      userId: userId // Требование 9.1: Изоляция данных пользователей
+    };
+
+    // Требование 9.4: Фильтрация по диапазону дат
+    if (startDate || endDate) {
+      where.date = {};
+      if (startDate) {
+        where.date.gte = startDate;
+      }
+      if (endDate) {
+        where.date.lte = endDate;
+      }
+    }
+
+    // Требование 9.5: Фильтрация по упражнению
+    if (exerciseId) {
+      where.OR = [
+        {
+          skillBlocks: {
+            some: {
+              exerciseDictId: exerciseId
+            }
+          }
+        },
+        {
+          wodBlocks: {
+            some: {
+              exercises: {
+                some: {
+                  exerciseDictId: exerciseId
+                }
+              }
+            }
+          }
+        }
+      ];
+    }
+
+    // Подсчет общего количества тренировок
+    const total = await prisma.workout.count({ where });
+
+    // Требование 9.2, 9.3: Пагинация
+    const skip = (page - 1) * limit;
+
+    // Требование 9.6: Сортировка по дате в порядке убывания
+    // Eager loading всех вложенных данных
+    const workouts = await prisma.workout.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: {
+        date: 'desc'
+      },
+      include: {
+        skillBlocks: {
+          include: {
+            exercise: true,
+            sets: {
+              orderBy: { setNumber: 'asc' }
+            }
+          }
+        },
+        wodBlocks: {
+          include: {
+            exercises: {
+              include: { exercise: true },
+              orderBy: { orderIndex: 'asc' }
+            }
+          }
+        }
+      }
+    });
+
+    // Преобразование в формат ответа
+    const workoutResponses: WorkoutResponse[] = workouts.map(workout => ({
+      id: workout.id,
+      userId: workout.userId,
+      date: workout.date,
+      comment: workout.comment,
+      skillBlocks: workout.skillBlocks.map(sb => ({
+        id: sb.id,
+        exercise: {
+          id: sb.exercise.id,
+          name: sb.exercise.name
+        },
+        sets: sb.sets.map(s => ({
+          id: s.id,
+          setNumber: s.setNumber,
+          reps: s.reps,
+          weight: Number(s.weight)
+        }))
+      })),
+      wodBlocks: workout.wodBlocks.map(wb => ({
+        id: wb.id,
+        wodType: wb.wodType,
+        level: wb.level,
+        timeCapSeconds: wb.timeCapSeconds,
+        isLadder: wb.isLadder,
+        resultType: wb.resultType,
+        resultDisplay: wb.resultDisplay,
+        resultSeconds: wb.resultSeconds,
+        resultTotalReps: wb.resultTotalReps,
+        exercises: wb.exercises.map(e => ({
+          id: e.id,
+          exercise: {
+            id: e.exercise.id,
+            name: e.exercise.name
+          },
+          reps: e.reps,
+          weight: e.weight ? Number(e.weight) : null,
+          orderIndex: e.orderIndex
+        }))
+      })),
+      createdAt: workout.createdAt.toISOString(),
+      updatedAt: workout.updatedAt.toISOString()
+    }));
+
+    // Проверка наличия следующей страницы
+    const hasMore = skip + workouts.length < total;
+
+    return {
+      workouts: workoutResponses,
+      total,
+      hasMore
+    };
+  }
+
+  /**
    * Загрузка тренировки со всеми вложенными данными
    * 
    * @param workoutId - ID тренировки
