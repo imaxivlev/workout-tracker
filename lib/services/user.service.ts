@@ -462,4 +462,101 @@ export class UserService {
       where: { id: userId }
     });
   }
+  
+  /**
+   * Запрос изменения email
+   * 
+   * @param userId - ID пользователя
+   * @param newEmail - Новый email адрес
+   * @returns Токен подтверждения для нового email
+   * @throws Error если новый email уже используется
+   * 
+   * Требования: 23.3
+   */
+  async requestEmailChange(userId: string, newEmail: string): Promise<string> {
+    // Проверка, что новый email не используется другим пользователем
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+    
+    if (existingUser && existingUser.id !== userId) {
+      throw new Error('Пользователь с таким email уже существует');
+    }
+    
+    // Генерация токена подтверждения (32 байта случайных данных)
+    const verificationToken = this.generateVerificationToken();
+    
+    // Удаление старых токенов верификации для этого пользователя
+    await prisma.verificationToken.deleteMany({
+      where: { userId }
+    });
+    
+    // Создание нового токена верификации со сроком действия 1 час
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+    
+    await prisma.verificationToken.create({
+      data: {
+        userId,
+        token: verificationToken,
+        expiresAt
+      }
+    });
+    
+    return verificationToken;
+  }
+  
+  /**
+   * Подтверждение изменения email
+   * 
+   * @param token - Токен подтверждения
+   * @param newEmail - Новый email адрес
+   * @returns true если изменение успешно, false если токен невалиден или истек
+   * 
+   * Требования: 23.3
+   */
+  async confirmEmailChange(token: string, newEmail: string): Promise<boolean> {
+    // Поиск токена в базе данных
+    const verificationToken = await prisma.verificationToken.findUnique({
+      where: { token },
+      include: { user: true }
+    });
+    
+    // Токен не найден
+    if (!verificationToken) {
+      return false;
+    }
+    
+    // Проверка срока действия токена (1 час)
+    const now = new Date();
+    if (verificationToken.expiresAt < now) {
+      // Токен истек - удаляем его
+      await prisma.verificationToken.delete({
+        where: { id: verificationToken.id }
+      });
+      return false;
+    }
+    
+    // Проверка, что новый email не занят другим пользователем
+    const existingUser = await prisma.user.findUnique({
+      where: { email: newEmail }
+    });
+    
+    if (existingUser && existingUser.id !== verificationToken.userId) {
+      return false;
+    }
+    
+    // Токен валиден - обновляем email и удаляем токен
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: verificationToken.userId },
+        data: { email: newEmail }
+      }),
+      prisma.verificationToken.delete({
+        where: { id: verificationToken.id }
+      })
+    ]);
+    
+    return true;
+  }
 }
