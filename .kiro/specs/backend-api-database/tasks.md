@@ -496,37 +496,49 @@
     - _Требования: 4.1_
     - **Действие пользователя:** Предоставить SMTP credentials
 
-  - [~] 16.3 Настроить Node.js хостинг для staging
-    - Зайти в панель управления Timeweb → Сайты → Создать сайт
-    - Имя: `workout-tracker-staging` или использовать поддомен `staging.yourdomain.com`
-    - Выбрать "Node.js приложение"
-    - Выбрать версию Node.js 18 или выше
-    - Настроить Git деплой (подключить GitHub репозиторий, ветка `master` или `staging`)
-    - Указать команду запуска: npm run build && npm start
-    - Указать порт: 3000 (или тот, который предоставит Timeweb)
+  - [~] 16.3 Настроить Node.js через SSH для staging
+    - Подключиться к серверу Timeweb по SSH
+    - Скачать и установить Node.js 18 LTS:
+      ```bash
+      wget https://nodejs.org/dist/v18.19.0/node-v18.19.0-linux-x64.tar.gz
+      tar xf node-v18.19.0-linux-x64.tar.gz
+      mv node-v18.19.0-linux-x64 nodejs
+      ```
+    - Добавить алиасы в ~/.bash_profile
+    - Установить PM2 глобально: `npm install -g pm2`
+    - Клонировать репозиторий: `git clone https://github.com/imaxivlev/workout-tracker.git ~/staging`
+    - Установить зависимости: `cd ~/staging && npm install`
+    - Собрать проект: `npm run build`
     - _Требования: 24.1_
-    - **Действие пользователя:** Создать staging хостинг и подключить репозиторий
+    - **Действие пользователя:** Выполнить команды через SSH
 
-  - [~] 16.4 Настроить переменные окружения для staging
-    - В панели управления Node.js приложением найти раздел "Переменные окружения"
-    - Добавить следующие переменные:
+  - [~] 16.4 Настроить переменные окружения и запустить staging
+    - Создать файл .env в ~/staging:
+      ```bash
+      cd ~/staging
+      nano .env
+      ```
+    - Добавить переменные:
       - DATABASE_URL (staging БД из шага 16.1)
       - JWT_SECRET (сгенерировать 256-bit случайную строку)
-      - SMTP_HOST (из шага 16.2)
-      - SMTP_PORT (из шага 16.2)
-      - SMTP_USER (из шага 16.2)
-      - SMTP_PASSWORD (из шага 16.2)
-      - NEXT_PUBLIC_APP_URL (URL staging приложения, например https://staging.yourdomain.com)
+      - SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD (из шага 16.2)
+      - NEXT_PUBLIC_APP_URL (URL staging приложения)
       - NODE_ENV=production
+    - Выполнить миграции: `npx prisma migrate deploy`
+    - Выполнить seed: `npx prisma db seed`
+    - Запустить через PM2: `pm2 start npm --name "workout-tracker-staging" -- start -- -p 3001`
+    - Сохранить PM2: `pm2 save && pm2 startup`
     - _Требования: 24.2_
-    - **Действие пользователя:** Добавить переменные окружения
+    - **Действие пользователя:** Создать .env и запустить приложение
 
-  - [~] 16.5 Выполнить миграции БД на staging
-    - Подключиться к серверу Timeweb через SSH (если доступно) или использовать панель управления
-    - Выполнить команду: npx prisma migrate deploy
-    - Выполнить seed скрипт: npx prisma db seed
-    - Проверить, что таблицы созданы и справочник упражнений загружен
-    - _Требования: 5.1-5.9_
+  - [~] 16.5 Настроить домен для staging
+    - В панели Timeweb → Домены → Добавить поддомен
+    - Создать поддомен: `staging.yourdomain.ru`
+    - Настроить проксирование на порт 3001
+    - Проверить SSL сертификат (автоматически через Let's Encrypt)
+    - Открыть https://staging.yourdomain.ru в браузере
+    - _Требования: 24.4_
+    - **Действие пользователя:** Настроить домен в панели Timeweb
 
   - [~] 16.6 Протестировать staging окружение
     - Открыть staging URL в браузере
@@ -540,18 +552,21 @@
 
   - [~] 16.7 Настроить Production окружение (после успешного тестирования staging)
     - Создать отдельную MySQL БД: `workout_tracker_production`
-    - Создать отдельный Node.js хостинг для production
-    - Использовать production домен (например, `app.yourdomain.com` или основной домен)
-    - Настроить переменные окружения с production DATABASE_URL
+    - Клонировать репозиторий в ~/production
+    - Установить зависимости и собрать проект
+    - Создать .env с production DATABASE_URL
     - Выполнить миграции на production БД
-    - Настроить SSL сертификат (автоматически через Let's Encrypt)
-    - _Требования: 24.4_
+    - Запустить через PM2 на порту 3000: `pm2 start npm --name "workout-tracker-production" -- start`
+    - Настроить production домен (например, `app.yourdomain.ru`)
+    - Настроить SSL сертификат
+    - _Требования: 24.4, 5.1-5.9_
 
   - [~] 16.8 Настроить логирование и мониторинг
-    - В панели Timeweb проверить доступность логов приложения
-    - Настроить уведомления о критичных ошибках (если доступно)
-    - Проверить мониторинг uptime в панели управления
-    - Настроить алерты для staging и production окружений
+    - Проверить логи через PM2: `pm2 logs workout-tracker-staging`
+    - Настроить PM2 для автозапуска при перезагрузке сервера
+    - Проверить мониторинг через `pm2 monit`
+    - Настроить алерты для staging и production окружений (если доступно в Timeweb)
+    - Создать скрипт для автоматического обновления через Git webhook или cron
     - _Требования: 24.3_
 
 - [ ] 17. Интеграция фронтенда с API
