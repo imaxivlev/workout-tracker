@@ -1,5 +1,13 @@
 # Деплой Next.js на Timeweb через SSH
 
+## Обзор
+
+Этот документ содержит общую информацию о деплое Next.js приложения на Timeweb.
+
+**Для детальных инструкций смотрите:**
+- `TIMEWEB_STAGING_SETUP.md` - Настройка staging окружения (test.crossfitapp.ru)
+- `TIMEWEB_PRODUCTION_SETUP.md` - Настройка production окружения (crossfitapp.ru)
+
 ## Пошаговая инструкция
 
 Timeweb предоставляет виртуальный хостинг с SSH доступом. Настроим Next.js приложение вручную.
