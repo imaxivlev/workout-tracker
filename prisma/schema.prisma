@@ -5,17 +5,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  firstName     String?   @map("first_name")
-  lastName      String?   @map("last_name")
-  avatar        String?
+  id            String    @id @default(uuid()) @db.VarChar(36)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar(255)
+  firstName     String?   @map("first_name") @db.VarChar(100)
+  lastName      String?   @map("last_name") @db.VarChar(100)
+  avatar        String?   @db.VarChar(500)
   verified      Boolean   @default(false)
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -30,9 +30,9 @@ model User {
 }
 
 model VerificationToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  token     String   @unique @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   
@@ -44,9 +44,9 @@ model VerificationToken {
 }
 
 model PasswordResetToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  token     String   @unique
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  token     String   @unique @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
   
@@ -58,10 +58,10 @@ model PasswordResetToken {
 }
 
 model ExerciseDict {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  name      String   @db.VarChar(255)
   isGlobal  Boolean  @default(false) @map("is_global")
-  userId    String?  @map("user_id") @db.Uuid
+  userId    String?  @map("user_id") @db.VarChar(36)
   createdAt DateTime @default(now()) @map("created_at")
   
   user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -75,10 +75,10 @@ model ExerciseDict {
 }
 
 model Workout {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
-  date      String   // YYYY-MM-DD format
-  comment   String?
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  date      String   @db.VarChar(10) // YYYY-MM-DD format
+  comment   String?  @db.Text
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   
@@ -92,9 +92,9 @@ model Workout {
 }
 
 model SkillBlock {
-  id             String   @id @default(uuid()) @db.Uuid
-  workoutId      String   @map("workout_id") @db.Uuid
-  exerciseDictId String   @map("exercise_dict_id") @db.Uuid
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  workoutId      String   @map("workout_id") @db.VarChar(36)
+  exerciseDictId String   @map("exercise_dict_id") @db.VarChar(36)
   createdAt      DateTime @default(now()) @map("created_at")
   
   workout      Workout        @relation(fields: [workoutId], references: [id], onDelete: Cascade)
@@ -107,8 +107,8 @@ model SkillBlock {
 }
 
 model SkillSet {
-  id           String  @id @default(uuid()) @db.Uuid
-  skillBlockId String  @map("skill_block_id") @db.Uuid
+  id           String  @id @default(uuid()) @db.VarChar(36)
+  skillBlockId String  @map("skill_block_id") @db.VarChar(36)
   setNumber    Int     @map("set_number")
   reps         Int
   weight       Decimal @db.Decimal(6, 2) // Max 9999.99 kg
@@ -144,14 +144,14 @@ enum ResultType {
 }
 
 model WodBlock {
-  id               String     @id @default(uuid()) @db.Uuid
-  workoutId        String     @map("workout_id") @db.Uuid
+  id               String     @id @default(uuid()) @db.VarChar(36)
+  workoutId        String     @map("workout_id") @db.VarChar(36)
   wodType          WodType    @map("wod_type")
   level            WodLevel
   timeCapSeconds   Int?       @map("time_cap_seconds")
   isLadder         Boolean    @default(false) @map("is_ladder")
   resultType       ResultType @map("result_type")
-  resultDisplay    String     @map("result_display") // "15:30" or "5+12"
+  resultDisplay    String     @map("result_display") @db.VarChar(50) // "15:30" or "5+12"
   resultSeconds    Int?       @map("result_seconds") // For TIME type
   resultTotalReps  Int?       @map("result_total_reps") // For AMRAP type
   createdAt        DateTime   @default(now()) @map("created_at")
@@ -164,9 +164,9 @@ model WodBlock {
 }
 
 model WodExercise {
-  id             String  @id @default(uuid()) @db.Uuid
-  wodBlockId     String  @map("wod_block_id") @db.Uuid
-  exerciseDictId String  @map("exercise_dict_id") @db.Uuid
+  id             String  @id @default(uuid()) @db.VarChar(36)
+  wodBlockId     String  @map("wod_block_id") @db.VarChar(36)
+  exerciseDictId String  @map("exercise_dict_id") @db.VarChar(36)
   reps           Int
   weight         Decimal? @db.Decimal(6, 2)
   orderIndex     Int     @map("order_index") // For maintaining exercise order
