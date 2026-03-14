@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const { user } = authResult;
 
     // Получение метрик Dashboard
-    const dashboard = await statisticsService.getDashboard(user.userId);
+    const dashboard = await statisticsService.getDashboard(user.id);
 
     return NextResponse.json(dashboard, { status: 200 });
   } catch (error) {

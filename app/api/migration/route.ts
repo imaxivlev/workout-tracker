@@ -24,14 +24,14 @@ export async function POST(request: NextRequest) {
 
     // Rate limiting (1 запрос за 5 минут)
     const rateLimitResult = await rateLimit(
-      `migration:${user.userId}`,
+      `migration:${user.id}`,
       { windowMs: 5 * 60 * 1000, maxRequests: 1 }
     );
 
     if (!rateLimitResult) {
       return NextResponse.json(
         { error: 'Too many requests. Please try again later.' },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': '300', // 5 минут
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Миграция тренировок
-    const result = await migrationService.migrateWorkouts(user.userId, workouts);
+    const result = await migrationService.migrateWorkouts(user.id, workouts);
 
     return NextResponse.json(result, { status: 200 });
   } catch (error) {

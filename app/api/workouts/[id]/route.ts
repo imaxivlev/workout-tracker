@@ -18,12 +18,12 @@ import { rateLimit, RATE_LIMIT_CONFIGS } from '@/lib/auth/rate-limiter';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Шаг 1: Аутентификация пользователя
     const authResult = await authenticateRequest(request);
-    
+
     if ('error' in authResult) {
       return NextResponse.json(
         {
@@ -33,12 +33,12 @@ export async function GET(
         { status: 401 }
       );
     }
-    
+
     const { user } = authResult;
-    
+
     // Шаг 2: Rate limiting (100 запросов за минуту)
     const isRateLimited = await rateLimit(user.id, RATE_LIMIT_CONFIGS.api);
-    
+
     if (isRateLimited) {
       return NextResponse.json(
         {
@@ -53,16 +53,16 @@ export async function GET(
         }
       );
     }
-    
+
     // Шаг 3: Получение ID тренировки из параметров маршрута
-    const workoutId = params.id;
-    
+    const { id: workoutId } = await params;
+
     // Шаг 4: Получение тренировки через WorkoutService
     const workoutService = new WorkoutService();
-    
+
     try {
       const workout = await workoutService.getWorkoutById(workoutId, user.id);
-      
+
       // Требование 10.3: Возврат 404 Not Found для несуществующей тренировки
       if (!workout) {
         return NextResponse.json(
@@ -73,7 +73,7 @@ export async function GET(
           { status: 404 }
         );
       }
-      
+
       // Требование 10.1: Возврат полного объекта со всеми вложенными блоками
       return NextResponse.json(
         {
@@ -81,7 +81,7 @@ export async function GET(
         },
         { status: 200 }
       );
-      
+
     } catch (error) {
       // Требование 10.2: Обработка ошибки доступа (403 Forbidden)
       if (error instanceof Error && error.message === 'FORBIDDEN') {
@@ -93,14 +93,14 @@ export async function GET(
           { status: 403 }
         );
       }
-      
+
       throw error;
     }
-    
+
   } catch (error) {
     // Логирование ошибки
     console.error('Ошибка при получении тренировки:', error);
-    
+
     // Возврат 500 Internal Server Error
     return NextResponse.json(
       {
@@ -126,12 +126,12 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Шаг 1: Аутентификация пользователя
     const authResult = await authenticateRequest(request);
-    
+
     if ('error' in authResult) {
       return NextResponse.json(
         {
@@ -141,12 +141,12 @@ export async function PATCH(
         { status: 401 }
       );
     }
-    
+
     const { user } = authResult;
-    
+
     // Шаг 2: Rate limiting (100 запросов за минуту)
     const isRateLimited = await rateLimit(user.id, RATE_LIMIT_CONFIGS.api);
-    
+
     if (isRateLimited) {
       return NextResponse.json(
         {
@@ -161,16 +161,16 @@ export async function PATCH(
         }
       );
     }
-    
+
     // Шаг 3: Получение ID тренировки из параметров маршрута
-    const workoutId = params.id;
-    
+    const { id: workoutId } = await params;
+
     // Шаг 4: Парсинг тела запроса
     const body = await request.json();
-    
+
     // Шаг 5: Валидация данных с помощью Zod (используем updateWorkoutSchema)
     const validationResult = updateWorkoutSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -184,15 +184,15 @@ export async function PATCH(
         { status: 400 }
       );
     }
-    
+
     const updateData = validationResult.data;
-    
+
     // Шаг 6: Обновление тренировки через WorkoutService
     const workoutService = new WorkoutService();
-    
+
     try {
       const workout = await workoutService.updateWorkout(workoutId, user.id, updateData);
-      
+
       // Требование 10.4: Возврат обновленного объекта
       return NextResponse.json(
         {
@@ -201,7 +201,7 @@ export async function PATCH(
         },
         { status: 200 }
       );
-      
+
     } catch (error) {
       // Обработка ошибок от WorkoutService
       if (error instanceof Error) {
@@ -215,7 +215,7 @@ export async function PATCH(
             { status: 403 }
           );
         }
-        
+
         // Требование 10.3: Обработка 404 Not Found
         if (error.message === 'NOT_FOUND') {
           return NextResponse.json(
@@ -226,7 +226,7 @@ export async function PATCH(
             { status: 404 }
           );
         }
-        
+
         // Проверка на ошибку валидации упражнения
         if (error.message.includes('Название упражнения')) {
           return NextResponse.json(
@@ -238,14 +238,14 @@ export async function PATCH(
           );
         }
       }
-      
+
       throw error;
     }
-    
+
   } catch (error) {
     // Логирование ошибки
     console.error('Ошибка при обновлении тренировки:', error);
-    
+
     // Возврат 500 Internal Server Error
     return NextResponse.json(
       {
@@ -272,12 +272,12 @@ export async function PATCH(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Шаг 1: Аутентификация пользователя
     const authResult = await authenticateRequest(request);
-    
+
     if ('error' in authResult) {
       return NextResponse.json(
         {
@@ -287,12 +287,12 @@ export async function DELETE(
         { status: 401 }
       );
     }
-    
+
     const { user } = authResult;
-    
+
     // Шаг 2: Rate limiting (100 запросов за минуту)
     const isRateLimited = await rateLimit(user.id, RATE_LIMIT_CONFIGS.api);
-    
+
     if (isRateLimited) {
       return NextResponse.json(
         {
@@ -307,16 +307,16 @@ export async function DELETE(
         }
       );
     }
-    
+
     // Шаг 3: Получение ID тренировки из параметров маршрута
-    const workoutId = params.id;
-    
+    const { id: workoutId } = await params;
+
     // Шаг 4: Удаление тренировки через WorkoutService
     const workoutService = new WorkoutService();
-    
+
     try {
       await workoutService.deleteWorkout(workoutId, user.id);
-      
+
       // Требование 10.5, 10.6: Возврат 200 OK (идемпотентность)
       return NextResponse.json(
         {
@@ -324,7 +324,7 @@ export async function DELETE(
         },
         { status: 200 }
       );
-      
+
     } catch (error) {
       // Требование 10.2: Обработка ошибки доступа (403 Forbidden)
       if (error instanceof Error && error.message === 'FORBIDDEN') {
@@ -336,14 +336,14 @@ export async function DELETE(
           { status: 403 }
         );
       }
-      
+
       throw error;
     }
-    
+
   } catch (error) {
     // Логирование ошибки
     console.error('Ошибка при удалении тренировки:', error);
-    
+
     // Возврат 500 Internal Server Error
     return NextResponse.json(
       {

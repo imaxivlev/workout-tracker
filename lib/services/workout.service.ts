@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ResultType } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -32,42 +32,40 @@ export class WorkoutService {
   async resolveExerciseId(exerciseName: string, userId: string): Promise<string> {
     // Нормализация названия для поиска (trim)
     const normalizedName = exerciseName.trim();
-    
+
     if (!normalizedName) {
       throw new Error('Название упражнения не может быть пустым');
     }
-    
+
     // Шаг 1: Поиск в глобальном справочнике (case-insensitive)
     const globalExercise = await prisma.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName,
-          mode: 'insensitive'
+          equals: normalizedName
         },
         isGlobal: true
       }
     });
-    
+
     if (globalExercise) {
       return globalExercise.id;
     }
-    
+
     // Шаг 2: Поиск в пользовательских упражнениях (case-insensitive)
     const userExercise = await prisma.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName,
-          mode: 'insensitive'
+          equals: normalizedName
         },
         userId: userId,
         isGlobal: false
       }
     });
-    
+
     if (userExercise) {
       return userExercise.id;
     }
-    
+
     // Шаг 3: Создание нового пользовательского упражнения
     const newExercise = await prisma.exerciseDict.create({
       data: {
@@ -76,7 +74,7 @@ export class WorkoutService {
         userId: userId
       }
     });
-    
+
     return newExercise.id;
   }
 
@@ -192,7 +190,7 @@ export class WorkoutService {
 
       // Загрузка полного объекта с вложенными данными
       const fullWorkout = await this.loadWorkoutWithRelations(result);
-      
+
       return fullWorkout;
     } catch (error) {
       // Транзакция автоматически откатывается при ошибке
@@ -214,42 +212,40 @@ export class WorkoutService {
     userId: string
   ): Promise<string> {
     const normalizedName = exerciseName.trim();
-    
+
     if (!normalizedName) {
       throw new Error('Название упражнения не может быть пустым');
     }
-    
+
     // Поиск в глобальном справочнике
     const globalExercise = await tx.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName,
-          mode: 'insensitive'
+          equals: normalizedName
         },
         isGlobal: true
       }
     });
-    
+
     if (globalExercise) {
       return globalExercise.id;
     }
-    
+
     // Поиск в пользовательских упражнениях
     const userExercise = await tx.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName,
-          mode: 'insensitive'
+          equals: normalizedName
         },
         userId: userId,
         isGlobal: false
       }
     });
-    
+
     if (userExercise) {
       return userExercise.id;
     }
-    
+
     // Создание нового пользовательского упражнения
     const newExercise = await tx.exerciseDict.create({
       data: {
@@ -258,7 +254,7 @@ export class WorkoutService {
         userId: userId
       }
     });
-    
+
     return newExercise.id;
   }
 
@@ -268,17 +264,17 @@ export class WorkoutService {
    * @param wodType - Тип WOD комплекса
    * @returns Тип результата
    */
-  private determineResultType(wodType: string): string {
+  private determineResultType(wodType: string): ResultType {
     switch (wodType) {
       case 'FOR_TIME':
-        return 'TIME';
+        return ResultType.TIME;
       case 'AMRAP':
-        return 'REPS';
+        return ResultType.REPS;
       case 'EMOM':
       case 'TABATA':
-        return 'TIME';
+        return ResultType.TIME;
       default:
-        return 'TIME';
+        return ResultType.TIME;
     }
   }
 

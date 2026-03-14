@@ -21,18 +21,18 @@ export function getClientIdentifier(request: NextRequest, userId?: string): stri
   // Извлекаем IP адрес
   const forwardedFor = request.headers.get('x-forwarded-for')
   const realIp = request.headers.get('x-real-ip')
-  
+
   if (forwardedFor) {
     // X-Forwarded-For может содержать несколько IP через запятую
     return `ip:${forwardedFor.split(',')[0].trim()}`
   }
-  
+
   if (realIp) {
     return `ip:${realIp}`
   }
 
-  // Fallback на IP из request (для локальной разработки)
-  return `ip:${request.ip || 'unknown'}`
+  // Fallback если заголовков нет
+  return `ip:unknown`
 }
 
 /**
@@ -55,7 +55,7 @@ export async function applyRateLimit(
 
   if (isLimited) {
     const info = getRateLimitInfo(identifier)
-    
+
     const response = NextResponse.json(
       {
         error: 'Too Many Requests',

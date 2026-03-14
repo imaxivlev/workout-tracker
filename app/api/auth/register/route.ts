@@ -31,20 +31,20 @@ const registerSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Получаем IP адрес для rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-    
+    const ip = request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+
     // Проверяем rate limit (5 попыток за 15 минут)
     const isRateLimited = await rateLimit(ip, RATE_LIMIT_CONFIGS.auth);
-    
+
     if (isRateLimited) {
       return NextResponse.json(
-        { 
+        {
           error: 'Слишком много попыток регистрации. Попробуйте позже.',
           code: 'RATE_LIMIT_EXCEEDED'
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': '900' // 15 минут в секундах
@@ -52,18 +52,18 @@ export async function POST(request: NextRequest) {
         }
       );
     }
-    
+
     // Парсим тело запроса
     const body = await request.json();
-    
+
     // Валидация данных с помощью Zod
     const validationResult = registerSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
           error: 'Ошибка валидации данных',
-          details: validationResult.error.errors.map(err => ({
+          details: validationResult.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -71,12 +71,12 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const { email, password, firstName, lastName } = validationResult.data;
-    
+
     // Создаем пользователя через UserService
     const userService = new UserService();
-    
+
     try {
       const result = await userService.register({
         email,
@@ -84,10 +84,10 @@ export async function POST(request: NextRequest) {
         firstName,
         lastName
       });
-      
+
       // TODO: Отправить email с подтверждением (задача 4)
       // await emailService.sendVerificationEmail(email, result.verificationToken);
-      
+
       // Возвращаем данные пользователя (без токена верификации)
       return NextResponse.json(
         {
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
         },
         { status: 201 }
       );
-      
+
     } catch (error) {
       // Обработка ошибок от UserService
       if (error instanceof Error) {
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
             { status: 409 } // Conflict
           );
         }
-        
+
         // Проверяем, является ли это ошибкой валидации пароля
         if (error.message.includes('Пароль')) {
           return NextResponse.json(
@@ -122,15 +122,15 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
+
       // Неизвестная ошибка
       throw error;
     }
-    
+
   } catch (error) {
     // Логируем ошибку для отладки
     console.error('Ошибка при регистрации пользователя:', error);
-    
+
     // Возвращаем общую ошибку без деталей
     return NextResponse.json(
       {

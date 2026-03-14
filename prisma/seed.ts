@@ -26,20 +26,23 @@ async function main() {
 
   // Создание глобальных упражнений
   for (const exerciseName of globalExercises) {
-    await prisma.exerciseDict.upsert({
+    const existing = await prisma.exerciseDict.findFirst({
       where: {
-        name_userId: {
-          name: exerciseName,
-          userId: null,
-        },
-      },
-      update: {},
-      create: {
         name: exerciseName,
         isGlobal: true,
         userId: null,
       },
     });
+
+    if (!existing) {
+      await prisma.exerciseDict.create({
+        data: {
+          name: exerciseName,
+          isGlobal: true,
+          userId: null,
+        },
+      });
+    }
   }
 
   console.log(`✓ Создано ${globalExercises.length} глобальных упражнений`);

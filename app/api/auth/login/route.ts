@@ -24,20 +24,20 @@ const loginSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // Получаем IP адрес для rate limiting
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('x-real-ip') || 
-               'unknown';
-    
+    const ip = request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      'unknown';
+
     // Проверяем rate limit (5 попыток за 15 минут)
     const isRateLimited = await rateLimit(ip, RATE_LIMIT_CONFIGS.auth);
-    
+
     if (isRateLimited) {
       return NextResponse.json(
-        { 
+        {
           error: 'Слишком много попыток входа. Попробуйте позже.',
           code: 'RATE_LIMIT_EXCEEDED'
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': '900' // 15 минут в секундах
@@ -45,18 +45,18 @@ export async function POST(request: NextRequest) {
         }
       );
     }
-    
+
     // Парсим тело запроса
     const body = await request.json();
-    
+
     // Валидация данных с помощью Zod
     const validationResult = loginSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
           error: 'Ошибка валидации данных',
-          details: validationResult.error.errors.map(err => ({
+          details: validationResult.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -64,15 +64,15 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const { email, password } = validationResult.data;
-    
+
     // Аутентификация через UserService
     const userService = new UserService();
-    
+
     try {
       const result = await userService.login(email, password);
-      
+
       // Создаем response с данными пользователя
       const response = NextResponse.json(
         {
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
         },
         { status: 200 }
       );
-      
+
       // Устанавливаем JWT токен в HTTP-only cookie
       // Требования: 21.5-21.6 (HTTP-only, Secure, SameSite)
       response.cookies.set('auth-token', result.token, {
@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
         maxAge: 7 * 24 * 60 * 60, // 7 дней в секундах
         path: '/', // Доступен для всех путей
       });
-      
+
       return response;
-      
+
     } catch (error) {
       // Обработка ошибок от UserService
       if (error instanceof Error) {
@@ -108,15 +108,15 @@ export async function POST(request: NextRequest) {
           );
         }
       }
-      
+
       // Неизвестная ошибка
       throw error;
     }
-    
+
   } catch (error) {
     // Логируем ошибку для отладки
     console.error('Ошибка при входе в систему:', error);
-    
+
     // Возвращаем общую ошибку без деталей
     return NextResponse.json(
       {

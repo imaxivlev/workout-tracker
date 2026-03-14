@@ -32,7 +32,6 @@ export async function GET(request: NextRequest) {
         isGlobal: true,
         name: {
           contains: query,
-          mode: 'insensitive',
         },
       },
       select: {
@@ -46,11 +45,10 @@ export async function GET(request: NextRequest) {
     // Поиск в пользовательских упражнениях
     const userExercises = await prisma.exerciseDict.findMany({
       where: {
-        userId: user.userId,
+        userId: user.id,
         isGlobal: false,
         name: {
           contains: query,
-          mode: 'insensitive',
         },
       },
       select: {

@@ -79,7 +79,7 @@ export function useOfflineWorkout(): UseOfflineWorkoutResult {
       if (response.ok) {
         const workout = await response.json();
         console.log('[Offline] Workout created online:', workout.id);
-        
+
         return {
           success: true,
           offline: false,
@@ -99,7 +99,8 @@ export function useOfflineWorkout(): UseOfflineWorkoutResult {
         // Регистрируем фоновую синхронизацию
         if ('serviceWorker' in navigator && 'sync' in ServiceWorkerRegistration.prototype) {
           const registration = await navigator.serviceWorker.ready;
-          await registration.sync.register('sync-workouts');
+          // @ts-ignore - sync API is not yet in standard TS DOM types
+          await (registration as any).sync.register('sync-workouts');
           console.log('[Offline] Background sync registered');
         }
 
@@ -110,7 +111,7 @@ export function useOfflineWorkout(): UseOfflineWorkoutResult {
         };
       } catch (dbError) {
         console.error('[Offline] Failed to save to queue:', dbError);
-        
+
         return {
           success: false,
           offline: true,
@@ -129,7 +130,7 @@ export function useOfflineWorkout(): UseOfflineWorkoutResult {
 
     try {
       const pending = await getPendingWorkouts();
-      
+
       if (pending.length === 0) {
         console.log('[Offline] No pending workouts to sync');
         return;

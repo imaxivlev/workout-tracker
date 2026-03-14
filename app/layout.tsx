@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ServiceWorkerRegistration } from "./components/ServiceWorkerRegistration";
@@ -13,11 +13,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const viewport: Viewport = {
+  themeColor: "#DC2626",
+};
+
 export const metadata: Metadata = {
   title: "CrossFit Tracker",
   description: "Трекер тренировок для кроссфита",
   manifest: "/manifest.json",
-  themeColor: "#DC2626",
 };
 
 export default function RootLayout({

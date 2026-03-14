@@ -10,7 +10,7 @@ const statisticsService = new StatisticsService();
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { exerciseId: string } }
+  { params }: { params: Promise<{ exerciseId: string }> }
 ) {
   try {
     // Аутентификация
@@ -23,7 +23,7 @@ export async function GET(
     }
 
     const { user } = authResult;
-    const { exerciseId } = params;
+    const { exerciseId } = await params;
 
     // Парсинг query параметров
     const { searchParams } = new URL(request.url);
@@ -32,13 +32,13 @@ export async function GET(
 
     // Получение личных рекордов
     const personalRecords = await statisticsService.getPersonalRecords(
-      user.userId,
+      user.id,
       exerciseId
     );
 
     // Получение истории прогресса
     const history = await statisticsService.getProgressHistory(
-      user.userId,
+      user.id,
       exerciseId,
       startDate,
       endDate

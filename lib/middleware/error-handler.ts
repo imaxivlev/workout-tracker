@@ -31,27 +31,27 @@ interface ErrorResponse {
 export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
   // Логирование полной ошибки для отладки
   console.error('[Error Handler] Обработка ошибки:', error);
-  
+
   // Ошибки валидации Zod
   if (error instanceof ZodError) {
     return handleValidationError(error);
   }
-  
+
   // Ошибки Prisma
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     return handlePrismaError(error);
   }
-  
+
   // Ошибки Prisma валидации
   if (error instanceof Prisma.PrismaClientValidationError) {
     return handlePrismaValidationError(error);
   }
-  
+
   // Общие ошибки JavaScript
   if (error instanceof Error) {
     return handleGenericError(error);
   }
-  
+
   // Неизвестные ошибки
   return NextResponse.json(
     {
@@ -67,12 +67,12 @@ export function handleApiError(error: unknown): NextResponse<ErrorResponse> {
  * Требования: 25.1
  */
 function handleValidationError(error: ZodError): NextResponse<ErrorResponse> {
-  console.error('[Error Handler] Ошибка валидации Zod:', error.errors);
-  
+  console.error('[Error Handler] Ошибка валидации Zod:', error.issues);
+
   return NextResponse.json(
     {
       error: 'Ошибка валидации данных',
-      details: error.errors.map(err => ({
+      details: error.issues.map(err => ({
         field: err.path.join('.'),
         message: err.message,
         code: err.code
@@ -93,12 +93,12 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
     meta: error.meta,
     message: error.message
   });
-  
+
   // P2002: Unique constraint violation
   if (error.code === 'P2002') {
     const target = error.meta?.target as string[] | undefined;
     const field = target ? target[0] : 'поле';
-    
+
     return NextResponse.json(
       {
         error: `Запись с таким значением ${field} уже существует`,
@@ -108,7 +108,7 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
       { status: 409 }
     );
   }
-  
+
   // P2025: Record not found
   if (error.code === 'P2025') {
     return NextResponse.json(
@@ -119,7 +119,7 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
       { status: 404 }
     );
   }
-  
+
   // P2003: Foreign key constraint violation
   if (error.code === 'P2003') {
     return NextResponse.json(
@@ -130,7 +130,7 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
       { status: 400 }
     );
   }
-  
+
   // P2014: Invalid relation
   if (error.code === 'P2014') {
     return NextResponse.json(
@@ -141,7 +141,7 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
       { status: 400 }
     );
   }
-  
+
   // Другие ошибки Prisma - не раскрываем детали
   return NextResponse.json(
     {
@@ -158,7 +158,7 @@ function handlePrismaError(error: Prisma.PrismaClientKnownRequestError): NextRes
  */
 function handlePrismaValidationError(error: Prisma.PrismaClientValidationError): NextResponse<ErrorResponse> {
   console.error('[Error Handler] Ошибка валидации Prisma:', error.message);
-  
+
   // Не раскрываем детали схемы БД в production
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
@@ -169,7 +169,7 @@ function handlePrismaValidationError(error: Prisma.PrismaClientValidationError):
       { status: 400 }
     );
   }
-  
+
   // В development можем показать больше деталей
   return NextResponse.json(
     {
@@ -191,7 +191,7 @@ function handleGenericError(error: Error): NextResponse<ErrorResponse> {
     message: error.message,
     stack: error.stack
   });
-  
+
   // Специфичные ошибки приложения
   if (error.message.includes('Unauthorized') || error.message.includes('Неавторизован')) {
     return NextResponse.json(
@@ -202,7 +202,7 @@ function handleGenericError(error: Error): NextResponse<ErrorResponse> {
       { status: 401 }
     );
   }
-  
+
   if (error.message.includes('Forbidden') || error.message.includes('Доступ запрещен')) {
     return NextResponse.json(
       {
@@ -212,7 +212,7 @@ function handleGenericError(error: Error): NextResponse<ErrorResponse> {
       { status: 403 }
     );
   }
-  
+
   if (error.message.includes('Not found') || error.message.includes('не найден')) {
     return NextResponse.json(
       {
@@ -222,7 +222,7 @@ function handleGenericError(error: Error): NextResponse<ErrorResponse> {
       { status: 404 }
     );
   }
-  
+
   // Общая ошибка сервера - не раскрываем детали в production
   if (process.env.NODE_ENV === 'production') {
     return NextResponse.json(
@@ -233,7 +233,7 @@ function handleGenericError(error: Error): NextResponse<ErrorResponse> {
       { status: 500 }
     );
   }
-  
+
   // В development показываем больше информации
   return NextResponse.json(
     {

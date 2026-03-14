@@ -29,16 +29,16 @@ export async function GET(request: NextRequest) {
   try {
     // Аутентификация пользователя
     const authResult = await authenticateRequest(request);
-    
+
     if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: 401 }
       );
     }
-    
+
     const { user: authUser } = authResult;
-    
+
     // Получение полных данных пользователя из БД
     const user = await prisma.user.findUnique({
       where: { id: authUser.id },
@@ -53,14 +53,14 @@ export async function GET(request: NextRequest) {
         updatedAt: true
       }
     });
-    
+
     if (!user) {
       return NextResponse.json(
         { error: 'Пользователь не найден' },
         { status: 404 }
       );
     }
-    
+
     return NextResponse.json({
       user: {
         id: user.id,
@@ -73,10 +73,10 @@ export async function GET(request: NextRequest) {
         updatedAt: user.updatedAt.toISOString()
       }
     });
-    
+
   } catch (error) {
     console.error('Ошибка при получении профиля:', error);
-    
+
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
@@ -98,27 +98,27 @@ export async function PATCH(request: NextRequest) {
   try {
     // Аутентификация пользователя
     const authResult = await authenticateRequest(request);
-    
+
     if (!isAuthSuccess(authResult)) {
       return NextResponse.json(
         { error: authResult.error },
         { status: 401 }
       );
     }
-    
+
     const { user: authUser } = authResult;
-    
+
     // Парсинг тела запроса
     const body = await request.json();
-    
+
     // Валидация данных с помощью Zod
     const validationResult = updateProfileSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       return NextResponse.json(
         {
           error: 'Ошибка валидации данных',
-          details: validationResult.error.errors.map(err => ({
+          details: validationResult.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -126,9 +126,9 @@ export async function PATCH(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     const { firstName, lastName, avatar } = validationResult.data;
-    
+
     // Обновление профиля через UserService
     const userService = new UserService();
     const updatedUser = await userService.updateProfile(authUser.id, {
@@ -136,15 +136,15 @@ export async function PATCH(request: NextRequest) {
       lastName,
       avatar
     });
-    
+
     return NextResponse.json({
       user: updatedUser,
       message: 'Профиль успешно обновлен'
     });
-    
+
   } catch (error) {
     console.error('Ошибка при обновлении профиля:', error);
-    
+
     return NextResponse.json(
       { error: 'Внутренняя ошибка сервера' },
       { status: 500 }
