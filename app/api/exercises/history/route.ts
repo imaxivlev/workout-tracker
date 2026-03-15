@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const skillBlocks = await prisma.skillBlock.findMany({
       where: {
-        exercise: { name: { equals: name, mode: 'insensitive' } },
+        exercise: { name: name },
         workout: { userId: user.id },
         sets: { some: {} },
       },
