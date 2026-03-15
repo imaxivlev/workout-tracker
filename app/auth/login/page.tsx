@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { authApi, ApiError } from '@/lib/api/client';
 
@@ -97,14 +96,11 @@ export default function AuthPage() {
   return (
     <div className="auth-container">
       <div className="auth-logo-wrapper">
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/workout-tracker/images/logo.png"
           alt="CrossFit Tracker"
           className="auth-logo-img"
-          width={260}
-          height={80}
-          style={{ objectFit: 'contain' }}
-          priority
         />
       </div>
 

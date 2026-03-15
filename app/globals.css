@@ -2150,9 +2150,13 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .forgot-password {
+    background: none;
+    border: none;
+    padding: 0;
     color: var(--color-primary);
     text-decoration: none;
     font-size: 0.875rem;
+    cursor: pointer;
 }
 
 .forgot-password:hover {
