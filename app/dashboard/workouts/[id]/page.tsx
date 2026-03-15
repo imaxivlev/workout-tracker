@@ -67,9 +67,14 @@ export default function WorkoutDetailPage() {
           <Link href="/dashboard/workouts" className="back-link">← Назад</Link>
           <h1 className="page-title">{date}</h1>
         </div>
-        <button onClick={handleDelete} className="btn-danger">
-          Удалить
-        </button>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link href={`/dashboard/workouts/${id}/edit`} className="btn btn-secondary">
+            ✏️ Редактировать
+          </Link>
+          <button onClick={handleDelete} className="btn-danger">
+            Удалить
+          </button>
+        </div>
       </div>
 
       {workout.comment && (
@@ -99,9 +104,9 @@ export default function WorkoutDetailPage() {
                 </thead>
                 <tbody>
                   {block.sets.map((set, i) => {
-                    const orm = set.reps === 1
+                    const orm = set.reps === 1 || set.reps >= 37
                       ? set.weight
-                      : Math.round(set.weight * (1 + set.reps / 30) * 2) / 2;
+                      : Math.round((set.weight / (1.0278 - 0.0278 * set.reps)) * 2) / 2;
                     return (
                       <tr key={set.id}>
                         <td>{i + 1}</td>

@@ -1,26 +1,80 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { workoutsApi, ApiError, WorkoutInput } from '@/lib/api/client';
+import { workoutsApi, exercisesApi, ApiError, WorkoutInput } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
 
 type WodType = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
 type WodLevel = 'RX' | 'SCALED';
 
 interface SkillSetForm { reps: string; weight: string; }
-interface SkillBlockForm { exerciseName: string; sets: SkillSetForm[]; }
+interface SkillBlockForm {
+  exerciseName: string;
+  sets: SkillSetForm[];
+  maxWeight: string;
+}
 
-interface WodExerciseForm { exerciseName: string; reps: string; weight: string; }
+interface WodExerciseForm {
+  exerciseName: string;
+  reps: string;
+  weight: string;
+  ladderRepsPerRound: string[];
+}
 interface WodBlockForm {
   wodType: WodType;
   level: WodLevel;
   timeCapSeconds: string;
   isLadder: boolean;
+  ladderRounds: number;
   resultDisplay: string;
   resultSeconds: string;
   resultTotalReps: string;
   exercises: WodExerciseForm[];
+}
+
+const CARDIO_TERMS = ['bike', 'row', 'run', 'skierg'];
+function isCardio(name: string): boolean {
+  const lower = name.toLowerCase();
+  return CARDIO_TERMS.some(t => lower.includes(t));
+}
+
+function parseMmSs(value: string): number {
+  const parts = value.split(':');
+  if (parts.length === 2) {
+    const mm = parseInt(parts[0]) || 0;
+    const ss = parseInt(parts[1]) || 0;
+    return mm * 60 + ss;
+  }
+  return parseInt(value) || 0;
+}
+
+function SkillHint({ exerciseName }: { exerciseName: string }) {
+  const [hint, setHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!exerciseName.trim()) {
+      setHint(null);
+      return;
+    }
+    exercisesApi.getLastHistory(exerciseName)
+      .then(data => {
+        if (data.lastWeight && data.lastDate) {
+          const dateStr = new Date(data.lastDate).toLocaleDateString('ru-RU');
+          setHint(`В прошлый раз: ${data.lastWeight} кг (${dateStr})`);
+        } else {
+          setHint(null);
+        }
+      })
+      .catch(() => setHint(null));
+  }, [exerciseName]);
+
+  if (!hint) return null;
+  return (
+    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
+      ℹ️ {hint}
+    </div>
+  );
 }
 
 export default function NewWorkoutPage() {
@@ -34,7 +88,7 @@ export default function NewWorkoutPage() {
 
   // --- Skill блоки ---
   function addSkillBlock() {
-    setSkillBlocks(prev => [...prev, { exerciseName: '', sets: [{ reps: '', weight: '' }] }]);
+    setSkillBlocks(prev => [...prev, { exerciseName: '', sets: [{ reps: '', weight: '' }], maxWeight: '' }]);
   }
 
   function removeSkillBlock(idx: number) {
@@ -43,6 +97,19 @@ export default function NewWorkoutPage() {
 
   function updateSkillExercise(idx: number, value: string) {
     setSkillBlocks(prev => prev.map((b, i) => i === idx ? { ...b, exerciseName: value } : b));
+  }
+
+  function updateSkillSetsCount(blockIdx: number, count: number) {
+    setSkillBlocks(prev => prev.map((b, i) => {
+      if (i !== blockIdx) return b;
+      const current = b.sets;
+      if (count > current.length) {
+        const extra = Array.from({ length: count - current.length }, () => ({ reps: '', weight: '' }));
+        return { ...b, sets: [...current, ...extra] };
+      } else {
+        return { ...b, sets: current.slice(0, count) };
+      }
+    }));
   }
 
   function addSkillSet(blockIdx: number) {
@@ -65,6 +132,10 @@ export default function NewWorkoutPage() {
     ));
   }
 
+  function updateSkillMaxWeight(blockIdx: number, value: string) {
+    setSkillBlocks(prev => prev.map((b, i) => i === blockIdx ? { ...b, maxWeight: value } : b));
+  }
+
   // --- WOD блоки ---
   function addWodBlock() {
     setWodBlocks(prev => [...prev, {
@@ -72,10 +143,11 @@ export default function NewWorkoutPage() {
       level: 'RX',
       timeCapSeconds: '',
       isLadder: false,
+      ladderRounds: 3,
       resultDisplay: '',
       resultSeconds: '',
       resultTotalReps: '',
-      exercises: [{ exerciseName: '', reps: '', weight: '' }],
+      exercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
     }]);
   }
 
@@ -89,7 +161,7 @@ export default function NewWorkoutPage() {
 
   function addWodExercise(blockIdx: number) {
     setWodBlocks(prev => prev.map((b, i) =>
-      i === blockIdx ? { ...b, exercises: [...b.exercises, { exerciseName: '', reps: '', weight: '' }] } : b
+      i === blockIdx ? { ...b, exercises: [...b.exercises, { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }] } : b
     ));
   }
 
@@ -99,6 +171,21 @@ export default function NewWorkoutPage() {
         ? { ...b, exercises: b.exercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e) }
         : b
     ));
+  }
+
+  function updateWodLadderRep(blockIdx: number, exIdx: number, roundIdx: number, value: string) {
+    setWodBlocks(prev => prev.map((b, i) => {
+      if (i !== blockIdx) return b;
+      return {
+        ...b,
+        exercises: b.exercises.map((e, j) => {
+          if (j !== exIdx) return e;
+          const arr = [...(e.ladderRepsPerRound || [])];
+          arr[roundIdx] = value;
+          return { ...e, ladderRepsPerRound: arr };
+        }),
+      };
+    }));
   }
 
   function removeWodExercise(blockIdx: number, exIdx: number) {
@@ -139,13 +226,22 @@ export default function NewWorkoutPage() {
               isLadder: b.isLadder,
               resultType: b.wodType === 'FOR_TIME' ? 'TIME' : b.wodType === 'AMRAP' ? 'REPS' : 'TIME',
               resultDisplay: b.resultDisplay,
-              resultSeconds: b.wodType === 'FOR_TIME' && b.resultSeconds ? parseInt(b.resultSeconds) : undefined,
+              resultSeconds: b.wodType === 'FOR_TIME' && b.resultSeconds ? parseMmSs(b.resultSeconds) : undefined,
               resultTotalReps: b.wodType === 'AMRAP' && b.resultTotalReps ? parseInt(b.resultTotalReps) : undefined,
-              exercises: b.exercises.map(ex => ({
-                exerciseName: ex.exerciseName,
-                reps: parseInt(ex.reps),
-                weight: ex.weight ? parseFloat(ex.weight) : undefined,
-              })),
+              exercises: b.exercises.map(ex => {
+                let reps = parseInt(ex.reps) || 0;
+                // For ladder: store comma-separated reps in reps field is not supported by API
+                // We store the plain reps (first round or average) and rely on resultDisplay
+                if (b.isLadder && ex.ladderRepsPerRound.length > 0) {
+                  const vals = ex.ladderRepsPerRound.filter(v => v).map(v => parseInt(v) || 0);
+                  reps = vals.length > 0 ? vals[0] : reps;
+                }
+                return {
+                  exerciseName: ex.exerciseName,
+                  reps,
+                  weight: ex.weight && !isCardio(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
+                };
+              }),
             }))
           : undefined,
       };
@@ -213,6 +309,36 @@ export default function NewWorkoutPage() {
                   onChange={v => updateSkillExercise(bi, v)}
                   placeholder="Начните вводить или выберите..."
                 />
+                <SkillHint exerciseName={block.exerciseName} />
+              </div>
+
+              <div className="form-row" style={{ gap: '1rem', alignItems: 'flex-end' }}>
+                <div className="form-group">
+                  <label className="form-label">Кол-во подходов</label>
+                  <select
+                    className="form-select"
+                    value={block.sets.length}
+                    onChange={e => updateSkillSetsCount(bi, parseInt(e.target.value))}
+                    style={{ maxWidth: '100px' }}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Макс. вес (кг)</label>
+                  <input
+                    type="number"
+                    value={block.maxWeight}
+                    onChange={e => updateSkillMaxWeight(bi, e.target.value)}
+                    className="form-input"
+                    placeholder="Ориентир"
+                    min="0.5"
+                    step="0.5"
+                    style={{ maxWidth: '120px' }}
+                  />
+                </div>
               </div>
 
               <div className="form-group">
@@ -322,6 +448,22 @@ export default function NewWorkoutPage() {
                 </div>
               </div>
 
+              {block.isLadder && (
+                <div className="form-group">
+                  <label className="form-label">Кол-во раундов</label>
+                  <select
+                    className="form-select"
+                    value={block.ladderRounds}
+                    onChange={e => updateWodBlock(bi, { ladderRounds: parseInt(e.target.value) })}
+                    style={{ maxWidth: '100px' }}
+                  >
+                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                      <option key={n} value={n}>{n}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="form-group">
                 <label className="form-label">Упражнения</label>
                 <div className="wod-exercises-container">
@@ -334,26 +476,48 @@ export default function NewWorkoutPage() {
                           placeholder="Упражнение"
                         />
                         <div className="wod-fields-scroll">
-                          <div className="single-reps-container" style={{ display: 'flex' }}>
+                          {block.isLadder ? (
+                            <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
+                              {Array.from({ length: block.ladderRounds }, (_, ri) => (
+                                <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>R{ri + 1}</span>
+                                  <input
+                                    type="number"
+                                    value={ex.ladderRepsPerRound[ri] || ''}
+                                    onChange={e => updateWodLadderRep(bi, ei, ri, e.target.value)}
+                                    className="form-input-sm"
+                                    placeholder="Повт"
+                                    min="1"
+                                    style={{ width: '52px' }}
+                                    required
+                                  />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="single-reps-container" style={{ display: 'flex' }}>
+                              <input
+                                type="number"
+                                value={ex.reps}
+                                onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
+                                className="form-input-sm"
+                                placeholder="Повт."
+                                min="1"
+                                required
+                              />
+                            </div>
+                          )}
+                          {!isCardio(ex.exerciseName) && (
                             <input
                               type="number"
-                              value={ex.reps}
-                              onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
-                              className="form-input-sm"
-                              placeholder="Повт."
-                              min="1"
-                              required
+                              value={ex.weight}
+                              onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
+                              className="form-input-sm wod-weight"
+                              placeholder="Вес, кг"
+                              min="0.5"
+                              step="0.5"
                             />
-                          </div>
-                          <input
-                            type="number"
-                            value={ex.weight}
-                            onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
-                            className="form-input-sm wod-weight"
-                            placeholder="Вес, кг"
-                            min="0.5"
-                            step="0.5"
-                          />
+                          )}
                         </div>
                       </div>
                       {block.exercises.length > 1 && (
@@ -386,12 +550,11 @@ export default function NewWorkoutPage() {
                   />
                   {block.wodType === 'FOR_TIME' && (
                     <input
-                      type="number"
+                      type="text"
                       value={block.resultSeconds}
                       onChange={e => updateWodBlock(bi, { resultSeconds: e.target.value })}
                       className="form-input"
-                      placeholder="Сек (напр. 754)"
-                      min="0"
+                      placeholder="MM:SS"
                       required
                     />
                   )}

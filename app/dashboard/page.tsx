@@ -59,11 +59,7 @@ export default function DashboardPage() {
     );
   }
 
-  const tonnageDisplay = stats
-    ? stats.tonnageThisMonth >= 1000
-      ? `${(stats.tonnageThisMonth / 1000).toFixed(1)} т`
-      : `${stats.tonnageThisMonth} кг`
-    : '0';
+  const bestWeightValue = stats?.bestWeight?.weight ?? 0;
 
   return (
     <div className="container">
@@ -86,8 +82,16 @@ export default function DashboardPage() {
           <div className="stat-mini-label">Тренировок<br />в этом месяце</div>
         </div>
         <div className="stat-mini">
-          <div className="stat-mini-value">{tonnageDisplay}</div>
-          <div className="stat-mini-label">Тоннаж<br />в этом месяце</div>
+          <div className="stat-mini-value">{bestWeightValue} кг</div>
+          <div className="stat-mini-label">
+            Лучший вес
+            {stats?.bestWeight && (
+              <span style={{ display: 'block', fontSize: '0.75rem' }}>
+                {stats.bestWeight.exerciseName}<br />
+                {new Date(stats.bestWeight.date).toLocaleDateString('ru-RU')}
+              </span>
+            )}
+          </div>
         </div>
         <div className="stat-mini">
           <div className="stat-mini-value">🔥 {stats?.streak.days ?? 0}</div>

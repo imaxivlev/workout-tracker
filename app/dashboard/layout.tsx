@@ -35,8 +35,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 История
               </Link>
               <Link
-                href="/dashboard/exercise"
-                className={`nav-link ${pathname.startsWith('/dashboard/exercise') ? 'active' : ''}`}
+                href="/dashboard/stats"
+                className={`nav-link ${pathname.startsWith('/dashboard/stats') ? 'active' : ''}`}
               >
                 Статистика
               </Link>
@@ -100,8 +100,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <span className="mobile-nav-label">Создать</span>
         </Link>
         <Link
-          href="/dashboard/exercise"
-          className={`mobile-nav-item ${pathname.startsWith('/dashboard/exercise') ? 'active' : ''}`}
+          href="/dashboard/stats"
+          className={`mobile-nav-item ${pathname.startsWith('/dashboard/stats') ? 'active' : ''}`}
         >
           <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <line x1="12" y1="20" x2="12" y2="10" />

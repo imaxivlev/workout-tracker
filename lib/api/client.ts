@@ -248,8 +248,17 @@ export const workoutsApi = {
 export interface DashboardStats {
   workoutsThisMonth: number;
   tonnageThisMonth: number;
+  bestWeight: { exerciseName: string; weight: number; date: string } | null;
   streak: { days: number; weeks: number };
   recentWorkouts: Workout[];
+}
+
+export interface StatsData {
+  workoutsCount: number;
+  skillSessions: number;
+  wodSessions: number;
+  newPRs: number;
+  personalRecords: Array<{ exerciseName: string; weight: number; date: string; reps: number }>;
 }
 
 export interface ExerciseStats {
@@ -278,6 +287,10 @@ export const statisticsApi = {
     const qs = query.toString();
     return apiFetch<ExerciseStats>(`/api/statistics/exercise/${exerciseId}${qs ? `?${qs}` : ''}`);
   },
+
+  async getStats(period: 'week' | 'month' | 'year' | 'all') {
+    return apiFetch<StatsData>(`/api/statistics/stats?period=${period}`);
+  },
 };
 
 // --- Exercises ---
@@ -291,6 +304,10 @@ export interface Exercise {
 export const exercisesApi = {
   async search(query: string) {
     return apiFetch<{ exercises: Exercise[] }>(`/api/exercises?q=${encodeURIComponent(query)}`);
+  },
+
+  async getLastHistory(name: string) {
+    return apiFetch<{ lastWeight: number | null; lastDate: string | null }>(`/api/exercises/history?name=${encodeURIComponent(name)}`);
   },
 };
 

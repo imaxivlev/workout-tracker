@@ -280,14 +280,52 @@ export class StatisticsService {
   }
 
   /**
+   * Нахождение лучшего веса среди всех упражнений пользователя
+   *
+   * @param userId - ID пользователя
+   * @returns Объект с именем упражнения, весом и датой или null
+   */
+  async getBestWeight(userId: string): Promise<{ exerciseName: string; weight: number; date: string } | null> {
+    const skillBlocks = await prisma.skillBlock.findMany({
+      where: {
+        workout: { userId },
+        sets: { some: {} },
+      },
+      include: {
+        exercise: true,
+        sets: true,
+        workout: { select: { date: true } },
+      },
+    });
+
+    let best: { exerciseName: string; weight: number; date: string } | null = null;
+
+    for (const block of skillBlocks) {
+      for (const set of block.sets) {
+        const w = Number(set.weight);
+        if (best === null || w > best.weight) {
+          best = {
+            exerciseName: block.exercise.name,
+            weight: w,
+            date: block.workout.date,
+          };
+        }
+      }
+    }
+
+    return best;
+  }
+
+  /**
    * Получение метрик для Dashboard
-   * 
+   *
    * @param userId - ID пользователя
    * @returns Объект с метриками
    */
   async getDashboard(userId: string): Promise<{
     workoutsThisMonth: number;
     tonnageThisMonth: number;
+    bestWeight: { exerciseName: string; weight: number; date: string } | null;
     streak: { days: number; weeks: number };
     recentWorkouts: any[];
   }> {
@@ -315,6 +353,9 @@ export class StatisticsService {
       startOfMonthStr,
       endOfMonthStr
     );
+
+    // Лучший вес за всё время
+    const bestWeight = await this.getBestWeight(userId);
 
     // Текущий стрик
     const streak = await this.calculateStreak(userId);
@@ -346,6 +387,7 @@ export class StatisticsService {
     return {
       workoutsThisMonth,
       tonnageThisMonth,
+      bestWeight,
       streak,
       recentWorkouts,
     };
