@@ -42,13 +42,12 @@ export default function ExerciseStatsPage() {
         </div>
       </div>
 
-      {/* Переключатель периода */}
       <div className="period-selector">
         {PERIODS.map(p => (
           <button
             key={p.days}
             onClick={() => setPeriod(p.days)}
-            className={`period-btn ${period === p.days ? 'active' : ''}`}
+            className={`period-btn${period === p.days ? ' active' : ''}`}
           >
             {p.label}
           </button>
@@ -64,34 +63,45 @@ export default function ExerciseStatsPage() {
       {!loading && !error && stats && (
         <>
           {/* Личные рекорды */}
-          <div className="quick-stats" style={{ marginTop: '1.5rem' }}>
-            <div className="stat-mini">
-              <div className="stat-mini-value">
-                {stats.personalRecords.maxWeight !== null ? `${stats.personalRecords.maxWeight} кг` : '—'}
-              </div>
-              <div className="stat-mini-label">Макс. вес</div>
-            </div>
-            <div className="stat-mini">
-              <div className="stat-mini-value">
-                {stats.personalRecords.maxReps !== null ? stats.personalRecords.maxReps : '—'}
-              </div>
-              <div className="stat-mini-label">Макс. повторений</div>
-            </div>
-            <div className="stat-mini">
-              <div className="stat-mini-value">
-                {stats.personalRecords.best1RM !== null ? `${stats.personalRecords.best1RM} кг` : '—'}
-              </div>
-              <div className="stat-mini-label">Лучший 1RM</div>
+          <div className="pr-section">
+            <h2 className="section-title">Личные рекорды</h2>
+            <div className="pr-list">
+              {stats.personalRecords.maxWeight !== null && (
+                <div className="pr-item">
+                  <div className="pr-exercise">
+                    <div className="pr-name">Максимальный вес</div>
+                  </div>
+                  <div className="pr-value">{stats.personalRecords.maxWeight} кг</div>
+                </div>
+              )}
+              {stats.personalRecords.maxReps !== null && (
+                <div className="pr-item">
+                  <div className="pr-exercise">
+                    <div className="pr-name">Максимум повторений</div>
+                  </div>
+                  <div className="pr-value">{stats.personalRecords.maxReps}</div>
+                </div>
+              )}
+              {stats.personalRecords.best1RM !== null && (
+                <div className="pr-item">
+                  <div className="pr-exercise">
+                    <div className="pr-name">Лучший 1RM (расчётный)</div>
+                  </div>
+                  <div className="pr-value">{stats.personalRecords.best1RM} кг</div>
+                </div>
+              )}
+              {stats.personalRecords.maxWeight === null &&
+               stats.personalRecords.maxReps === null &&
+               stats.personalRecords.best1RM === null && (
+                <div className="empty-state">Нет данных за выбранный период</div>
+              )}
             </div>
           </div>
 
           {/* История прогресса */}
-          <div className="workouts-section" style={{ marginTop: '2rem' }}>
-            <h2 className="section-title">История</h2>
-
-            {stats.progressHistory.length === 0 ? (
-              <div className="empty-state">Нет данных за выбранный период</div>
-            ) : (
+          {stats.progressHistory.length > 0 && (
+            <div className="workouts-section" style={{ marginTop: '2rem' }}>
+              <h2 className="section-title">История подходов</h2>
               <table className="sets-table" style={{ marginTop: '1rem' }}>
                 <thead>
                   <tr>
@@ -119,8 +129,8 @@ export default function ExerciseStatsPage() {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
+            </div>
+          )}
         </>
       )}
     </div>
