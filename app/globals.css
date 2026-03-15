@@ -26,6 +26,7 @@ body {
 }
 
 /* Navbar */
+
 .navbar {
     background: var(--bg-secondary);
     border-bottom: 2px solid var(--border-color);
@@ -47,26 +48,30 @@ body {
 .logo {
     display: flex;
     align-items: center;
-    text-decoration: none;
+    gap: 0.75rem;
+    font-size: 1.5rem;
+    font-weight: 700;
 }
 
 .logo img {
     height: auto;
     max-height: 60px;
+    /* Увеличено по просьбе пользователя */
     max-width: 240px;
     width: auto;
     object-fit: contain;
     display: block;
 }
 
-/* Mobile Logo Bar */
+/* Mobile Logo Bar - hidden by default */
 .mobile-logo-bar {
     display: none;
     justify-content: center;
     align-items: center;
-    padding: 0.75rem 1rem;
+    padding: 1rem;
     background: var(--bg-secondary);
     border-bottom: 1px solid var(--border-color);
+    width: 100%;
     position: sticky;
     top: 0;
     z-index: 101;
@@ -77,6 +82,10 @@ body {
     width: auto;
     max-width: 90%;
     object-fit: contain;
+}
+
+.logo-icon {
+    font-size: 2rem;
 }
 
 .nav-links {
@@ -113,6 +122,7 @@ body {
 }
 
 /* Container */
+
 .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -157,6 +167,7 @@ body {
 }
 
 /* Pagination */
+
 .pagination-container {
     flex-direction: row !important;
     /* Override inline style */
@@ -192,6 +203,7 @@ body {
 }
 
 /* Quick Stats */
+
 .quick-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -220,6 +232,7 @@ body {
 }
 
 /* Section */
+
 .workouts-section {
     margin-bottom: 3rem;
 }
@@ -248,6 +261,7 @@ body {
 }
 
 /* Workout Cards */
+
 .workout-list {
     display: grid;
     gap: 1.5rem;
@@ -346,6 +360,7 @@ body {
 }
 
 /* Type Selector */
+
 .type-selector {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -392,6 +407,7 @@ body {
 }
 
 /* Forms */
+
 .workout-form {
     background: var(--bg-secondary);
     border-radius: 16px;
@@ -433,15 +449,22 @@ body {
     border-color: var(--color-primary);
 }
 
-/* Style option elements to match autocomplete-item */
+/* Style options like autocomplete-items */
 .form-select option {
-    background-color: var(--bg-tertiary);
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    background: var(--bg-tertiary);
     color: var(--text-primary);
-    font-size: 1rem;
-    padding: 0.75rem 1rem; /* May not work in all browsers */
+}
+
+.form-select option:hover,
+.form-select option:checked,
+.form-select option:focus {
+    background: var(--bg-secondary);
 }
 
 /* Remove spinners from number inputs */
+
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -478,13 +501,28 @@ input[type=number]::-webkit-outer-spin-button {
     overflow-y: auto;
     display: none;
     z-index: 10000;
-    /* Increased z-index */
     width: calc(100% - 4px);
     top: 100%;
-    /* Ensure it starts exactly below the input */
     left: 0;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    /* Add shadow for better visibility */
+}
+
+.autocomplete-dropdown::-webkit-scrollbar {
+    width: 8px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-track {
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+
+.autocomplete-dropdown::-webkit-scrollbar-thumb:hover {
+    background: var(--text-secondary);
 }
 
 .autocomplete-dropdown.active {
@@ -501,35 +539,71 @@ input[type=number]::-webkit-outer-spin-button {
     background: var(--bg-secondary);
 }
 
-/* WOD Exercise Rows */
+/* WOD Exercise Rows Fix for Desktop */
+
 .wod-exercise-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr 100px 40px;
-    gap: 0.5rem;
-    align-items: center;
+    position: relative;
     margin-bottom: 0.75rem;
 }
 
-/* Ladder Mode: adjust columns */
-.wod-exercise-row.ladder-mode {
-    grid-template-columns: 225px 1fr 100px 40px;
+.wod-row-scroller {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+    padding-right: 45px;
+    /* space for delete button */
 }
 
-/* Containers inside the row */
-.single-reps-container,
-.ladder-reps-container {
+/* Base without ladder */
+.wod-exercise-row .wod-exercise-name {
+    flex: 1.5;
+    min-width: 150px;
+}
+
+.wod-exercise-row .wod-fields-scroll {
+    display: flex;
+    flex: 2;
+    /* Reps and Weight share the rest */
+    gap: 0.5rem;
+    align-items: center;
     min-width: 0;
-    /* Allow flex items to shrink */
 }
 
-.ladder-reps-container {
+.wod-exercise-row .single-reps-container {
+    flex: 1;
+    min-width: 0;
+}
+
+.wod-exercise-row .single-reps-container input {
+    width: 100%;
+}
+
+.wod-exercise-row .wod-weight {
+    flex: 1;
+    min-width: 90px;
+}
+
+/* Ladder Mode: adjust columns */
+
+.wod-exercise-row.ladder-mode .wod-exercise-name {
+    flex: 0 0 225px;
+    /* Fixed width */
+}
+
+.wod-exercise-row.ladder-mode .wod-fields-scroll {
+    flex: 1;
+}
+
+.wod-exercise-row.ladder-mode .ladder-reps-container {
+    flex: 1;
     display: flex;
     gap: 0.5rem;
     overflow-x: auto;
     padding: 2px 0;
 }
 
-.ladder-reps-container input {
+.wod-exercise-row.ladder-mode .ladder-reps-container input {
     width: auto;
     max-width: none;
     min-width: 45px;
@@ -537,7 +611,20 @@ input[type=number]::-webkit-outer-spin-button {
     flex-shrink: 1;
 }
 
+.wod-exercise-row.ladder-mode .wod-weight {
+    flex: 0 0 90px;
+    /* Pinned 90px minimum */
+}
+
+.wod-exercise-row .btn-icon {
+    position: absolute;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
 /* Exercise List */
+
 .exercise-list {
     display: flex;
     flex-direction: column;
@@ -553,6 +640,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Form input small - match dark theme */
+
 .form-input-sm {
     padding: 0.75rem;
     background: var(--bg-tertiary);
@@ -611,6 +699,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Notification Box */
+
 .notification-box {
     border-radius: 12px;
     padding: 1.5rem;
@@ -633,6 +722,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Buttons */
+
 .btn-primary,
 .btn-secondary,
 .btn-danger,
@@ -707,6 +797,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Statistics */
+
 .period-selector {
     display: flex;
     gap: 1rem;
@@ -782,6 +873,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Personal Records */
+
 .pr-section {
     margin-bottom: 3rem;
 }
@@ -827,6 +919,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Chart */
+
 .chart-section {
     margin-bottom: 3rem;
 }
@@ -849,6 +942,7 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 /* Profile */
+
 .profile-card {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
@@ -901,33 +995,8 @@ input[type=number]::-webkit-outer-spin-button {
     gap: 1rem;
 }
 
-/* Filters */
-.filters-section {
-    margin-bottom: 2rem;
-}
-
-.date-range-inputs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.date-input-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.date-input-group label {
-    margin-bottom: 0;
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
 /* Mobile Bottom Navigation */
+
 .mobile-bottom-nav {
     display: none;
     /* Hidden by default, shown on mobile */
@@ -977,15 +1046,385 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* Responsive */
 
-
 /* Tablet and below (up to 992px) */
+
+/* Mobile and small tablets (up to 768px) */
+
+/* Small mobile (up to 480px) */
+
+/* --- Mobile Touch Improvements --- */
+
+/* --- Date Picker Styles --- */
+
+.date-picker-modal {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem;
+    z-index: 1000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    margin-top: 0.5rem;
+}
+
+.date-picker-modal.active {
+    display: block;
+}
+
+/* Override for mobile - center modal with backdrop */
+
+.date-range-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: flex-end;
+    margin-bottom: 1rem;
+}
+
+.date-input-group {
+    flex: 0 0 auto;
+    /* Don't stretch - fit content */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-input-group label {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.date-input-group .form-input-sm {
+    width: 120px;
+    /* Exact width for дд.мм.гггг */
+    flex: 0 0 120px;
+    text-align: center;
+}
+
+.date-presets {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    overflow-x: auto;
+}
+
+.preset-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.preset-btn:hover {
+    border-color: var(--text-secondary);
+    color: var(--text-primary);
+}
+
+.preset-btn.active {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+}
+
+.calendar-wrapper {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.nav-arrow {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.nav-arrow:hover {
+    background: var(--bg-tertiary);
+}
+
+.nav-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+.calendar-grid-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    flex: 1;
+}
+
+.calendar-month {
+    text-align: center;
+}
+
+.month-title {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.calendar-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    margin-bottom: 0.25rem;
+}
+
+.weekday-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-align: center;
+}
+
+.calendar-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+}
+
+.day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+}
+
+.day-cell:hover:not(.empty) {
+    background: var(--bg-tertiary);
+}
+
+.day-cell.empty {
+    cursor: default;
+}
+
+/* Selection States */
+
+.day-cell.selected {
+    background: var(--color-primary);
+    color: white;
+    font-weight: bold;
+}
+
+.day-cell.range-start {
+    background: var(--color-primary);
+    color: white;
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+.day-cell.range-end {
+    background: var(--color-primary);
+    color: white;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+}
+
+.day-cell.range-between {
+    background: rgba(var(--color-primary-rgb), 0.2);
+    background: #00e5ff33;
+    /* Fallback */
+    color: var(--text-primary);
+    border-radius: 0;
+}
+
+.picker-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    border-top: 1px solid var(--border-color);
+    padding-top: 1rem;
+}
+
+/* --- WOD Layout --- */
+
+/* Desktop: flex with percentage ratios and constraints */
+
+.wod-exercise-row {
+    position: relative;
+    padding: 0.5rem;
+    padding-right: 3rem;
+    /* Space for delete button */
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    margin-bottom: 0.5rem;
+    /* Removed display: flex from here, moved to scroller */
+}
+
+/* NEW: The wrapper acts as the flex row on desktop */
+
+.wod-row-scroller {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    width: 100%;
+}
+
+.wod-exercise-row .btn-icon {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+}
+
+/* --- DESKTOP SPECIFIC LAYOUT (>768px) - V14 CSS GRID --- */
+
+/* Mobile Fix for Ghost Field */
+
+.wod-exercise-row.no-weight .wod-fields-scroll {
+    flex: 1;
+}
+
+/* --- Header Button --- */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.btn-new-workout {
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+}
+
+.btn-new-workout:hover {
+    background: var(--color-primary-hover);
+}
+
+@media (min-width: 769px) {
+
+    .wod-exercise-row {
+        padding-right: 3rem;
+    }
+
+    .wod-row-scroller {
+        display: flex;
+        gap: 1rem;
+        width: 100%;
+        align-items: center;
+    }
+
+    .wod-exercise-row .wod-exercise-name {
+        flex: 1;
+        min-width: 200px;
+        width: 100%;
+        margin: 0;
+    }
+
+    .wod-exercise-row .wod-fields-scroll {
+        flex: 1;
+        display: flex;
+        gap: 0.5rem;
+        width: 100%;
+        min-width: 0;
+        align-items: center;
+    }
+
+    .single-reps-container {
+        flex: 1;
+        display: flex;
+        min-width: 0;
+        width: 100%;
+    }
+
+    .single-reps-container input {
+        width: 100%;
+    }
+
+    .wod-weight {
+        flex: 1;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .wod-exercise-row.no-weight .single-reps-container,
+    .wod-exercise-row.no-weight .ladder-reps-container {
+        flex: 2;
+        /* takes more space if no weight */
+    }
+
+    .ladder-reps-container {
+        flex: 1;
+        display: flex;
+        gap: 0.25rem;
+        overflow-x: auto;
+        min-width: 0;
+        padding-bottom: 4px;
+        /* for custom scrollbar */
+    }
+
+    .ladder-reps-container input {
+        flex: 1 1 50px;
+        min-width: 45px;
+        max-width: 70px;
+        /* Don't get too wide on small round counts */
+    }
+
+    /* Custom scrollbar for ladder */
+    .ladder-reps-container::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .ladder-reps-container::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+        border-radius: 4px;
+    }
+
+    .ladder-reps-container::-webkit-scrollbar-thumb {
+        background: var(--color-primary);
+        border-radius: 4px;
+    }
+}
+
 @media (max-width: 992px) {
     .stats-grid {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .calendar-grid-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
 }
 
-/* Mobile and small tablets (up to 768px) */
 @media (max-width: 768px) {
 
     /* Hide desktop navigation, show mobile bottom nav */
@@ -1110,6 +1549,12 @@ input[type=number]::-webkit-outer-spin-button {
         padding: 0.6rem 1.2rem;
     }
 
+    /* Calendar */
+    .calendar-grid-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.5rem !important;
+    }
+
     /* Workout cards */
     .workout-card {
         padding: 1rem;
@@ -1207,8 +1652,124 @@ input[type=number]::-webkit-outer-spin-button {
     }
 }
 
-/* Small mobile (up to 480px) */
+@media (max-width: 768px) {
+
+    /* Increase tap target sizes for mobile */
+    .nav-link,
+    .period-btn,
+    .preset-btn,
+    .pagination-btn,
+    .btn-icon {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better overflow handling */
+    .workout-name,
+    .pr-name,
+    .profile-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+}
+
+@media (max-width: 768px) {
+    .date-picker-modal {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        right: auto !important;
+        transform: translate(-50%, -50%) !important;
+        width: 95% !important;
+        max-width: 500px !important;
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        z-index: 10001 !important;
+        margin-top: 0 !important;
+    }
+
+    /* Backdrop */
+    .date-picker-modal.active::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.75);
+        z-index: -1;
+    }
+
+    /* Make calendar responsive inside modal */
+    .calendar-grid-container {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 1.5rem !important;
+    }
+
+    /* Presets scroll horizontally on mobile */
+    .date-presets {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 0.5rem;
+    }
+
+    /* Calendar wrapper stacks on mobile */
+    .calendar-wrapper {
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Navigation arrows smaller and positioned at top */
+    .nav-arrow {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+        position: absolute;
+        top: 0;
+        z-index: 10;
+    }
+
+    #prev-month {
+        left: 0;
+    }
+
+    #next-month {
+        right: 0;
+    }
+
+    /* Month title smaller */
+    .month-title {
+        font-size: 0.95rem;
+    }
+
+    /* Actions full width, stacked reversed so Cancel is below Apply */
+    .picker-actions {
+        flex-direction: column-reverse;
+        gap: 0.75rem;
+    }
+
+    .picker-actions .btn-primary,
+    .picker-actions .btn-secondary {
+        width: 100% !important;
+    }
+}
+
 @media (max-width: 480px) {
+
+    .calendar-grid-container {
+        grid-template-columns: repeat(1, 1fr) !important;
+        justify-content: center;
+        justify-items: center;
+        margin: 0 auto;
+    }
+
+    .calendar-month {
+        max-width: 320px;
+        margin: 0 auto;
+        width: 100%;
+    }
 
     /* Navigation - stack or minimize */
     .nav-container {
@@ -1303,113 +1864,107 @@ input[type=number]::-webkit-outer-spin-button {
         font-size: 1.2rem;
     }
 
-    /* WOD exercise fields - optimized for mobile V5 PINNED BUTTON */
+    /* WOD exercise fields - mobile: wrap rows layout */
     .wod-exercise-row {
-        display: flex !important;
-        flex-wrap: nowrap !important;
         position: relative !important;
-        padding: 0.75rem !important;
-        padding-right: 3rem !important;
-        /* Space for fixed button */
+        padding: 0.5rem !important;
+        padding-right: 2.5rem !important;
         margin-bottom: 1rem !important;
         overflow: visible !important;
-        /* Row itself does NOT scroll */
-        align-items: center !important;
-    }
-
-    .wod-exercise-row.no-weight {
-        display: flex !important;
+        align-items: flex-start !important;
     }
 
     /* Fixed Delete Button */
     .wod-exercise-row .btn-icon {
         position: absolute !important;
-        top: 50% !important;
-        right: 0.5rem !important;
-        transform: translateY(-50%) !important;
+        top: 0.5rem !important;
+        right: 0.25rem !important;
+        transform: none !important;
         z-index: 20 !important;
         background: var(--bg-secondary) !important;
-        /* Cover scroll content */
     }
 
-    /* SCROLLING WRAPPER */
+    /* SCROLLING WRAPPER becomes a column by default */
     .wod-row-scroller {
         display: flex !important;
+        flex-direction: column !important;
         flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
+        overflow-x: visible !important;
+        align-items: stretch !important;
+        gap: 0.4rem !important;
         flex: 1 !important;
-        /* Take remaining space */
         width: 100% !important;
-        -webkit-overflow-scrolling: touch !important;
-        /* Hide scrollbar if desired, or keep */
-        scrollbar-width: none;
+        scrollbar-width: auto;
     }
 
-    .wod-row-scroller::-webkit-scrollbar {
-        display: none;
-    }
-
-    /* Exercise name - Inside Scroller */
+    /* Row 1: Exercise name */
     .wod-exercise-name {
-        flex: 0 0 140px !important;
-        width: 140px !important;
-        min-width: 140px !important;
-        max-width: 140px !important;
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        max-width: none !important;
         margin-bottom: 0 !important;
-        margin-right: 0 !important;
     }
 
-    /* Fields container - Inside Scroller */
+    /* Row 2+3: Fields container wraps */
     .wod-fields-scroll {
         display: flex !important;
-        flex-wrap: nowrap !important;
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
+        flex-wrap: wrap !important;
+        flex: none !important;
+        gap: 0.4rem !important;
         align-items: center !important;
         overflow: visible !important;
-        padding-bottom: 0 !important;
-        margin-bottom: 0 !important;
         min-width: 0 !important;
     }
 
-    /* Single reps container */
-    .single-reps-container {
-        display: flex;
-        /* Removed !important */
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
-        width: 80px !important;
-        min-width: 80px !important;
+    /* Without ladder: reps + weight in one row (50%/50%) */
+    .wod-exercise-row:not(.ladder-mode) .single-reps-container {
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
     }
 
-    .single-reps-container input {
-        width: 80px !important;
-        min-width: 80px !important;
-        flex: 0 0 auto !important;
+    .wod-exercise-row:not(.ladder-mode) .single-reps-container input {
+        width: 100% !important;
+        min-width: 0 !important;
+        flex: 1 !important;
     }
 
-    /* Ladder reps container */
-    .ladder-reps-container {
-        display: flex;
-        /* Removed !important */
-        flex: 0 0 auto !important;
-        gap: 0.5rem !important;
+    .wod-exercise-row:not(.ladder-mode) .wod-weight {
+        flex: 1 !important;
+        min-width: 0 !important;
+        width: auto !important;
     }
 
-    .ladder-reps-container input {
-        width: 50px !important;
+    /* With ladder: reps row scrolls horizontally, weight on its own row */
+    .wod-exercise-row.ladder-mode .wod-fields-scroll {
+        flex-direction: column !important;
+        gap: 0.4rem !important;
+    }
+
+    .wod-exercise-row.ladder-mode .single-reps-container {
+        display: none !important;
+    }
+
+    .wod-exercise-row.ladder-mode .ladder-reps-container {
+        display: flex !important;
+        flex: none !important;
+        gap: 0.4rem !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+    }
+
+    .wod-exercise-row.ladder-mode .ladder-reps-container input {
+        flex: 1 1 50px !important;
         min-width: 50px !important;
-        flex: 0 0 auto !important;
+        max-width: none !important;
     }
 
-    /* Weight input */
-    .wod-weight {
-        flex: 0 0 auto !important;
-        width: 90px !important;
-        min-width: 90px !important;
-        max-width: none !important;
+    .wod-exercise-row.ladder-mode .wod-weight {
+        flex: none !important;
+        width: 100% !important;
+        min-width: 0 !important;
     }
 
     /* Set inputs container - scroll */
@@ -1564,552 +2119,295 @@ input[type=number]::-webkit-outer-spin-button {
     }
 }
 
-/* --- Mobile Touch Improvements --- */
-@media (max-width: 768px) {
-
-    /* Increase tap target sizes for mobile */
-    .nav-link,
-    .period-btn,
-    .preset-btn,
-    .pagination-btn,
-    .btn-icon {
-        min-height: 44px;
-        min-width: 44px;
-    }
-
-    /* Better overflow handling */
-    .workout-name,
-    .pr-name,
-    .profile-name {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-}
-
-/* --- Date Picker Styles --- */
-.date-picker-modal {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1rem;
-    z-index: 1000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-    margin-top: 0.5rem;
-}
-
-.date-picker-modal.active {
-    display: block;
-}
-
-/* --- Calendar Base Styles --- */
-.calendar-grid-container {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1rem;
-    flex: 1;
-}
-
-/* Tablet (481px - 768px) - Requirements 3.1, 3.2 */
-@media (min-width: 481px) and (max-width: 768px) {
-    .calendar-grid-container {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1rem;
-    }
-}
-
-/* Mobile (<481px) - Requirements 3.3, 3.4, 3.5 */
-@media (max-width: 480px) {
-    .calendar-grid-container {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-        justify-items: center;
-    }
-    
-    .calendar-month {
-        width: 100%;
-        max-width: 100%;
-    }
-
-    /* Date picker modal - center with backdrop */
-    .date-picker-modal {
-        position: fixed !important;
-        top: 50% !important;
-        left: 50% !important;
-        right: auto !important;
-        transform: translate(-50%, -50%) !important;
-        width: 95% !important;
-        max-width: 500px !important;
-        max-height: 85vh !important;
-        overflow-y: auto !important;
-        z-index: 10001 !important;
-        margin-top: 0 !important;
-    }
-
-    /* Backdrop */
-    .date-picker-modal.active::before {
-        content: '';
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.75);
-        z-index: -1;
-    }
-
-    /* Presets scroll horizontally on mobile */
-    .date-presets {
-        overflow-x: auto;
-        flex-wrap: nowrap;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 0.5rem;
-    }
-
-    /* Calendar wrapper stacks on mobile */
-    .calendar-wrapper {
-        flex-direction: column;
-    }
-
-    /* Navigation arrows smaller */
-    .nav-arrow {
-        width: 28px;
-        height: 28px;
-        font-size: 0.9rem;
-    }
-
-    /* Month title smaller */
-    .month-title {
-        font-size: 0.95rem;
-    }
-
-    /* Actions full width */
-    .picker-actions {
-        flex-direction: column;
-        gap: 0.75rem;
-    }
-
-    .picker-actions .btn-primary,
-    .picker-actions .btn-secondary {
-        width: 100% !important;
-    }
-}
-
-.date-presets {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 1rem;
-    overflow-x: auto;
-}
-
-.preset-btn {
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-}
-
-.preset-btn:hover {
-    border-color: var(--text-secondary);
-    color: var(--text-primary);
-}
-
-.preset-btn.active {
-    background: var(--color-primary);
-    color: white;
-    border-color: var(--color-primary);
-}
-
-.calendar-wrapper {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.nav-arrow {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: var(--text-primary);
-    flex-shrink: 0;
-}
-
-.nav-arrow:hover {
-    background: var(--bg-tertiary);
-}
-
-.nav-arrow:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-.calendar-month {
-    text-align: center;
-}
-
-.month-title {
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: var(--text-primary);
-}
-
-.calendar-header {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    margin-bottom: 0.25rem;
-}
-
-.weekday-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    text-align: center;
-}
-
-.calendar-days-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 2px;
-}
-
-.day-cell {
-    aspect-ratio: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    border-radius: 4px;
-    font-size: 0.9rem;
-    color: var(--text-primary);
-}
-
-.day-cell:hover:not(.empty) {
-    background: var(--bg-tertiary);
-}
-
-.day-cell.empty {
-    cursor: default;
-}
-
-/* Selection States */
-.day-cell.selected {
-    background: var(--color-primary);
-    color: white;
-    font-weight: bold;
-}
-
-.day-cell.range-start {
-    background: var(--color-primary);
-    color: white;
-    border-top-right-radius: 0;
-    border-bottom-right-radius: 0;
-}
-
-.day-cell.range-end {
-    background: var(--color-primary);
-    color: white;
-    border-top-left-radius: 0;
-    border-bottom-left-radius: 0;
-}
-
-.day-cell.range-between {
-    background: rgba(var(--color-primary-rgb), 0.2);
-    background: #00e5ff33;
-    /* Fallback */
-    color: var(--text-primary);
-    border-radius: 0;
-}
-
-.picker-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    border-top: 1px solid var(--border-color);
-    padding-top: 1rem;
-}
-
-/* --- WOD Layout --- */
-/* Desktop: flex with percentage ratios and constraints */
-.wod-exercise-row {
-    position: relative;
-    padding: 0.5rem;
-    padding-right: 3rem;
-    /* Space for delete button */
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    margin-bottom: 0.5rem;
-    /* Removed display: flex from here, moved to scroller */
-}
-
-/* NEW: The wrapper acts as the flex row on desktop */
-.wod-row-scroller {
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
-    width: 100%;
-}
-
-.wod-exercise-row .btn-icon {
-    position: absolute;
-    right: 0.5rem;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-}
-
-/* --- DESKTOP SPECIFIC LAYOUT (>768px) - V14 CSS GRID --- */
-@media (min-width: 769px) {
-
-    /* PARENT RESET: Stop acting as a Grid (which crushes the inner scroller) */
-    .wod-exercise-row {
-        display: block !important;
-        padding-right: 3rem !important;
-        /* Keep space for button */
-        grid-template-columns: none !important;
-        /* Just in case */
-    }
-
-    /* MASTER ROW: Split 50% Name / 50% Fields */
-    /* Target the scroller container which holds the inputs */
-    .wod-row-scroller {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        gap: 0.5rem !important;
-        width: 100% !important;
-        align-items: center !important;
-    }
-
-    /* 1. Exercise Name (Left Column) */
-    .wod-exercise-row .wod-exercise-name {
-        width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        max-width: none !important;
-    }
-
-    /* 2. Fields Wrapper (Right Column) - Nested Grid */
-    .wod-exercise-row .wod-fields-scroll {
-        display: grid !important;
-        grid-template-columns: 1fr 1fr !important;
-        /* 50% Reps / 50% Weight */
-        gap: 0.5rem !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        align-items: center !important;
-        /* Remove flex props */
-        flex: none !important;
-    }
-
-    /* REPS CONTAINER (Left Cell of Nested Grid) */
-    .single-reps-container,
-    .ladder-reps-container {
-        width: 100% !important;
-        min-width: 0 !important;
-        max-width: none !important;
-        /* Remove flex props */
-        flex: none !important;
-    }
-
-    /* WEIGHT INPUT (Right Cell of Nested Grid) */
-    .wod-weight {
-        width: 100% !important;
-        max-width: none !important;
-        min-width: 0 !important;
-        /* Remove flex props */
-        flex: none !important;
-    }
-
-    /* CARDIO MODE (No Weight) - Collapse Nested Grid to 1 Column */
-    .wod-exercise-row.no-weight .wod-fields-scroll {
-        grid-template-columns: 1fr !important;
-    }
-
-    /* Single Reps Input - Fill Container */
-    .single-reps-container input {
-        width: 100% !important;
-    }
-
-    /* Ladder Container - Flex content inside the grid cell */
-    .ladder-reps-container {
-        display: flex !important;
-        gap: 0.25rem !important;
-        overflow-x: auto;
-    }
-
-    .ladder-reps-container input {
-        flex: 1 0 auto !important;
-        /* Grow to fill */
-        width: auto !important;
-        min-width: 40px;
-    }
-}
-
-/* Mobile Fix for Ghost Field */
 @media (max-width: 480px) {
     .wod-exercise-row.ladder-mode .single-reps-container {
         display: none !important;
     }
 }
 
-.wod-exercise-row.no-weight .wod-fields-scroll {
+/* Auth Page Specific Styles */
+body.auth-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+}
+
+.auth-container {
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.auth-logo-wrapper {
+    margin-bottom: 2rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.auth-logo {
+    max-width: 300px;
+    width: 100%;
+    height: auto;
+    object-fit: contain;
+}
+
+.auth-card {
+    width: 100%;
+    padding: 2rem 1.5rem;
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+}
+
+.auth-tabs {
+    display: flex;
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.auth-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    font-weight: 500;
+    padding: 0.75rem 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    margin-bottom: -2px;
+    /* Накладываемся на бордер */
+}
+
+.auth-tab.active {
+    color: var(--color-primary);
+    border-bottom-color: var(--color-primary);
+}
+
+.auth-form {
+    display: none;
+}
+
+.auth-form.active {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+/* Reduced spacing for auth login form */
+.auth-form .form-group {
+    margin-bottom: 1rem;
+}
+
+.auth-form .form-label {
+    margin-bottom: 0.25rem;
+}
+
+.auth-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.forgot-password {
+    color: var(--color-primary);
+    text-decoration: none;
+}
+
+.forgot-password:hover {
+    text-decoration: underline;
+}
+
+.form-input.error {
+    border-color: var(--color-primary);
+    background-color: rgba(255, 59, 48, 0.05);
+    /* Slight red tint */
+}
+
+.form-error-msg {
+    color: var(--color-primary);
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    min-height: 1.2rem;
+    /* Reserve space so layout doesn't jump */
+}
+
+/* Notification (Toast) Styles */
+#notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--color-primary);
+    min-width: 250px;
+    transform: translateX(120%);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.error {
+    border-left-color: var(--color-primary);
+    /* У нас color-primary это красный */
+}
+
+.notification.success {
+    border-left-color: var(--color-secondary);
+    /* У нас secondary это зеленый */
+}
+/* ============================================
+   Next.js App — дополнения к mvp-styles.css
+   ============================================ */
+
+/* Обёртка приложения */
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
     flex: 1;
 }
 
-
-/* --- Header Button --- */
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.btn-new-workout {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 20px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    transition: background 0.2s;
-}
-
-.btn-new-workout:hover {
-    background: var(--color-primary-hover);
-}
-
-/* ============================================================
-   Новые стили для React компонентов (задача 17)
-   ============================================================ */
-
-/* --- Базовая кнопка .btn --- */
-.btn {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    text-decoration: none;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-.btn.btn-primary {
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-    color: var(--text-primary);
-}
-
-.btn.btn-primary:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(255, 59, 48, 0.4);
-}
-
-.btn.btn-outline {
-    background: transparent;
-    border: 2px solid var(--border-color);
-    color: var(--text-primary);
-}
-
-.btn.btn-outline:hover:not(:disabled) {
-    border-color: var(--color-primary);
-}
-
-.btn.btn-danger {
-    background: rgba(255, 59, 48, 0.2);
-    color: var(--color-primary);
-    border: 2px solid var(--color-primary);
-}
-
-.btn.btn-danger:hover:not(:disabled) {
-    background: var(--color-primary);
-    color: var(--text-primary);
-}
-
-.btn.btn-full {
+/* Кнопки — доп. варианты */
+.btn-full {
     width: 100%;
 }
 
-.btn.btn-sm {
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
     padding: 0.5rem 1rem;
-    font-size: 0.85rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-/* --- Form элементы --- */
-.form-label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
+.btn-outline:hover {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+/* Состояние загрузки */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    gap: 1rem;
     color: var(--text-secondary);
+}
+
+/* Спиннер */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spinAnim 0.8s linear infinite;
+}
+
+@keyframes spinAnim {
+    to { transform: rotate(360deg); }
+}
+
+/* Сообщения форм */
+.form-success {
+    color: var(--color-secondary);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    background: rgba(48, 255, 136, 0.1);
+    border: 1px solid var(--color-secondary);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.form-error {
+    color: var(--color-primary);
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 59, 48, 0.1);
+    border: 1px solid var(--color-primary);
+    border-radius: 8px;
+    margin-bottom: 1rem;
 }
 
 .form-hint {
     font-size: 0.8rem;
     color: var(--text-secondary);
-    font-weight: 400;
+    margin-top: 0.25rem;
 }
 
-.form-error {
-    background: rgba(255, 59, 48, 0.15);
-    border: 1px solid var(--color-primary);
-    color: var(--color-primary);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.95rem;
+/* Мобильный nav (Next.js alias для .mobile-bottom-nav) */
+.mobile-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--bg-secondary);
+    border-top: 2px solid var(--border-color);
+    padding: 0.5rem 0;
+    z-index: 1000;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
 }
 
-.form-success {
-    background: rgba(48, 255, 136, 0.15);
-    border: 1px solid var(--color-secondary);
-    color: var(--color-secondary);
-    padding: 0.75rem 1rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    font-size: 0.95rem;
+@media (max-width: 768px) {
+    .navbar {
+        display: none;
+    }
+
+    .mobile-logo-bar {
+        display: flex;
+    }
+
+    .mobile-nav {
+        display: flex;
+    }
+
+    body {
+        padding-bottom: 70px;
+    }
+
+    .main-content .container {
+        padding: 1rem;
+    }
 }
 
-.form-check {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    cursor: pointer;
-    color: var(--text-secondary);
-}
-
-/* --- Auth стили --- */
+/* Auth страницы */
 .auth-container {
     min-height: 100vh;
     display: flex;
@@ -2133,21 +2431,6 @@ input[type=number]::-webkit-outer-spin-button {
     width: 100%;
     height: auto;
     object-fit: contain;
-}
-
-.auth-card {
-    width: 100%;
-    max-width: 420px;
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2rem 1.5rem;
-}
-
-.auth-tabs {
-    display: flex;
-    border-bottom: 2px solid var(--border-color);
-    margin-bottom: 1.5rem;
 }
 
 .auth-tab {
@@ -2178,30 +2461,6 @@ input[type=number]::-webkit-outer-spin-button {
     animation: fadeIn 0.3s ease;
 }
 
-.auth-form .form-group {
-    margin-bottom: 1rem;
-}
-
-.auth-form .form-label {
-    margin-bottom: 0.25rem;
-}
-
-.auth-actions {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.25rem;
-    font-size: 0.875rem;
-}
-
-.remember-me {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--text-secondary);
-    cursor: pointer;
-}
-
 .forgot-password {
     background: none;
     border: none;
@@ -2216,78 +2475,7 @@ input[type=number]::-webkit-outer-spin-button {
     text-decoration: underline;
 }
 
-.form-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-}
-
-.form-error-msg {
-    color: var(--color-primary);
-    font-size: 0.8rem;
-    margin-top: 0.25rem;
-    min-height: 1.2rem;
-}
-
-.auth-links {
-    margin-top: 1.5rem;
-    text-align: center;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.auth-link {
-    color: var(--color-primary);
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-
-.auth-link:hover {
-    text-decoration: underline;
-}
-
-.auth-link-sep {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* --- Toast уведомления --- */
-#notification-container {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.notification {
-    background-color: var(--bg-tertiary);
-    color: var(--text-primary);
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: var(--shadow);
-    border-left: 4px solid var(--color-primary);
-    min-width: 250px;
-    transform: translateX(120%);
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.notification.show {
-    transform: translateX(0);
-}
-
-.notification.error {
-    border-left-color: var(--color-primary);
-}
-
-.notification.success {
-    border-left-color: var(--color-secondary);
-}
-
+/* Статусные иконки (страница верификации) */
 .auth-status {
     text-align: center;
     padding: 1.5rem 0;
@@ -2305,7 +2493,6 @@ input[type=number]::-webkit-outer-spin-button {
     align-items: center;
     justify-content: center;
     font-size: 1.8rem;
-    font-weight: 700;
 }
 
 .status-success {
@@ -2320,76 +2507,7 @@ input[type=number]::-webkit-outer-spin-button {
     border: 2px solid var(--color-primary);
 }
 
-/* --- Spinner --- */
-.spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid var(--border-color);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: spin 0.8s linear infinite;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 4rem;
-    gap: 1rem;
-    color: var(--text-secondary);
-}
-
-/* --- Empty state --- */
-.empty-state {
-    text-align: center;
-    padding: 3rem;
-    color: var(--text-secondary);
-    background: var(--bg-secondary);
-    border: 2px dashed var(--border-color);
-    border-radius: 16px;
-}
-
-/* --- App shell --- */
-.app-shell {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-.main-content {
-    flex: 1;
-    padding-top: 0;
-}
-
-/* --- Мобильная навигация (новый класс) --- */
-.mobile-nav {
-    display: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--bg-secondary);
-    border-top: 2px solid var(--border-color);
-    padding: 0.5rem 0;
-    z-index: 1000;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
-}
-
-@media (max-width: 768px) {
-    .mobile-nav {
-        display: flex;
-    }
-    .main-content {
-        padding-bottom: 70px;
-    }
-}
-
-/* --- Модальное окно --- */
+/* Модальное окно (Migration modal) */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -2397,17 +2515,17 @@ input[type=number]::-webkit-outer-spin-button {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
+    z-index: 2000;
     padding: 1rem;
 }
 
 .modal-card {
     background: var(--bg-secondary);
     border: 2px solid var(--border-color);
-    border-radius: 20px;
+    border-radius: 16px;
     padding: 2rem;
-    max-width: 480px;
     width: 100%;
+    max-width: 440px;
 }
 
 .modal-title {
@@ -2433,254 +2551,35 @@ input[type=number]::-webkit-outer-spin-button {
     flex-direction: column;
     align-items: center;
     gap: 1rem;
-    padding: 1.5rem 0;
-    color: var(--text-secondary);
+    padding: 1rem 0;
 }
 
 .modal-result {
-    padding: 0.5rem 0;
-}
-
-/* --- Блок-карточки в форме тренировки --- */
-.block-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.block-skill {
-    border-color: rgba(48, 255, 136, 0.3);
-}
-
-.block-wod {
-    border-color: rgba(255, 59, 48, 0.3);
-}
-
-.block-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.25rem;
-}
-
-.btn-remove {
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 1.1rem;
-    padding: 0.25rem 0.5rem;
-    transition: color 0.2s;
-}
-
-.btn-remove:hover {
-    color: var(--color-primary);
-}
-
-/* --- Подходы в Skill блоке --- */
-.sets-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.set-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-}
-
-.set-num {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    min-width: 1.5rem;
-    text-align: right;
-}
-
-/* --- Добавление блоков --- */
-.add-blocks-row {
-    display: flex;
-    gap: 1rem;
-    margin-top: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-/* --- WOD exercises builder --- */
-.wod-exercises-builder {
-    margin-top: 1rem;
-}
-
-.wod-exercise-row {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 0.75rem;
-    flex-wrap: wrap;
-}
-
-/* --- Форма тренировки --- */
-.workout-form {
-    background: var(--bg-tertiary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 2rem;
-}
-
-/* --- Детальная страница тренировки --- */
-.detail-block {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.detail-block-header {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1rem;
-}
-
-.exercise-link {
-    color: var(--text-primary);
-    text-decoration: none;
-    font-size: 1.2rem;
-    font-weight: 700;
-    transition: color 0.2s;
-}
-
-.exercise-link:hover {
-    color: var(--color-primary);
-}
-
-.workout-comment {
-    color: var(--text-secondary);
-    font-style: italic;
-    margin-bottom: 1rem;
-}
-
-.wod-result {
-    font-size: 1.1rem;
-    margin-bottom: 0.75rem;
-}
-
-.wod-result strong {
-    color: var(--color-primary);
-}
-
-.wod-exercises {
-    margin-top: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.wod-exercise-item {
-    color: var(--text-secondary);
-    font-size: 0.95rem;
-}
-
-.back-link {
-    display: block;
-    color: var(--text-secondary);
-    text-decoration: none;
-    font-size: 0.85rem;
-    margin-bottom: 0.25rem;
-    transition: color 0.2s;
-}
-
-.back-link:hover {
-    color: var(--text-primary);
-}
-
-/* --- Таблица подходов --- */
-.sets-table {
-    width: 100%;
-    border-collapse: collapse;
-    background: var(--bg-tertiary);
-    border-radius: 8px;
-    overflow: hidden;
-}
-
-.sets-table th {
-    padding: 0.75rem 1rem;
-    text-align: left;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.sets-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.95rem;
-}
-
-.sets-table tr:last-child td {
-    border-bottom: none;
-}
-
-.sets-table tbody tr:hover {
-    background: var(--bg-secondary);
-}
-
-/* --- Профиль --- */
-.profile-section {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.profile-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-accent));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 2rem;
-    font-weight: 700;
-    flex-shrink: 0;
-    overflow: hidden;
-}
-
-.profile-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.settings-card {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 16px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-}
-
-.settings-danger {
-    border-color: rgba(255, 59, 48, 0.3);
-}
-
-/* --- Workout block (детали) --- */
-.workout-block {
-    background: var(--bg-tertiary);
-    border-radius: 8px;
-    padding: 0.75rem 1rem;
     margin-bottom: 0.5rem;
 }
 
-.workout-block .block-title {
-    font-weight: 600;
-    margin-bottom: 0.25rem;
+/* Filters */
+.filters-section {
+    margin-bottom: 2rem;
+}
+
+.date-range-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-input-group label {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
 }
