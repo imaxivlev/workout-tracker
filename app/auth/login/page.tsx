@@ -1,75 +1,159 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { authApi, ApiError } from '@/lib/api/client';
 
-export default function LoginPage() {
+type Tab = 'login' | 'register' | 'reset';
+
+export default function AuthPage() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [tab, setTab] = useState<Tab>('login');
 
-  async function handleSubmit(e: FormEvent) {
+  // Login
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Register
+  const [regFirstName, setRegFirstName] = useState('');
+  const [regLastName, setRegLastName] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+  const [regConfirm, setRegConfirm] = useState('');
+  const [regError, setRegError] = useState('');
+  const [regSuccess, setRegSuccess] = useState('');
+  const [regLoading, setRegLoading] = useState(false);
+
+  // Reset
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetError, setResetError] = useState('');
+  const [resetSuccess, setResetSuccess] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+
+  async function handleLogin(e: FormEvent) {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
+    setLoginError('');
+    setLoginLoading(true);
     try {
-      await authApi.login(email, password);
+      await authApi.login(loginEmail, loginPassword);
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 401) {
-          setError('Неверный email или пароль');
-        } else if (err.status === 429) {
-          setError('Слишком много попыток. Подождите 15 минут.');
-        } else {
-          setError(err.message);
-        }
+        if (err.status === 401) setLoginError('Неверный email или пароль');
+        else if (err.status === 429) setLoginError('Слишком много попыток. Подождите 15 минут.');
+        else setLoginError(err.message);
       } else {
-        setError('Ошибка соединения с сервером');
+        setLoginError('Ошибка соединения с сервером');
       }
     } finally {
-      setLoading(false);
+      setLoginLoading(false);
+    }
+  }
+
+  async function handleRegister(e: FormEvent) {
+    e.preventDefault();
+    setRegError('');
+    if (regPassword !== regConfirm) {
+      setRegError('Пароли не совпадают');
+      return;
+    }
+    setRegLoading(true);
+    try {
+      await authApi.register(regEmail, regPassword);
+      setRegSuccess('Аккаунт создан! Проверьте почту для подтверждения email.');
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 409) setRegError('Пользователь с таким email уже существует');
+        else if (err.details?.length) setRegError(err.details[0].message);
+        else setRegError(err.message);
+      } else {
+        setRegError('Ошибка соединения с сервером');
+      }
+    } finally {
+      setRegLoading(false);
+    }
+  }
+
+  async function handleReset(e: FormEvent) {
+    e.preventDefault();
+    setResetError('');
+    setResetSuccess('');
+    setResetLoading(true);
+    try {
+      await authApi.requestPasswordReset(resetEmail);
+      setResetSuccess('Письмо со ссылкой для восстановления отправлено на ваш email.');
+    } catch (err) {
+      if (err instanceof ApiError) setResetError(err.message);
+      else setResetError('Ошибка соединения с сервером');
+    } finally {
+      setResetLoading(false);
     }
   }
 
   return (
     <div className="auth-container">
+      <div className="auth-logo-wrapper">
+        <Image
+          src="/workout-tracker/images/logo.png"
+          alt="CrossFit Tracker"
+          className="auth-logo-img"
+          width={260}
+          height={80}
+          style={{ objectFit: 'contain' }}
+          priority
+        />
+      </div>
+
       <div className="auth-card">
-        <div className="auth-logo">
-          <span className="auth-logo-icon">🏋️</span>
-          <span className="auth-logo-text">CrossFit Tracker</span>
-        </div>
+        {/* Табы — не показываем при сбросе пароля */}
+        {tab !== 'reset' && (
+          <div className="auth-tabs">
+            <button
+              className={`auth-tab${tab === 'login' ? ' active' : ''}`}
+              onClick={() => setTab('login')}
+              type="button"
+            >
+              Вход
+            </button>
+            <button
+              className={`auth-tab${tab === 'register' ? ' active' : ''}`}
+              onClick={() => setTab('register')}
+              type="button"
+            >
+              Регистрация
+            </button>
+          </div>
+        )}
 
-        <h1 className="auth-title">Вход</h1>
-
-        <form onSubmit={handleSubmit} className="auth-form">
+        {/* Форма входа */}
+        <form
+          onSubmit={handleLogin}
+          className={`auth-form${tab === 'login' ? ' active' : ''}`}
+        >
           <div className="form-group">
-            <label htmlFor="email" className="form-label">Email</label>
+            <label className="form-label">Email</label>
             <input
-              id="email"
               type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
+              value={loginEmail}
+              onChange={e => setLoginEmail(e.target.value)}
               className="form-input"
-              placeholder="you@example.com"
+              placeholder="your@email.com"
               required
               autoComplete="email"
             />
+            {loginError && <div className="form-error-msg">{loginError}</div>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="password" className="form-label">Пароль</label>
+            <label className="form-label">Пароль</label>
             <input
-              id="password"
               type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
+              value={loginPassword}
+              onChange={e => setLoginPassword(e.target.value)}
               className="form-input"
               placeholder="••••••••"
               required
@@ -77,22 +161,160 @@ export default function LoginPage() {
             />
           </div>
 
-          {error && <div className="form-error">{error}</div>}
+          <div className="auth-actions">
+            <span />
+            <button
+              type="button"
+              className="forgot-password"
+              onClick={() => setTab('reset')}
+            >
+              Забыли пароль?
+            </button>
+          </div>
 
-          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
-            {loading ? 'Вход...' : 'Войти'}
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            style={{ marginTop: '1.5rem' }}
+            disabled={loginLoading}
+          >
+            {loginLoading ? 'Вход...' : 'Войти'}
           </button>
         </form>
 
-        <div className="auth-links">
-          <Link href="/auth/reset-password" className="auth-link">
-            Забыли пароль?
-          </Link>
-          <span className="auth-link-sep">·</span>
-          <Link href="/auth/register" className="auth-link">
-            Регистрация
-          </Link>
-        </div>
+        {/* Форма регистрации */}
+        <form
+          onSubmit={handleRegister}
+          className={`auth-form${tab === 'register' ? ' active' : ''}`}
+        >
+          {regSuccess ? (
+            <div className="form-success" style={{ textAlign: 'center', padding: '1rem 0' }}>
+              {regSuccess}
+            </div>
+          ) : (
+            <>
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Имя</label>
+                  <input
+                    type="text"
+                    value={regFirstName}
+                    onChange={e => setRegFirstName(e.target.value)}
+                    className="form-input"
+                    placeholder="Иван"
+                    autoComplete="given-name"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Фамилия</label>
+                  <input
+                    type="text"
+                    value={regLastName}
+                    onChange={e => setRegLastName(e.target.value)}
+                    className="form-input"
+                    placeholder="Иванов"
+                    autoComplete="family-name"
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email"
+                  value={regEmail}
+                  onChange={e => setRegEmail(e.target.value)}
+                  className="form-input"
+                  placeholder="your@email.com"
+                  required
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Пароль</label>
+                <input
+                  type="password"
+                  value={regPassword}
+                  onChange={e => setRegPassword(e.target.value)}
+                  className="form-input"
+                  placeholder="Минимум 8 символов"
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Подтверждение пароля</label>
+                <input
+                  type="password"
+                  value={regConfirm}
+                  onChange={e => setRegConfirm(e.target.value)}
+                  className="form-input"
+                  placeholder="Повторите пароль"
+                  required
+                  autoComplete="new-password"
+                />
+              </div>
+
+              {regError && <div className="form-error-msg">{regError}</div>}
+
+              <button
+                type="submit"
+                className="btn btn-primary btn-full"
+                style={{ marginTop: '1.5rem' }}
+                disabled={regLoading}
+              >
+                {regLoading ? 'Создание...' : 'Создать аккаунт'}
+              </button>
+            </>
+          )}
+        </form>
+
+        {/* Форма сброса пароля */}
+        <form
+          onSubmit={handleReset}
+          className={`auth-form${tab === 'reset' ? ' active' : ''}`}
+        >
+          <p style={{ textAlign: 'center', marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+            Введите ваш email, и мы отправим ссылку для восстановления пароля.
+          </p>
+
+          <div className="form-group">
+            <label className="form-label">Email</label>
+            <input
+              type="email"
+              value={resetEmail}
+              onChange={e => setResetEmail(e.target.value)}
+              className="form-input"
+              placeholder="your@email.com"
+              required
+              autoComplete="email"
+            />
+          </div>
+
+          {resetError && <div className="form-error-msg">{resetError}</div>}
+          {resetSuccess && <div className="form-success">{resetSuccess}</div>}
+
+          <button
+            type="submit"
+            className="btn btn-primary btn-full"
+            style={{ marginTop: '1.5rem', marginBottom: '1rem' }}
+            disabled={resetLoading}
+          >
+            {resetLoading ? 'Отправка...' : 'Восстановить пароль'}
+          </button>
+
+          <div style={{ textAlign: 'center' }}>
+            <button
+              type="button"
+              className="forgot-password"
+              onClick={() => setTab('login')}
+            >
+              Вернуться ко входу
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
