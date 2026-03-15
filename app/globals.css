@@ -901,6 +901,32 @@ input[type=number]::-webkit-outer-spin-button {
     gap: 1rem;
 }
 
+/* Filters */
+.filters-section {
+    margin-bottom: 2rem;
+}
+
+.date-range-inputs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.date-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.date-input-group label {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
 /* Mobile Bottom Navigation */
 .mobile-bottom-nav {
     display: none;
