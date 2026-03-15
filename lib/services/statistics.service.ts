@@ -288,7 +288,7 @@ export class StatisticsService {
   async getDashboard(userId: string): Promise<{
     workoutsThisMonth: number;
     tonnageThisMonth: number;
-    currentStreak: { days: number; weeks: number };
+    streak: { days: number; weeks: number };
     recentWorkouts: any[];
   }> {
     const now = new Date();
@@ -317,7 +317,7 @@ export class StatisticsService {
     );
 
     // Текущий стрик
-    const currentStreak = await this.calculateStreak(userId);
+    const streak = await this.calculateStreak(userId);
 
     // Последние 5-10 тренировок
     const recentWorkouts = await prisma.workout.findMany({
@@ -346,7 +346,7 @@ export class StatisticsService {
     return {
       workoutsThisMonth,
       tonnageThisMonth,
-      currentStreak,
+      streak,
       recentWorkouts,
     };
   }
