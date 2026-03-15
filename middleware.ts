@@ -6,11 +6,12 @@ const AUTH_PATHS = ['/auth/login', '/auth/register'];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Пропускаем API routes, статику и сервис-воркер
+  // Пропускаем API routes, статику, сервис-воркер и публичные файлы
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/static/') ||
+    pathname.startsWith('/workout-tracker/') ||
     pathname === '/manifest.json' ||
     pathname === '/service-worker.js' ||
     pathname === '/favicon.ico'
