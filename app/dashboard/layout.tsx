@@ -4,13 +4,6 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/client';
 
-const navItems = [
-  { href: '/dashboard', label: 'Главная', icon: '🏠' },
-  { href: '/dashboard/workouts', label: 'Тренировки', icon: '📋' },
-  { href: '/dashboard/workouts/new', label: 'Добавить', icon: '➕' },
-  { href: '/dashboard/profile', label: 'Профиль', icon: '👤' },
-];
-
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -29,41 +22,45 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Верхняя навигация (десктоп) */}
       <nav className="navbar">
         <div className="nav-container">
-          <div className="logo">
-            <span className="logo-icon">🏋️</span>
-            <span>CrossFit Tracker</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+            <Link href="/dashboard" className="logo">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/workout-tracker/images/logo.png" alt="CrossFit Tracker" />
+            </Link>
+            <div className="nav-links">
+              <Link
+                href="/dashboard/workouts"
+                className={`nav-link ${pathname.startsWith('/dashboard/workouts') && pathname !== '/dashboard/workouts/new' ? 'active' : ''}`}
+              >
+                История
+              </Link>
+              <Link
+                href="/dashboard/exercise"
+                className={`nav-link ${pathname.startsWith('/dashboard/exercise') ? 'active' : ''}`}
+              >
+                Статистика
+              </Link>
+            </div>
           </div>
-          <div className="nav-links">
-            <Link
-              href="/dashboard"
-              className={`nav-link ${pathname === '/dashboard' ? 'active' : ''}`}
-            >
-              Главная
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <Link href="/dashboard/workouts/new" className="btn btn-primary btn-sm">
+              Новая тренировка
             </Link>
-            <Link
-              href="/dashboard/workouts"
-              className={`nav-link ${pathname.startsWith('/dashboard/workouts') && pathname !== '/dashboard/workouts/new' ? 'active' : ''}`}
-            >
-              Тренировки
-            </Link>
-            <Link
-              href="/dashboard/workouts/new"
-              className={`nav-link ${pathname === '/dashboard/workouts/new' ? 'active' : ''}`}
-            >
-              + Добавить
-            </Link>
-            <Link
-              href="/dashboard/profile"
-              className={`nav-link ${pathname === '/dashboard/profile' ? 'active' : ''}`}
-            >
-              Профиль
+            <Link href="/dashboard/profile" className="user-avatar" title="Профиль">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </Link>
           </div>
-          <button onClick={handleLogout} className="btn btn-outline btn-sm">
-            Выйти
-          </button>
         </div>
       </nav>
+
+      {/* Мобильная лого-полоса */}
+      <div className="mobile-logo-bar">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/workout-tracker/images/logo.png" alt="CrossFit Tracker" className="mobile-logo-img" />
+      </div>
 
       {/* Контент */}
       <main className="main-content">
@@ -72,16 +69,57 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Нижняя мобильная навигация */}
       <nav className="mobile-nav">
-        {navItems.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`mobile-nav-item ${pathname === item.href ? 'active' : ''}`}
-          >
-            <span className="mobile-nav-icon">{item.icon}</span>
-            <span className="mobile-nav-label">{item.label}</span>
-          </Link>
-        ))}
+        <Link
+          href="/dashboard"
+          className={`mobile-nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
+        >
+          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+            <polyline points="9 22 9 12 15 12 15 22" />
+          </svg>
+          <span className="mobile-nav-label">Главная</span>
+        </Link>
+        <Link
+          href="/dashboard/workouts"
+          className={`mobile-nav-item ${pathname.startsWith('/dashboard/workouts') && pathname !== '/dashboard/workouts/new' ? 'active' : ''}`}
+        >
+          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+          <span className="mobile-nav-label">История</span>
+        </Link>
+        <Link
+          href="/dashboard/workouts/new"
+          className={`mobile-nav-item ${pathname === '/dashboard/workouts/new' ? 'active' : ''}`}
+        >
+          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          <span className="mobile-nav-label">Создать</span>
+        </Link>
+        <Link
+          href="/dashboard/exercise"
+          className={`mobile-nav-item ${pathname.startsWith('/dashboard/exercise') ? 'active' : ''}`}
+        >
+          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <line x1="12" y1="20" x2="12" y2="10" />
+            <line x1="18" y1="20" x2="18" y2="4" />
+            <line x1="6" y1="20" x2="6" y2="16" />
+          </svg>
+          <span className="mobile-nav-label">Статистика</span>
+        </Link>
+        <Link
+          href="/dashboard/profile"
+          className={`mobile-nav-item ${pathname === '/dashboard/profile' ? 'active' : ''}`}
+        >
+          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+          <span className="mobile-nav-label">Профиль</span>
+        </Link>
       </nav>
     </div>
   );

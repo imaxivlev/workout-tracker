@@ -72,9 +72,10 @@ export default function DashboardPage() {
       )}
 
       <div className="page-header">
-        <h1 className="page-title">Главная</h1>
+        <h1 className="page-title">Мои тренировки</h1>
         <Link href="/dashboard/workouts/new" className="btn btn-primary">
-          + Тренировка
+          <span className="btn-icon">➕</span>
+          Новая тренировка
         </Link>
       </div>
 
@@ -82,16 +83,16 @@ export default function DashboardPage() {
       <div className="quick-stats">
         <div className="stat-mini">
           <div className="stat-mini-value">{stats?.workoutsThisMonth ?? 0}</div>
-          <div className="stat-mini-label">Тренировок в месяце</div>
+          <div className="stat-mini-label">Тренировок<br />в этом месяце</div>
         </div>
         <div className="stat-mini">
           <div className="stat-mini-value">{tonnageDisplay}</div>
-          <div className="stat-mini-label">Тоннаж в месяце</div>
+          <div className="stat-mini-label">Тоннаж<br />в этом месяце</div>
         </div>
         <div className="stat-mini">
-          <div className="stat-mini-value">{stats?.streak.days ?? 0}</div>
+          <div className="stat-mini-value">🔥 {stats?.streak.days ?? 0}</div>
           <div className="stat-mini-label">
-            Дней подряд
+            Тренировочных дней<br />подряд
             {(stats?.streak.weeks ?? 0) > 0 && (
               <span style={{ display: 'block', fontSize: '0.75rem' }}>
                 {stats!.streak.weeks} нед.
