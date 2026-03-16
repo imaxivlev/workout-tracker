@@ -448,6 +448,46 @@ export class UserService {
   }
   
   /**
+   * Смена пароля пользователя
+   *
+   * @param userId - ID пользователя
+   * @param currentPassword - Текущий пароль
+   * @param newPassword - Новый пароль
+   * @returns true если смена успешна
+   * @throws Error если текущий пароль неверен или новый пароль невалиден
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) {
+      throw new Error('Пользователь не найден');
+    }
+
+    const isValid = await this.verifyPassword(currentPassword, user.passwordHash);
+    if (!isValid) {
+      throw new Error('Неверный текущий пароль');
+    }
+
+    // Валидация нового пароля (минимум 8 символов, 1 цифра, 1 буква)
+    if (newPassword.length < 8) {
+      throw new Error('Пароль должен быть минимум 8 символов');
+    }
+    if (!/\d/.test(newPassword)) {
+      throw new Error('Пароль должен содержать хотя бы 1 цифру');
+    }
+    if (!/[a-zA-Z]/.test(newPassword)) {
+      throw new Error('Пароль должен содержать хотя бы 1 букву');
+    }
+
+    const newHash = await this.hashPassword(newPassword);
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: newHash },
+    });
+
+    return true;
+  }
+
+  /**
    * Удаление аккаунта пользователя
    * 
    * @param userId - ID пользователя

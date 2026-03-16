@@ -8,24 +8,30 @@ interface WorkoutCardProps {
   onDelete?: (id: string) => void;
 }
 
+function formatShortDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  return `${day} ${months[date.getMonth()]}`;
+}
+
 export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
-  const date = new Date(workout.date);
-  const dateStr = date.toLocaleDateString('ru-RU', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  const dateStr = formatShortDate(workout.date);
+
+  const hasSkill = workout.skillBlocks.length > 0;
+  const hasWod = workout.wodBlocks.length > 0;
+  const cardClass = `workout-card${hasSkill ? ' has-skill' : ''}${hasWod ? ' has-wod' : ''}`;
 
   return (
-    <div className="workout-card">
+    <div className={cardClass}>
       <Link href={`/dashboard/workouts/${workout.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
         <div className="workout-header">
           <span className="workout-date">{dateStr}</span>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
-            {workout.skillBlocks.length > 0 && (
+            {hasSkill && (
               <span className="workout-type skill">Skill</span>
             )}
-            {workout.wodBlocks.length > 0 && (
+            {hasWod && (
               <span className="workout-type wod">WOD</span>
             )}
           </div>

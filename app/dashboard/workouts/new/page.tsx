@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { workoutsApi, exercisesApi, ApiError, WorkoutInput } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
@@ -32,6 +32,10 @@ interface WodBlockForm {
   resultTotalReps: string;
   exercises: WodExerciseForm[];
 }
+
+type BlockItem =
+  | { type: 'skill'; data: SkillBlockForm }
+  | { type: 'wod'; data: WodBlockForm };
 
 const CARDIO_TERMS = ['bike', 'row', 'run', 'skierg'];
 function isCardio(name: string): boolean {
@@ -77,31 +81,70 @@ function SkillHint({ exerciseName }: { exerciseName: string }) {
   );
 }
 
+function Toast({ message, onHide }: { message: string; onHide: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onHide, 2500);
+    return () => clearTimeout(timer);
+  }, [onHide]);
+
+  return (
+    <div className="toast-warning">
+      {message}
+    </div>
+  );
+}
+
 export default function NewWorkoutPage() {
   const router = useRouter();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [comment, setComment] = useState('');
-  const [skillBlocks, setSkillBlocks] = useState<SkillBlockForm[]>([]);
-  const [wodBlocks, setWodBlocks] = useState<WodBlockForm[]>([]);
+  const [blocks, setBlocks] = useState<BlockItem[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [toast, setToast] = useState('');
 
-  // --- Skill блоки ---
+  const hideToast = useCallback(() => setToast(''), []);
+
+  // --- Добавление блоков ---
   function addSkillBlock() {
-    setSkillBlocks(prev => [...prev, { exerciseName: '', sets: [{ reps: '', weight: '' }], maxWeight: '' }]);
+    setBlocks(prev => [...prev, { type: 'skill', data: { exerciseName: '', sets: [{ reps: '', weight: '' }], maxWeight: '' } }]);
   }
 
-  function removeSkillBlock(idx: number) {
-    setSkillBlocks(prev => prev.filter((_, i) => i !== idx));
+  function addWodBlock() {
+    setBlocks(prev => [...prev, {
+      type: 'wod',
+      data: {
+        wodType: 'FOR_TIME',
+        level: 'RX',
+        timeCapSeconds: '',
+        isLadder: false,
+        ladderRounds: 3,
+        resultDisplay: '',
+        resultSeconds: '',
+        resultTotalReps: '',
+        exercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
+      },
+    }]);
+  }
+
+  function removeBlock(idx: number) {
+    setBlocks(prev => prev.filter((_, i) => i !== idx));
+  }
+
+  // --- Skill helpers ---
+  function updateSkillData(idx: number, updater: (b: SkillBlockForm) => SkillBlockForm) {
+    setBlocks(prev => prev.map((block, i) => {
+      if (i !== idx || block.type !== 'skill') return block;
+      return { ...block, data: updater(block.data) };
+    }));
   }
 
   function updateSkillExercise(idx: number, value: string) {
-    setSkillBlocks(prev => prev.map((b, i) => i === idx ? { ...b, exerciseName: value } : b));
+    updateSkillData(idx, b => ({ ...b, exerciseName: value }));
   }
 
-  function updateSkillSetsCount(blockIdx: number, count: number) {
-    setSkillBlocks(prev => prev.map((b, i) => {
-      if (i !== blockIdx) return b;
+  function updateSkillSetsCount(idx: number, count: number) {
+    updateSkillData(idx, b => {
       const current = b.sets;
       if (count > current.length) {
         const extra = Array.from({ length: count - current.length }, () => ({ reps: '', weight: '' }));
@@ -109,89 +152,76 @@ export default function NewWorkoutPage() {
       } else {
         return { ...b, sets: current.slice(0, count) };
       }
+    });
+  }
+
+  function addSkillSet(idx: number) {
+    updateSkillData(idx, b => ({ ...b, sets: [...b.sets, { reps: '', weight: '' }] }));
+  }
+
+  function removeSkillSet(idx: number, setIdx: number) {
+    updateSkillData(idx, b => ({ ...b, sets: b.sets.filter((_, j) => j !== setIdx) }));
+  }
+
+  function updateSkillSet(idx: number, setIdx: number, field: keyof SkillSetForm, value: string) {
+    updateSkillData(idx, b => ({
+      ...b,
+      sets: b.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s),
     }));
   }
 
-  function addSkillSet(blockIdx: number) {
-    setSkillBlocks(prev => prev.map((b, i) =>
-      i === blockIdx ? { ...b, sets: [...b.sets, { reps: '', weight: '' }] } : b
-    ));
+  function updateSkillMaxWeight(idx: number, value: string) {
+    updateSkillData(idx, b => ({ ...b, maxWeight: value }));
   }
 
-  function removeSkillSet(blockIdx: number, setIdx: number) {
-    setSkillBlocks(prev => prev.map((b, i) =>
-      i === blockIdx ? { ...b, sets: b.sets.filter((_, j) => j !== setIdx) } : b
-    ));
-  }
-
-  function updateSkillSet(blockIdx: number, setIdx: number, field: keyof SkillSetForm, value: string) {
-    setSkillBlocks(prev => prev.map((b, i) =>
-      i === blockIdx
-        ? { ...b, sets: b.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s) }
-        : b
-    ));
-  }
-
-  function updateSkillMaxWeight(blockIdx: number, value: string) {
-    setSkillBlocks(prev => prev.map((b, i) => i === blockIdx ? { ...b, maxWeight: value } : b));
-  }
-
-  // --- WOD блоки ---
-  function addWodBlock() {
-    setWodBlocks(prev => [...prev, {
-      wodType: 'FOR_TIME',
-      level: 'RX',
-      timeCapSeconds: '',
-      isLadder: false,
-      ladderRounds: 3,
-      resultDisplay: '',
-      resultSeconds: '',
-      resultTotalReps: '',
-      exercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
-    }]);
-  }
-
-  function removeWodBlock(idx: number) {
-    setWodBlocks(prev => prev.filter((_, i) => i !== idx));
+  // --- WOD helpers ---
+  function updateWodData(idx: number, updater: (b: WodBlockForm) => WodBlockForm) {
+    setBlocks(prev => prev.map((block, i) => {
+      if (i !== idx || block.type !== 'wod') return block;
+      return { ...block, data: updater(block.data) };
+    }));
   }
 
   function updateWodBlock(idx: number, updates: Partial<WodBlockForm>) {
-    setWodBlocks(prev => prev.map((b, i) => i === idx ? { ...b, ...updates } : b));
+    updateWodData(idx, b => ({ ...b, ...updates }));
   }
 
-  function addWodExercise(blockIdx: number) {
-    setWodBlocks(prev => prev.map((b, i) =>
-      i === blockIdx ? { ...b, exercises: [...b.exercises, { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }] } : b
-    ));
-  }
-
-  function updateWodExercise(blockIdx: number, exIdx: number, field: keyof WodExerciseForm, value: string) {
-    setWodBlocks(prev => prev.map((b, i) =>
-      i === blockIdx
-        ? { ...b, exercises: b.exercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e) }
-        : b
-    ));
-  }
-
-  function updateWodLadderRep(blockIdx: number, exIdx: number, roundIdx: number, value: string) {
-    setWodBlocks(prev => prev.map((b, i) => {
-      if (i !== blockIdx) return b;
-      return {
-        ...b,
-        exercises: b.exercises.map((e, j) => {
-          if (j !== exIdx) return e;
-          const arr = [...(e.ladderRepsPerRound || [])];
-          arr[roundIdx] = value;
-          return { ...e, ladderRepsPerRound: arr };
-        }),
-      };
+  function addWodExercise(idx: number) {
+    updateWodData(idx, b => ({
+      ...b,
+      exercises: [...b.exercises, { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
     }));
   }
 
-  function removeWodExercise(blockIdx: number, exIdx: number) {
-    setWodBlocks(prev => prev.map((b, i) =>
-      i === blockIdx ? { ...b, exercises: b.exercises.filter((_, j) => j !== exIdx) } : b
-    ));
+  function updateWodExercise(idx: number, exIdx: number, field: keyof WodExerciseForm, value: string) {
+    updateWodData(idx, b => ({
+      ...b,
+      exercises: b.exercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e),
+    }));
+  }
+
+  function updateWodLadderRep(idx: number, exIdx: number, roundIdx: number, value: string) {
+    updateWodData(idx, b => ({
+      ...b,
+      exercises: b.exercises.map((e, j) => {
+        if (j !== exIdx) return e;
+        const arr = [...(e.ladderRepsPerRound || [])];
+        arr[roundIdx] = value;
+        return { ...e, ladderRepsPerRound: arr };
+      }),
+    }));
+  }
+
+  function removeWodExercise(idx: number, exIdx: number) {
+    const block = blocks[idx];
+    if (block?.type === 'wod' && block.data.exercises.length <= 1) {
+      setToast('Нельзя удалить единственное упражнение');
+      return;
+    }
+    updateWodData(idx, b => ({
+      ...b,
+      exercises: b.exercises.filter((_, j) => j !== exIdx),
+    }));
   }
 
   // --- Отправка формы ---
@@ -199,13 +229,16 @@ export default function NewWorkoutPage() {
     e.preventDefault();
     setError('');
 
-    if (skillBlocks.length === 0 && wodBlocks.length === 0) {
+    if (blocks.length === 0) {
       setError('Добавьте хотя бы один блок (Skill или WOD)');
       return;
     }
 
     setLoading(true);
     try {
+      const skillBlocks = blocks.filter((b): b is { type: 'skill'; data: SkillBlockForm } => b.type === 'skill').map(b => b.data);
+      const wodBlocks = blocks.filter((b): b is { type: 'wod'; data: WodBlockForm } => b.type === 'wod').map(b => b.data);
+
       const payload: WorkoutInput = {
         date,
         comment: comment.trim() || undefined,
@@ -230,8 +263,6 @@ export default function NewWorkoutPage() {
               resultTotalReps: b.wodType === 'AMRAP' && b.resultTotalReps ? parseInt(b.resultTotalReps) : undefined,
               exercises: b.exercises.map(ex => {
                 let reps = parseInt(ex.reps) || 0;
-                // For ladder: store comma-separated reps in reps field is not supported by API
-                // We store the plain reps (first round or average) and rely on resultDisplay
                 if (b.isLadder && ex.ladderRepsPerRound.length > 0) {
                   const vals = ex.ladderRepsPerRound.filter(v => v).map(v => parseInt(v) || 0);
                   reps = vals.length > 0 ? vals[0] : reps;
@@ -263,11 +294,11 @@ export default function NewWorkoutPage() {
     }
   }
 
-  const totalBlocks = skillBlocks.length + wodBlocks.length;
-
   return (
     <div className="container">
       <h1 className="page-title">Новая тренировка</h1>
+
+      {toast && <Toast message={toast} onHide={hideToast} />}
 
       <form onSubmit={handleSubmit}>
         {/* Дата */}
@@ -284,243 +315,250 @@ export default function NewWorkoutPage() {
           />
         </div>
 
-        {/* Блоки тренировки */}
+        {/* Блоки тренировки — в порядке добавления */}
         <div className="added-blocks-list">
-          {totalBlocks === 0 && (
+          {blocks.length === 0 && (
             <div className="empty-state" style={{ textAlign: 'center', padding: '2rem' }}>
               Пока пусто. Добавьте блок Skill или WOD.
             </div>
           )}
 
-          {/* Skill блоки */}
-          {skillBlocks.map((block, bi) => (
-            <div key={`skill-${bi}`} className="added-block skill-block">
-              <button type="button" className="remove-block" onClick={() => removeSkillBlock(bi)}>
-                ✕
-              </button>
-              <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>
-                🏋️ Skill
-              </h3>
+          {blocks.map((block, bi) => {
+            if (block.type === 'skill') {
+              const skill = block.data;
+              return (
+                <div key={`block-${bi}`} className="added-block skill-block">
+                  <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>
+                    ✕
+                  </button>
+                  <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>
+                    🏋️ Skill
+                  </h3>
 
-              <div className="form-group">
-                <label className="form-label">Упражнение</label>
-                <ExerciseAutocomplete
-                  value={block.exerciseName}
-                  onChange={v => updateSkillExercise(bi, v)}
-                  placeholder="Начните вводить или выберите..."
-                />
-                <SkillHint exerciseName={block.exerciseName} />
-              </div>
+                  <div className="form-group">
+                    <label className="form-label">Упражнение</label>
+                    <ExerciseAutocomplete
+                      value={skill.exerciseName}
+                      onChange={v => updateSkillExercise(bi, v)}
+                      placeholder="Начните вводить или выберите..."
+                    />
+                    <SkillHint exerciseName={skill.exerciseName} />
+                  </div>
 
-              <div className="form-row" style={{ gap: '1rem', alignItems: 'flex-end' }}>
-                <div className="form-group">
-                  <label className="form-label">Кол-во подходов</label>
-                  <select
-                    className="form-select"
-                    value={block.sets.length}
-                    onChange={e => updateSkillSetsCount(bi, parseInt(e.target.value))}
-                    style={{ maxWidth: '100px' }}
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Макс. вес (кг)</label>
-                  <input
-                    type="number"
-                    value={block.maxWeight}
-                    onChange={e => updateSkillMaxWeight(bi, e.target.value)}
-                    className="form-input"
-                    placeholder="Ориентир"
-                    min="0.5"
-                    step="0.5"
-                    style={{ maxWidth: '120px' }}
-                  />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">Подходы (повторения × вес кг)</label>
-                <div className="sets-container">
-                  {block.sets.map((set, si) => (
-                    <div key={si} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>#{si + 1}</span>
+                  <div className="form-row" style={{ gap: '1rem', alignItems: 'flex-end' }}>
+                    <div className="form-group">
+                      <label className="form-label">Кол-во подходов</label>
+                      <select
+                        className="form-select"
+                        value={skill.sets.length}
+                        onChange={e => updateSkillSetsCount(bi, parseInt(e.target.value))}
+                        style={{ maxWidth: '100px' }}
+                      >
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                          <option key={n} value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Макс. вес (кг)</label>
                       <input
                         type="number"
-                        value={set.reps}
-                        onChange={e => updateSkillSet(bi, si, 'reps', e.target.value)}
-                        className="form-input set-input"
-                        placeholder="Повт"
-                        min="1"
-                        required
-                      />
-                      <input
-                        type="number"
-                        value={set.weight}
-                        onChange={e => updateSkillSet(bi, si, 'weight', e.target.value)}
-                        className="form-input set-input"
-                        placeholder="Кг"
+                        value={skill.maxWeight}
+                        onChange={e => updateSkillMaxWeight(bi, e.target.value)}
+                        className="form-input"
+                        placeholder="Ориентир"
                         min="0.5"
                         step="0.5"
-                        required
+                        style={{ maxWidth: '120px' }}
                       />
-                      {block.sets.length > 1 && (
-                        <button
-                          type="button"
-                          onClick={() => removeSkillSet(bi, si)}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.1rem' }}
-                        >
-                          ✕
-                        </button>
-                      )}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              <button type="button" onClick={() => addSkillSet(bi)} className="btn-add">
-                + Добавить подход
-              </button>
-            </div>
-          ))}
+                  {/* Повторения — горизонтальный ряд */}
+                  <div className="form-group">
+                    <label className="form-label">Повторения в подходах</label>
+                    <div className="sets-container">
+                      {skill.sets.map((set, si) => (
+                        <div key={si} className="set-column">
+                          <span className="set-label">#{si + 1}</span>
+                          <input
+                            type="number"
+                            value={set.reps}
+                            onChange={e => updateSkillSet(bi, si, 'reps', e.target.value)}
+                            className="form-input set-input"
+                            placeholder={`${si + 1}`}
+                            min="1"
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-          {/* WOD блоки */}
-          {wodBlocks.map((block, bi) => (
-            <div key={`wod-${bi}`} className="added-block wod-block">
-              <button type="button" className="remove-block" onClick={() => removeWodBlock(bi)}>
-                ✕
-              </button>
-              <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>
-                ⚡ WOD
-              </h3>
+                  {/* Вес — горизонтальный ряд */}
+                  <div className="form-group">
+                    <label className="form-label">Вес для каждого подхода (кг)</label>
+                    <div className="sets-container">
+                      {skill.sets.map((set, si) => (
+                        <div key={si} className="set-column">
+                          <span className="set-label">#{si + 1}</span>
+                          <input
+                            type="number"
+                            value={set.weight}
+                            onChange={e => updateSkillSet(bi, si, 'weight', e.target.value)}
+                            className="form-input set-input"
+                            placeholder={`${si + 1}`}
+                            min="0.5"
+                            step="0.5"
+                            required
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Тип</label>
-                  <select
-                    value={block.wodType}
-                    onChange={e => updateWodBlock(bi, { wodType: e.target.value as WodType })}
-                    className="form-select"
-                  >
-                    <option value="FOR_TIME">For Time</option>
-                    <option value="AMRAP">AMRAP</option>
-                    <option value="EMOM">EMOM</option>
-                    <option value="TABATA">Tabata</option>
-                  </select>
+                  <button type="button" onClick={() => addSkillSet(bi)} className="btn-add">
+                    + Добавить подход
+                  </button>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Уровень</label>
-                  <select
-                    value={block.level}
-                    onChange={e => updateWodBlock(bi, { level: e.target.value as WodLevel })}
-                    className="form-select"
-                  >
-                    <option value="RX">Rx</option>
-                    <option value="SCALED">Scaled</option>
-                  </select>
-                </div>
-              </div>
+              );
+            }
 
-              <div className="form-row">
-                <div className="form-group">
-                  <label className="form-label">Огр. времени, мин</label>
-                  <input
-                    type="number"
-                    value={block.timeCapSeconds}
-                    onChange={e => updateWodBlock(bi, { timeCapSeconds: e.target.value })}
-                    className="form-input"
-                    placeholder="20"
-                    min="1"
-                  />
+            // WOD block
+            const wod = block.data;
+            return (
+              <div key={`block-${bi}`} className="added-block wod-block">
+                <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>
+                  ✕
+                </button>
+                <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>
+                  ⚡ WOD
+                </h3>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Тип</label>
+                    <select
+                      value={wod.wodType}
+                      onChange={e => updateWodBlock(bi, { wodType: e.target.value as WodType })}
+                      className="form-select"
+                    >
+                      <option value="FOR_TIME">For Time</option>
+                      <option value="AMRAP">AMRAP</option>
+                      <option value="EMOM">EMOM</option>
+                      <option value="TABATA">Tabata</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Уровень</label>
+                    <select
+                      value={wod.level}
+                      onChange={e => updateWodBlock(bi, { level: e.target.value as WodLevel })}
+                      className="form-select"
+                    >
+                      <option value="RX">Rx</option>
+                      <option value="SCALED">Scaled</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Огр. времени, мин</label>
                     <input
-                      type="checkbox"
-                      checked={block.isLadder}
-                      onChange={e => updateWodBlock(bi, { isLadder: e.target.checked })}
-                      style={{ width: '20px', height: '20px' }}
+                      type="number"
+                      value={wod.timeCapSeconds}
+                      onChange={e => updateWodBlock(bi, { timeCapSeconds: e.target.value })}
+                      className="form-input"
+                      placeholder="20"
+                      min="1"
                     />
-                    Лесенка
-                  </label>
+                  </div>
+                  <div className="form-group" style={{ display: 'flex', alignItems: 'center', paddingTop: '1.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontWeight: 600 }}>
+                      <input
+                        type="checkbox"
+                        checked={wod.isLadder}
+                        onChange={e => updateWodBlock(bi, { isLadder: e.target.checked })}
+                        style={{ width: '20px', height: '20px' }}
+                      />
+                      Лесенка
+                    </label>
+                  </div>
                 </div>
-              </div>
 
-              {block.isLadder && (
+                {wod.isLadder && (
+                  <div className="form-group">
+                    <label className="form-label">Кол-во раундов</label>
+                    <select
+                      className="form-select"
+                      value={wod.ladderRounds}
+                      onChange={e => updateWodBlock(bi, { ladderRounds: parseInt(e.target.value) })}
+                      style={{ maxWidth: '100px' }}
+                    >
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div className="form-group">
-                  <label className="form-label">Кол-во раундов</label>
-                  <select
-                    className="form-select"
-                    value={block.ladderRounds}
-                    onChange={e => updateWodBlock(bi, { ladderRounds: parseInt(e.target.value) })}
-                    style={{ maxWidth: '100px' }}
-                  >
-                    {Array.from({ length: 12 }, (_, i) => i + 1).map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="form-group">
-                <label className="form-label">Упражнения</label>
-                <div className="wod-exercises-container">
-                  {block.exercises.map((ex, ei) => (
-                    <div key={ei} className="wod-exercise-row">
-                      <div className="wod-row-scroller">
-                        <ExerciseAutocomplete
-                          value={ex.exerciseName}
-                          onChange={v => updateWodExercise(bi, ei, 'exerciseName', v)}
-                          placeholder="Упражнение"
-                        />
-                        <div className="wod-fields-scroll">
-                          {block.isLadder ? (
-                            <div style={{ display: 'flex', gap: '0.25rem', flexWrap: 'wrap' }}>
-                              {Array.from({ length: block.ladderRounds }, (_, ri) => (
-                                <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
-                                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>R{ri + 1}</span>
-                                  <input
-                                    type="number"
-                                    value={ex.ladderRepsPerRound[ri] || ''}
-                                    onChange={e => updateWodLadderRep(bi, ei, ri, e.target.value)}
-                                    className="form-input-sm"
-                                    placeholder="Повт"
-                                    min="1"
-                                    style={{ width: '52px' }}
-                                    required
-                                  />
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="single-reps-container" style={{ display: 'flex' }}>
+                  <label className="form-label">Упражнения</label>
+                  <div className="wod-exercises-container">
+                    {wod.exercises.map((ex, ei) => (
+                      <div key={ei} className="wod-exercise-row">
+                        <div className="wod-row-scroller">
+                          <ExerciseAutocomplete
+                            value={ex.exerciseName}
+                            onChange={v => updateWodExercise(bi, ei, 'exerciseName', v)}
+                            placeholder="Упражнение"
+                          />
+                          <div className="wod-fields-scroll">
+                            {wod.isLadder ? (
+                              <div className="ladder-reps-container">
+                                {Array.from({ length: wod.ladderRounds }, (_, ri) => (
+                                  <div key={ri} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.1rem' }}>
+                                    <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>R{ri + 1}</span>
+                                    <input
+                                      type="number"
+                                      value={ex.ladderRepsPerRound[ri] || ''}
+                                      onChange={e => updateWodLadderRep(bi, ei, ri, e.target.value)}
+                                      className="form-input-sm"
+                                      placeholder="Повт"
+                                      min="1"
+                                      style={{ width: '52px' }}
+                                      required
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="single-reps-container" style={{ display: 'flex' }}>
+                                <input
+                                  type="number"
+                                  value={ex.reps}
+                                  onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
+                                  className="form-input-sm"
+                                  placeholder="Повт."
+                                  min="1"
+                                  required
+                                />
+                              </div>
+                            )}
+                            {!isCardio(ex.exerciseName) && (
                               <input
                                 type="number"
-                                value={ex.reps}
-                                onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
-                                className="form-input-sm"
-                                placeholder="Повт."
-                                min="1"
-                                required
+                                value={ex.weight}
+                                onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
+                                className="form-input-sm wod-weight"
+                                placeholder="Вес, кг"
+                                min="0.5"
+                                step="0.5"
                               />
-                            </div>
-                          )}
-                          {!isCardio(ex.exerciseName) && (
-                            <input
-                              type="number"
-                              value={ex.weight}
-                              onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
-                              className="form-input-sm wod-weight"
-                              placeholder="Вес, кг"
-                              min="0.5"
-                              step="0.5"
-                            />
-                          )}
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      {block.exercises.length > 1 && (
                         <button
                           type="button"
                           className="btn-icon"
@@ -528,51 +566,50 @@ export default function NewWorkoutPage() {
                         >
                           ✕
                         </button>
-                      )}
-                    </div>
-                  ))}
+                      </div>
+                    ))}
+                  </div>
+                  <button type="button" onClick={() => addWodExercise(bi)} className="btn-add">
+                    + Добавить упражнение
+                  </button>
                 </div>
-                <button type="button" onClick={() => addWodExercise(bi)} className="btn-add">
-                  + Добавить упражнение
-                </button>
-              </div>
 
-              <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                <label className="form-label">Результат</label>
-                <div className="form-row" style={{ gap: '0.5rem' }}>
-                  <input
-                    type="text"
-                    value={block.resultDisplay}
-                    onChange={e => updateWodBlock(bi, { resultDisplay: e.target.value })}
-                    className="form-input"
-                    placeholder={block.wodType === 'FOR_TIME' ? '12:34' : block.wodType === 'AMRAP' ? '150 повт.' : 'результат'}
-                    required
-                  />
-                  {block.wodType === 'FOR_TIME' && (
+                <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                  <label className="form-label">Результат</label>
+                  <div className="form-row" style={{ gap: '0.5rem' }}>
+                    <select
+                      className="form-select"
+                      value={wod.wodType === 'AMRAP' ? 'reps' : 'time'}
+                      onChange={e => {
+                        const isReps = e.target.value === 'reps';
+                        updateWodBlock(bi, {
+                          wodType: isReps ? 'AMRAP' : 'FOR_TIME',
+                        });
+                      }}
+                      style={{ maxWidth: '200px' }}
+                    >
+                      <option value="time">Время</option>
+                      <option value="reps">Количество повторений</option>
+                    </select>
                     <input
                       type="text"
-                      value={block.resultSeconds}
-                      onChange={e => updateWodBlock(bi, { resultSeconds: e.target.value })}
+                      value={wod.wodType === 'AMRAP' ? wod.resultTotalReps : wod.resultDisplay}
+                      onChange={e => {
+                        if (wod.wodType === 'AMRAP') {
+                          updateWodBlock(bi, { resultTotalReps: e.target.value, resultDisplay: e.target.value });
+                        } else {
+                          updateWodBlock(bi, { resultDisplay: e.target.value, resultSeconds: e.target.value });
+                        }
+                      }}
                       className="form-input"
-                      placeholder="MM:SS"
+                      placeholder={wod.wodType === 'AMRAP' ? '420' : '04:20'}
                       required
                     />
-                  )}
-                  {block.wodType === 'AMRAP' && (
-                    <input
-                      type="number"
-                      value={block.resultTotalReps}
-                      onChange={e => updateWodBlock(bi, { resultTotalReps: e.target.value })}
-                      className="form-input"
-                      placeholder="Всего повторений"
-                      min="0"
-                      required
-                    />
-                  )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Комментарий */}

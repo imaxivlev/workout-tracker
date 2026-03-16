@@ -6,6 +6,13 @@ import { statisticsApi, DashboardStats, ApiError } from '@/lib/api/client';
 import { WorkoutCard } from '@/app/components/WorkoutCard';
 import { MigrationModal } from '@/app/components/MigrationModal';
 
+function formatShortDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const day = date.getDate();
+  const months = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+  return `${day} ${months[date.getMonth()]}`;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,17 +88,15 @@ export default function DashboardPage() {
           <div className="stat-mini-value">{stats?.workoutsThisMonth ?? 0}</div>
           <div className="stat-mini-label">Тренировок<br />в этом месяце</div>
         </div>
-        <div className="stat-mini">
+        <div className="stat-mini best-weight-card">
           <div className="stat-mini-value">{bestWeightValue} кг</div>
-          <div className="stat-mini-label">
-            Лучший вес
-            {stats?.bestWeight && (
-              <span style={{ display: 'block', fontSize: '0.75rem' }}>
-                {stats.bestWeight.exerciseName}<br />
-                {new Date(stats.bestWeight.date).toLocaleDateString('ru-RU')}
-              </span>
-            )}
-          </div>
+          {stats?.bestWeight && (
+            <>
+              <div className="best-weight-exercise">{stats.bestWeight.exerciseName}</div>
+              <div className="best-weight-date">{formatShortDate(stats.bestWeight.date)}</div>
+            </>
+          )}
+          <div className="stat-mini-label">Лучший вес</div>
         </div>
         <div className="stat-mini">
           <div className="stat-mini-value">🔥 {stats?.streak.days ?? 0}</div>
