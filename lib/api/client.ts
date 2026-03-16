@@ -302,8 +302,10 @@ export interface Exercise {
 }
 
 export const exercisesApi = {
-  async search(query: string) {
-    return apiFetch<{ exercises: Exercise[] }>(`/api/exercises?q=${encodeURIComponent(query)}`);
+  async search(query: string, limit?: number) {
+    const params = new URLSearchParams({ query });
+    if (limit) params.set('limit', String(limit));
+    return apiFetch<{ exercises: Exercise[] }>(`/api/exercises?${params.toString()}`);
   },
 
   async getLastHistory(name: string) {

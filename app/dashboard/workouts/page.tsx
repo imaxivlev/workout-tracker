@@ -76,7 +76,7 @@ export default function WorkoutsPage() {
 
   function handleDateApply() {
     setPage(1);
-    loadWorkouts(1, startDate, endDate);
+    // useEffect перезагружает данные при изменении page/startDate/endDate
   }
 
   function handleDateReset() {
