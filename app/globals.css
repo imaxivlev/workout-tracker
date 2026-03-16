@@ -2284,11 +2284,136 @@ body.auth-page {
     border-left-color: var(--color-secondary);
     /* У нас secondary это зеленый */
 }
-/* ============================================
-   Next.js App — дополнения к mvp-styles.css
-   ============================================ */
 
-/* Обёртка приложения */
+/* ============================================================
+   Inline styles from index.html <style> block
+   ============================================================ */
+
+.workout-blocks {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.workout-block {
+    border-left: 4px solid var(--border-color);
+    padding-left: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.workout-block.skill {
+    border-color: var(--color-secondary);
+}
+
+.workout-block.wod {
+    border-color: var(--color-primary);
+}
+
+.block-title {
+    font-weight: 700;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sets-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.set-input {
+    width: 60px;
+    text-align: center;
+}
+
+.builder-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.btn-add-block {
+    padding: 1.5rem;
+    background: var(--bg-secondary);
+    border: 2px dashed var(--border-color);
+    border-radius: 12px;
+    color: var(--text-secondary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-add-block:hover {
+    border-color: var(--color-primary);
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+}
+
+.added-blocks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.added-block {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    position: relative;
+}
+
+.remove-block {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.remove-block:hover {
+    color: var(--color-primary);
+}
+
+.wod-exercise-row.no-weight {
+    grid-template-columns: 2fr 1fr auto;
+}
+
+.best-weight-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.best-weight-exercise {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+}
+
+.best-weight-date {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* ============================================================
+   Next.js specific additions
+   ============================================================ */
+
+/* App shell */
 .app-shell {
     min-height: 100vh;
     display: flex;
@@ -2299,7 +2424,7 @@ body.auth-page {
     flex: 1;
 }
 
-/* Кнопки — доп. варианты */
+/* Extra button variants */
 .btn-full {
     width: 100%;
 }
@@ -2319,7 +2444,7 @@ body.auth-page {
     color: var(--color-primary);
 }
 
-/* Состояние загрузки */
+/* Loading state */
 .loading-state {
     display: flex;
     flex-direction: column;
@@ -2330,7 +2455,6 @@ body.auth-page {
     color: var(--text-secondary);
 }
 
-/* Спиннер */
 .spinner {
     width: 40px;
     height: 40px;
@@ -2344,7 +2468,7 @@ body.auth-page {
     to { transform: rotate(360deg); }
 }
 
-/* Сообщения форм */
+/* Form messages */
 .form-success {
     color: var(--color-secondary);
     font-size: 0.9rem;
@@ -2365,13 +2489,7 @@ body.auth-page {
     margin-bottom: 1rem;
 }
 
-.form-hint {
-    font-size: 0.8rem;
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
-}
-
-/* Мобильный nav (Next.js alias для .mobile-bottom-nav) */
+/* Mobile nav (Next.js alias for .mobile-bottom-nav) */
 .mobile-nav {
     display: none;
     position: fixed;
@@ -2386,20 +2504,8 @@ body.auth-page {
 }
 
 @media (max-width: 768px) {
-    .navbar {
-        display: none;
-    }
-
-    .mobile-logo-bar {
-        display: flex;
-    }
-
     .mobile-nav {
         display: flex;
-    }
-
-    body {
-        padding-bottom: 70px;
     }
 
     .main-content .container {
@@ -2407,25 +2513,7 @@ body.auth-page {
     }
 }
 
-/* Auth страницы */
-.auth-container {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 1rem;
-    background: var(--bg-primary);
-}
-
-.auth-logo-wrapper {
-    margin-bottom: 2rem;
-    width: 100%;
-    max-width: 420px;
-    display: flex;
-    justify-content: center;
-}
-
+/* Auth pages (Next.js) */
 .auth-logo-img {
     max-width: 260px;
     width: 100%;
@@ -2433,49 +2521,7 @@ body.auth-page {
     object-fit: contain;
 }
 
-.auth-tab {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    font-weight: 500;
-    padding: 0.75rem 0;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: all 0.2s;
-    margin-bottom: -2px;
-}
-
-.auth-tab.active {
-    color: var(--color-primary);
-    border-bottom-color: var(--color-primary);
-}
-
-.auth-form {
-    display: none;
-}
-
-.auth-form.active {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-.forgot-password {
-    background: none;
-    border: none;
-    padding: 0;
-    color: var(--color-primary);
-    text-decoration: none;
-    font-size: 0.875rem;
-    cursor: pointer;
-}
-
-.forgot-password:hover {
-    text-decoration: underline;
-}
-
-/* Статусные иконки (страница верификации) */
+/* Verification page status */
 .auth-status {
     text-align: center;
     padding: 1.5rem 0;
@@ -2507,7 +2553,7 @@ body.auth-page {
     border: 2px solid var(--color-primary);
 }
 
-/* Модальное окно (Migration modal) */
+/* Migration modal */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -2563,109 +2609,7 @@ body.auth-page {
     margin-bottom: 2rem;
 }
 
-.date-range-inputs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
-}
-
-.date-input-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.date-input-group label {
-    margin-bottom: 0;
-    flex-shrink: 0;
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-/* ===== Workout Builder (Create page) ===== */
-
-.added-blocks-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-}
-
-.added-block {
-    background: var(--bg-secondary);
-    border: 2px solid var(--border-color);
-    border-radius: 12px;
-    padding: 1.5rem;
-    position: relative;
-}
-
-.remove-block {
-    position: absolute;
-    top: 1rem;
-    right: 1rem;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 1.2rem;
-    line-height: 1;
-    padding: 0.25rem;
-    transition: color 0.2s ease;
-}
-
-.remove-block:hover {
-    color: var(--color-primary);
-}
-
-.block-title {
-    font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.sets-container {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-    align-items: flex-start;
-}
-
-.builder-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    margin-bottom: 2rem;
-}
-
-.btn-add-block {
-    padding: 1.5rem;
-    background: var(--bg-secondary);
-    border: 2px dashed var(--border-color);
-    border-radius: 12px;
-    color: var(--text-secondary);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1rem;
-    text-align: center;
-}
-
-.btn-add-block:hover {
-    border-color: var(--color-primary);
-    color: var(--text-primary);
-    background: var(--bg-tertiary);
-}
-
+/* WOD exercises container */
 .wod-exercises-container {
     display: flex;
     flex-direction: column;
@@ -2673,74 +2617,33 @@ body.auth-page {
     margin-bottom: 0.75rem;
 }
 
-/* ===== Workout Detail (details page) ===== */
-
-.workout-blocks {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    margin-top: 1.5rem;
-}
-
-.workout-block {
-    border-left: 4px solid var(--border-color);
-    padding-left: 1.25rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
-}
-
-.workout-block.skill {
-    border-color: var(--color-secondary);
-}
-
-.workout-block.wod {
-    border-color: var(--color-primary);
-}
-
+/* Details page */
 .details-content {
     margin-top: 1rem;
 }
 
-/* ===== Profile page ===== */
-
+/* Profile form */
 .profile-form {
     margin-top: 1rem;
 }
 
-/* ===== Exercise Stats page ===== */
-
+/* Exercise stats PR overrides */
 .pr-exercise {
     flex: 1;
 }
 
-.pr-name {
-    font-weight: 600;
-    font-size: 1rem;
+/* Workout card color indicators */
+.workout-card.has-skill {
+    border-left: 4px solid var(--color-secondary);
 }
 
-.pr-date {
-    font-size: 0.85rem;
-    color: var(--text-secondary);
-    margin-top: 0.25rem;
+.workout-card.has-wod {
+    border-left: 4px solid var(--color-primary);
 }
 
-.pr-value {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--color-primary);
-}
-
-/* Set column for horizontal grid layout */
-.set-column {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.15rem;
-}
-
-.set-label {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
+.workout-card.has-skill.has-wod {
+    border-image: linear-gradient(to bottom, var(--color-secondary), var(--color-primary)) 1;
+    border-left-width: 4px;
 }
 
 /* Toast warning */
@@ -2766,28 +2669,17 @@ body.auth-page {
     to { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
-/* Ladder reps container */
-.ladder-reps-container {
+/* Set column for horizontal grid layout */
+.set-column {
     display: flex;
-    gap: 0.25rem;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
 }
 
-/* Workout card color indicators */
-.workout-card {
-    border-left: 4px solid transparent;
-}
-
-.workout-card.has-skill {
-    border-left-color: var(--color-secondary);
-}
-
-.workout-card.has-wod {
-    border-left-color: var(--color-primary);
-}
-
-.workout-card.has-skill.has-wod {
-    border-image: linear-gradient(to bottom, var(--color-secondary), var(--color-primary)) 1;
+.set-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
 }
 
 /* Profile stats summary */
@@ -2855,4 +2747,19 @@ body.auth-page {
 
 .toggle-btn:not(:last-child) {
     border-right: 1px solid var(--border-color);
+}
+
+/* Empty state */
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    padding: 2rem;
+}
+
+/* Workout comment */
+.workout-comment {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.75rem;
+    font-style: italic;
 }
