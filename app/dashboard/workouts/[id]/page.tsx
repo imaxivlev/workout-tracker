@@ -64,7 +64,7 @@ export default function WorkoutDetailPage() {
     <div className="container">
       <div className="page-header">
         <div>
-          <Link href="/dashboard/workouts" className="back-link">← Назад</Link>
+          <button type="button" className="btn-secondary" onClick={() => router.push('/dashboard/workouts')}>← Назад</button>
           <h1 className="page-title">{date}</h1>
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
@@ -89,9 +89,7 @@ export default function WorkoutDetailPage() {
           return (
             <div key={block.id} className="added-block skill-block" style={{ marginBottom: '2rem' }}>
               <h3 className="block-title" style={{ color: 'var(--color-secondary)', marginBottom: '1rem' }}>
-                <Link href={`/dashboard/exercise/${block.exercise.id}`} className="exercise-link" style={{ color: 'inherit', textDecoration: 'none' }}>
-                  🏋️ Skill: {block.exercise.name}
-                </Link>
+                🏋️ Skill: {block.exercise.name}
               </h3>
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Подходы:</strong> {block.sets.length}
@@ -125,11 +123,7 @@ export default function WorkoutDetailPage() {
               {wodDetails.length > 0 && (
                 <div className="detail-row" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                   {wodDetails.map((line, i) => (
-                    <div key={i}>
-                      <Link href={`/dashboard/exercise/${block.exercises[i].exercise.id}`} className="exercise-link" style={{ color: 'inherit' }}>
-                        {line}
-                      </Link>
-                    </div>
+                    <div key={i}>{line}</div>
                   ))}
                 </div>
               )}
