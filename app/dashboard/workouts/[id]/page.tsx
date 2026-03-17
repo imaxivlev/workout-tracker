@@ -84,78 +84,58 @@ export default function WorkoutDetailPage() {
       )}
 
       <div className="details-content">
-        <div className="workout-blocks">
-          {workout.skillBlocks.map(block => (
-            <div key={block.id} className="workout-block skill">
-              <div className="block-title">
-                <span className="workout-type skill">Skill</span>
-                <Link href={`/dashboard/exercise/${block.exercise.id}`} className="exercise-link">
-                  🏋️ {block.exercise.name}
+        {workout.skillBlocks.map(block => {
+          const skillDetails = block.sets.map((s, i) => `${s.reps}x${s.weight > 0 ? s.weight + 'кг' : '-'}`).join(', ');
+          return (
+            <div key={block.id} className="added-block skill-block" style={{ marginBottom: '2rem' }}>
+              <h3 className="block-title" style={{ color: 'var(--color-secondary)', marginBottom: '1rem' }}>
+                <Link href={`/dashboard/exercise/${block.exercise.id}`} className="exercise-link" style={{ color: 'inherit', textDecoration: 'none' }}>
+                  🏋️ Skill: {block.exercise.name}
                 </Link>
+              </h3>
+              <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                <strong>Подходы:</strong> {block.sets.length}
               </div>
-              <table className="sets-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Повторений</th>
-                    <th>Вес (кг)</th>
-                    <th>1RM (est.)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.sets.map((set, i) => {
-                    const orm = set.reps === 1 || set.reps >= 37
-                      ? set.weight
-                      : Math.round((set.weight / (1.0278 - 0.0278 * set.reps)) * 2) / 2;
-                    return (
-                      <tr key={set.id}>
-                        <td>{i + 1}</td>
-                        <td>{set.reps}</td>
-                        <td>{set.weight}</td>
-                        <td>{orm}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ))}
-
-          {workout.wodBlocks.map(block => (
-            <div key={block.id} className="workout-block wod">
-              <div className="block-title">
-                <span className="workout-type wod">WOD</span>
-                <span>{block.wodType} · {block.level}{block.isLadder ? ' · Лесенка' : ''}</span>
-              </div>
-
-              <div style={{ marginBottom: '0.75rem' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Результат: </span>
-                <strong>{block.resultDisplay}</strong>
-                {block.timeCapSeconds && (
-                  <span style={{ color: 'var(--text-secondary)', marginLeft: '1rem', fontSize: '0.9rem' }}>
-                    Тайм-кап: {Math.floor(block.timeCapSeconds / 60)} мин
-                  </span>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {block.exercises.map(ex => (
-                  <div key={ex.id} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>{ex.reps}×</span>
-                    <Link href={`/dashboard/exercise/${ex.exercise.id}`} className="exercise-link">
-                      {ex.exercise.name}
-                    </Link>
-                    {ex.weight && (
-                      <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                        @ {ex.weight} кг
-                      </span>
-                    )}
-                  </div>
-                ))}
+              <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                <strong>Детали:</strong> {skillDetails}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
+
+        {workout.wodBlocks.map(block => {
+          const wodDetails = block.exercises.map(ex => {
+            const parts = [ex.exercise.name];
+            if (ex.reps) parts.unshift(`${ex.reps}×`);
+            if (ex.weight) parts.push(`@ ${ex.weight}кг`);
+            return parts.join(' ');
+          });
+          return (
+            <div key={block.id} className="added-block wod-block" style={{ marginBottom: '2rem' }}>
+              <h3 className="block-title" style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>
+                ⚡ WOD: {block.wodType}{block.isLadder ? ' · Лесенка' : ''}
+              </h3>
+              <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                <strong>Тип:</strong> {block.level ? block.level.toUpperCase() : 'RX'}
+              </div>
+              <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                <strong>Результат:</strong> {block.resultDisplay}
+                {block.timeCapSeconds ? ` (тайм-кап: ${Math.floor(block.timeCapSeconds / 60)} мин)` : ''}
+              </div>
+              {wodDetails.length > 0 && (
+                <div className="detail-row" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
+                  {wodDetails.map((line, i) => (
+                    <div key={i}>
+                      <Link href={`/dashboard/exercise/${block.exercises[i].exercise.id}`} className="exercise-link" style={{ color: 'inherit' }}>
+                        {line}
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
