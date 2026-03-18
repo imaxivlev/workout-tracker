@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { statisticsApi, exercisesApi, StatsData, Exercise, ApiError } from '@/lib/api/client';
+import CustomSelect from '@/app/components/CustomSelect';
 
 type Period = 'week' | 'month' | 'year' | 'all';
 type DetailLevel = 'day' | 'week' | 'month';
@@ -329,27 +330,26 @@ export default function StatsPage() {
       <div className="chart-section">
         <h2 className="section-title">Прогресс по упражнению</h2>
         <div className="chart-controls" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-          <select
-            className="form-select"
+          <CustomSelect
             value={selectedExerciseId}
-            onChange={e => setSelectedExerciseId(e.target.value)}
+            onChange={setSelectedExerciseId}
             style={{ flex: 1, minWidth: '250px', maxWidth: '300px' }}
-          >
-            {exercises.length === 0 && <option value="">Нет упражнений</option>}
-            {exercises.map(ex => (
-              <option key={ex.id} value={ex.id}>{formatExerciseName(ex.name)}</option>
-            ))}
-          </select>
-          <select
-            className="form-select"
+            options={
+              exercises.length === 0
+                ? [{ value: '', label: 'Нет упражнений' }]
+                : exercises.map(ex => ({ value: ex.id, label: formatExerciseName(ex.name) }))
+            }
+          />
+          <CustomSelect
             value={detail}
-            onChange={e => setDetail(e.target.value as DetailLevel)}
+            onChange={v => setDetail(v as DetailLevel)}
             style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}
-          >
-            <option value="day">По дням</option>
-            <option value="week">По неделям</option>
-            <option value="month">По месяцам</option>
-          </select>
+            options={[
+              { value: 'day', label: 'По дням' },
+              { value: 'week', label: 'По неделям' },
+              { value: 'month', label: 'По месяцам' },
+            ]}
+          />
         </div>
         <div className="chart-container" style={{ position: 'relative', height: '400px', width: '100%' }}>
           <ProgressChart chartData={chartData} loading={chartLoading} />
