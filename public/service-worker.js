@@ -10,7 +10,7 @@
  * Требования: 18.2-18.4, 19.1-19.5
  */
 
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `workout-tracker-static-${CACHE_VERSION}`;
 const API_CACHE = `workout-tracker-api-${CACHE_VERSION}`;
 const EXERCISES_CACHE = `workout-tracker-exercises-${CACHE_VERSION}`;
@@ -65,7 +65,13 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
-  
+
+  // Навигационные запросы (HTML-страницы) — пропускаем напрямую к серверу
+  // Иначе iOS Safari в PWA режиме падает на редиректах
+  if (request.mode === 'navigate') {
+    return;
+  }
+
   // API запросы - network-first с fallback на кэш
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(handleApiRequest(request));
