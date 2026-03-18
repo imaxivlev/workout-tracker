@@ -70,7 +70,7 @@ export default function WorkoutDetailPage() {
         </div>
         <div style={{ display: 'flex', gap: '0.75rem' }}>
           <Link href={`/dashboard/workouts/${id}/edit`} className="btn btn-secondary">
-            ✏️ Редактировать
+            Редактировать
           </Link>
           <button onClick={handleDelete} className="btn-danger">
             Удалить

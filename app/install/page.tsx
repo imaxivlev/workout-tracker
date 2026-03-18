@@ -21,8 +21,8 @@ export default function InstallPage() {
       </h1>
 
       <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', lineHeight: 1.6 }}>
-        CrossFit Tracker можно установить как приложение на телефон.
-        Оно будет открываться в полноэкранном режиме, работать без интернета
+        Кроссфит Трекер можно установить как приложение на телефон.
+        Оно будет открываться в полноэкранном режиме
         и запускаться с иконки на домашнем экране.
       </p>
 
@@ -69,7 +69,6 @@ export default function InstallPage() {
       <div style={{ marginTop: '2rem', padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
           После установки приложение будет доступно на домашнем экране как обычное приложение.
-          Тренировки, созданные без интернета, автоматически синхронизируются при восстановлении связи.
         </p>
       </div>
     </div>
