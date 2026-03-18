@@ -28,7 +28,7 @@ const rateLimitStore = new Map<string, RateLimitRecord>()
 export const RATE_LIMIT_CONFIGS = {
   auth: {
     windowMs: 15 * 60 * 1000, // 15 минут
-    maxRequests: 5
+    maxRequests: 20
   },
   api: {
     windowMs: 60 * 1000, // 1 минута
