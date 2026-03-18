@@ -21,6 +21,10 @@ export const metadata: Metadata = {
   title: "CrossFit Tracker",
   description: "Трекер тренировок для кроссфита",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.svg",
+    apple: "/workout-tracker/icon-192.png",
+  },
 };
 
 export default function RootLayout({
