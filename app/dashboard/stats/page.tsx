@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { statisticsApi, exercisesApi, StatsData, Exercise, ApiError } from '@/lib/api/client';
 import CustomSelect from '@/app/components/CustomSelect';
+import { formatForDropdown, enToRuName } from '@/lib/exercise-names';
 
 type Period = 'week' | 'month' | 'year' | 'all';
 type DetailLevel = 'day' | 'week' | 'month';
@@ -26,27 +27,8 @@ const PERIOD_LABELS: Record<Period, string> = {
   all: 'Всё время',
 };
 
-const EXERCISE_RU_NAMES: Record<string, string> = {
-  'Back Squat': 'Приседания на спине',
-  'Front Squat': 'Фронтальные приседания',
-  'Deadlift': 'Становая тяга',
-  'Bench Press': 'Жим лежа',
-  'Overhead Press': 'Жим стоя',
-  'Snatch': 'Рывок',
-  'Clean & Jerk': 'Толчок',
-  'Pull-ups': 'Подтягивания',
-  'Push-ups': 'Отжимания',
-  'Burpees': 'Бёрпи',
-  'Box Jumps': 'Прыжки на тумбу',
-  'Kettlebell Swing': 'Махи гирей',
-  'Thruster': 'Трастеры',
-  'Wall Balls': 'Броски мяча',
-  'Rope Climbs': 'Лазание по канату',
-};
-
 function formatExerciseName(name: string): string {
-  const ruName = EXERCISE_RU_NAMES[name];
-  return ruName ? `${ruName} (${name})` : name;
+  return formatForDropdown(name);
 }
 
 function groupProgressData(data: ProgressPoint[], detail: DetailLevel): ChartData {
@@ -302,7 +284,7 @@ export default function StatsPage() {
                 {stats!.personalRecords.map((pr, i) => (
                   <div key={i} className="pr-item">
                     <div className="pr-exercise">
-                      <div className="pr-name">{pr.exerciseName}</div>
+                      <div className="pr-name">{enToRuName(pr.exerciseName)}</div>
                       <div className="pr-date">
                         {new Date(pr.date).toLocaleDateString('ru-RU', {
                           day: 'numeric',
