@@ -151,9 +151,23 @@ export function CustomDatePicker({ startDate, endDate, onChange, onApply, onRese
   const [monthOffset, setMonthOffset] = useState(0); // negative = going back in time
   const today = toYMD(now);
 
-  // The 3 months shown: [rightmost-2, rightmost-1, rightmost]
-  const months = [0, 1, 2].map(i => {
-    const d = new Date(now.getFullYear(), now.getMonth() + monthOffset - 2 + i, 1);
+  // Adaptive month count: 1 on mobile, 2 on tablet, 3 on desktop
+  const [monthsToShow, setMonthsToShow] = useState(3);
+
+  useEffect(() => {
+    function updateMonthCount() {
+      const w = window.innerWidth;
+      if (w < 481) setMonthsToShow(1);
+      else if (w <= 768) setMonthsToShow(2);
+      else setMonthsToShow(3);
+    }
+    updateMonthCount();
+    window.addEventListener('resize', updateMonthCount);
+    return () => window.removeEventListener('resize', updateMonthCount);
+  }, []);
+
+  const months = Array.from({ length: monthsToShow }, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() + monthOffset - (monthsToShow - 1) + i, 1);
     return { year: d.getFullYear(), month: d.getMonth() };
   });
 
@@ -260,14 +274,14 @@ export function CustomDatePicker({ startDate, endDate, onChange, onApply, onRese
     : formatDisplay(startDate, endDate);
 
   return (
-    <div ref={containerRef} className="date-filter-container" style={{ position: 'relative' }}>
+    <div ref={containerRef} className="date-filter-container" style={{ position: 'relative', marginBottom: '1rem' }}>
       {/* Кнопка-триггер */}
-      <label className="form-label">Период</label>
+      <label>Период</label>
       <button
         type="button"
         className="form-input"
         onClick={() => setOpen(o => !o)}
-        style={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', maxWidth: '320px' }}
+        style={{ textAlign: 'left', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' }}
       >
         <span>{displayText}</span>
         <span>📅</span>
@@ -356,10 +370,10 @@ export function CustomDatePicker({ startDate, endDate, onChange, onApply, onRese
 
           {/* Кнопки */}
           <div className="picker-actions">
-            <button type="button" className="btn btn-secondary" onClick={handleReset}>
-              Сбросить
+            <button type="button" className="btn-secondary" onClick={handleReset}>
+              Отмена
             </button>
-            <button type="button" className="btn btn-primary" onClick={handleApply}>
+            <button type="button" className="btn-primary" onClick={handleApply}>
               Применить
             </button>
           </div>

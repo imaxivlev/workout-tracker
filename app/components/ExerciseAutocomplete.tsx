@@ -7,9 +7,11 @@ interface ExerciseAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  inputClassName?: string;
+  wrapperClassName?: string;
 }
 
-export function ExerciseAutocomplete({ value, onChange, placeholder }: ExerciseAutocompleteProps) {
+export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassName, wrapperClassName }: ExerciseAutocompleteProps) {
   const [suggestions, setSuggestions] = useState<Exercise[]>([]);
   const [open, setOpen] = useState(false);
   const [searching, setSearching] = useState(false);
@@ -58,12 +60,12 @@ export function ExerciseAutocomplete({ value, onChange, placeholder }: ExerciseA
   }
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', flex: 1 }}>
+    <div ref={wrapperRef} className={wrapperClassName} style={{ position: 'relative', flex: 1 }}>
       <input
         type="text"
         value={value}
         onChange={e => handleInput(e.target.value)}
-        className="form-input"
+        className={inputClassName || "form-input"}
         placeholder={placeholder || 'Название упражнения'}
         autoComplete="off"
         required

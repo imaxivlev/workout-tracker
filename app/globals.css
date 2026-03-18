@@ -557,14 +557,13 @@ input[type=number]::-webkit-outer-spin-button {
 
 /* Base without ladder */
 .wod-exercise-row .wod-exercise-name {
-    flex: 1.5;
+    flex: 2;
     min-width: 150px;
 }
 
 .wod-exercise-row .wod-fields-scroll {
     display: flex;
-    flex: 2;
-    /* Reps and Weight share the rest */
+    flex: 1;
     gap: 0.5rem;
     align-items: center;
     min-width: 0;
@@ -649,6 +648,7 @@ input[type=number]::-webkit-outer-spin-button {
     color: var(--text-primary);
     font-size: 0.9rem;
     transition: all 0.2s ease;
+    width: 100%;
 }
 
 .form-input-sm:focus {
@@ -1344,7 +1344,7 @@ input[type=number]::-webkit-outer-spin-button {
     }
 
     .wod-exercise-row .wod-exercise-name {
-        flex: 1;
+        flex: 2;
         min-width: 200px;
         width: 100%;
         margin: 0;
@@ -1379,7 +1379,6 @@ input[type=number]::-webkit-outer-spin-button {
     .wod-exercise-row.no-weight .single-reps-container,
     .wod-exercise-row.no-weight .ladder-reps-container {
         flex: 2;
-        /* takes more space if no weight */
     }
 
     .ladder-reps-container {
@@ -1389,14 +1388,12 @@ input[type=number]::-webkit-outer-spin-button {
         overflow-x: auto;
         min-width: 0;
         padding-bottom: 4px;
-        /* for custom scrollbar */
     }
 
     .ladder-reps-container input {
         flex: 1 1 50px;
         min-width: 45px;
-        max-width: 70px;
-        /* Don't get too wide on small round counts */
+        max-width: none;
     }
 
     /* Custom scrollbar for ladder */
@@ -1624,15 +1621,16 @@ input[type=number]::-webkit-outer-spin-button {
 
     .wod-exercise-row .wod-exercise-name {
         flex: 1 1 100%;
-        /* Full width */
         min-width: 100%;
         margin-bottom: 0.5rem;
     }
 
+    .wod-exercise-row .wod-exercise-name input {
+        width: 100%;
+    }
+
     .wod-exercise-row .wod-fields-scroll {
-        flex: 1 1 calc(100% - 3rem);
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+        flex: 1 1 100%;
         display: flex;
         gap: 0.5rem;
     }
@@ -1644,11 +1642,14 @@ input[type=number]::-webkit-outer-spin-button {
         transform: none;
     }
 
-    /* Rigid widths for tablet */
     .single-reps-container,
     .wod-weight {
-        flex: 0 0 auto;
-        min-width: 80px;
+        flex: 1;
+        min-width: 0;
+    }
+
+    .single-reps-container input {
+        width: 100%;
     }
 }
 
@@ -1731,11 +1732,11 @@ input[type=number]::-webkit-outer-spin-button {
         z-index: 10;
     }
 
-    #prev-month {
+    .calendar-wrapper > .nav-arrow:first-child {
         left: 0;
     }
 
-    #next-month {
+    .calendar-wrapper > .nav-arrow:last-child {
         right: 0;
     }
 
@@ -1897,7 +1898,7 @@ input[type=number]::-webkit-outer-spin-button {
         scrollbar-width: auto;
     }
 
-    /* Row 1: Exercise name */
+    /* Row 1: Exercise name - full width */
     .wod-exercise-name {
         flex: none !important;
         width: 100% !important;
@@ -1906,37 +1907,38 @@ input[type=number]::-webkit-outer-spin-button {
         margin-bottom: 0 !important;
     }
 
-    /* Row 2+3: Fields container wraps */
+    .wod-exercise-name input {
+        width: 100% !important;
+    }
+
+    /* Row 2+3: Fields container */
     .wod-fields-scroll {
         display: flex !important;
         flex-wrap: wrap !important;
         flex: none !important;
+        width: 100% !important;
         gap: 0.4rem !important;
         align-items: center !important;
         overflow: visible !important;
         min-width: 0 !important;
     }
 
-    /* Without ladder: reps + weight in one row (50%/50%) */
+    /* Without ladder: reps + weight 50%/50% */
     .wod-exercise-row:not(.ladder-mode) .single-reps-container {
         flex: 1 !important;
         min-width: 0 !important;
-        width: auto !important;
     }
 
     .wod-exercise-row:not(.ladder-mode) .single-reps-container input {
         width: 100% !important;
-        min-width: 0 !important;
-        flex: 1 !important;
     }
 
     .wod-exercise-row:not(.ladder-mode) .wod-weight {
         flex: 1 !important;
         min-width: 0 !important;
-        width: auto !important;
     }
 
-    /* With ladder: reps row scrolls horizontally, weight on its own row */
+    /* With ladder: reps row + weight full width */
     .wod-exercise-row.ladder-mode .wod-fields-scroll {
         flex-direction: column !important;
         gap: 0.4rem !important;

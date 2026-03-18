@@ -116,7 +116,7 @@ export default function WorkoutsPage() {
       <h1 className="page-title">История тренировок</h1>
 
       {/* Фильтры */}
-      <div className="filters-section">
+      <div className="filters-section" style={{ marginBottom: '2rem' }}>
         <CustomDatePicker
           startDate={startDate}
           endDate={endDate}
@@ -125,36 +125,36 @@ export default function WorkoutsPage() {
           onReset={handleDateReset}
         />
 
-        <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div className="period-selector">
-            <button
-              className={`period-btn${typeFilter === 'all' ? ' active' : ''}`}
-              onClick={() => setTypeFilter('all')}
-            >
-              Все
-            </button>
-            <button
-              className={`period-btn${typeFilter === 'skill' ? ' active' : ''}`}
-              onClick={() => setTypeFilter('skill')}
-            >
-              Skill
-            </button>
-            <button
-              className={`period-btn${typeFilter === 'wod' ? ' active' : ''}`}
-              onClick={() => setTypeFilter('wod')}
-            >
-              WOD
-            </button>
-          </div>
-
+        <div className="form-group">
+          <label>Фильтр по упражнению</label>
           <input
             type="text"
             className="form-input"
-            placeholder="Фильтр по упражнению"
+            placeholder="Все упражнения"
             value={exerciseFilter}
             onChange={e => setExerciseFilter(e.target.value)}
-            style={{ maxWidth: '220px' }}
           />
+        </div>
+
+        <div className="period-selector">
+          <button
+            className={`period-btn${typeFilter === 'all' ? ' active' : ''}`}
+            onClick={() => setTypeFilter('all')}
+          >
+            Все
+          </button>
+          <button
+            className={`period-btn${typeFilter === 'skill' ? ' active' : ''}`}
+            onClick={() => setTypeFilter('skill')}
+          >
+            Skill
+          </button>
+          <button
+            className={`period-btn${typeFilter === 'wod' ? ' active' : ''}`}
+            onClick={() => setTypeFilter('wod')}
+          >
+            WOD
+          </button>
         </div>
       </div>
 
