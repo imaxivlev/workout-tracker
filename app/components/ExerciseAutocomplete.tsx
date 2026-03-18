@@ -2,37 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { exercisesApi, Exercise } from '@/lib/api/client';
-
-// Русские названия для глобальных упражнений
-const EXERCISE_RU_NAMES: Record<string, string> = {
-  'Back Squat': 'Приседания со штангой на спине (Back Squat)',
-  'Front Squat': 'Фронтальные приседания (Front Squat)',
-  'Deadlift': 'Становая тяга (Deadlift)',
-  'Bench Press': 'Жим лежа (Bench Press)',
-  'Overhead Press': 'Жим стоя (Overhead Press)',
-  'Snatch': 'Рывок (Snatch)',
-  'Clean & Jerk': 'Толчок (Clean & Jerk)',
-  'Clean': 'Взятие на грудь (Clean)',
-  'Pull-ups': 'Подтягивания (Pull-ups)',
-  'Push-ups': 'Отжимания (Push-ups)',
-  'Burpees': 'Берпи (Burpees)',
-  'Box Jumps': 'Запрыгивания на коробку (Box Jumps)',
-  'Kettlebell Swing': 'Махи гирей (Kettlebell Swing)',
-  'Thruster': 'Трастеры (Thrusters)',
-  'Wall Balls': 'Броски мяча (Wall Balls)',
-  'Rope Climbs': 'Лазание по канату (Rope Climbs)',
-  'Row': 'Гребля (Row)',
-  'Bike': 'Велотренажер (Bike)',
-  'Run': 'Бег (Run)',
-  'SkiErg': 'Лыжный тренажер (SkiErg)',
-  'Ring Muscle-ups': 'Выходы на кольцах (Ring Muscle-ups)',
-  'Bar Muscle-ups': 'Выходы на перекладине (Bar Muscle-ups)',
-  'Squats': 'Приседания (Squats)',
-};
-
-function formatExerciseName(name: string): string {
-  return EXERCISE_RU_NAMES[name] || name;
-}
+import { formatForDropdown, enToRuName } from '@/lib/exercise-names';
 
 interface ExerciseAutocompleteProps {
   value: string;
@@ -74,7 +44,6 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
 
   function handleFocus() {
     loadExercises().then(() => {
-      // При фокусе — показать все или отфильтрованные
       filterList(value);
       setOpen(true);
     });
@@ -87,8 +56,8 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
     }
     const lower = query.toLowerCase();
     const result = allExercises.filter(ex => {
-      const ruName = formatExerciseName(ex.name).toLowerCase();
-      return ruName.includes(lower) || ex.name.toLowerCase().includes(lower);
+      const dropdownName = formatForDropdown(ex.name).toLowerCase();
+      return dropdownName.includes(lower) || ex.name.toLowerCase().includes(lower);
     });
     setFiltered(result);
   }
@@ -99,8 +68,10 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
     setOpen(true);
   }
 
-  function selectSuggestion(name: string) {
-    onChange(name);
+  function selectSuggestion(ex: Exercise) {
+    // Сохраняем русское название (для глобальных), или как есть (для пользовательских)
+    const ruName = enToRuName(ex.name);
+    onChange(ruName);
     setOpen(false);
   }
 
@@ -109,11 +80,9 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
   }
 
   function handleMouseDownItem() {
-    // Предотвратить закрытие от blur
     if (blurTimeout.current) clearTimeout(blurTimeout.current);
   }
 
-  // Обновить фильтр когда загрузятся упражнения
   useEffect(() => {
     if (loaded && open) {
       filterList(value);
@@ -140,10 +109,10 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
             <div
               key={ex.id}
               onMouseDown={handleMouseDownItem}
-              onClick={() => selectSuggestion(ex.name)}
+              onClick={() => selectSuggestion(ex)}
               className="autocomplete-item"
             >
-              {formatExerciseName(ex.name)}
+              {formatForDropdown(ex.name)}
             </div>
           ))}
         </div>

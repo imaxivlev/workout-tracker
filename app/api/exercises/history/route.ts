@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { PrismaClient } from '@prisma/client';
+import { ruToEnName } from '@/lib/exercise-names';
 
 const prisma = new PrismaClient();
 
@@ -18,15 +19,23 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const name = searchParams.get('name');
+    const excludeWorkoutId = searchParams.get('excludeWorkoutId');
 
     if (!name) {
       return NextResponse.json({ lastWeight: null, lastDate: null });
     }
 
+    // Конвертируем русское название в английское для поиска в БД
+    const enName = ruToEnName(name);
+    const nameFilter = enName !== name ? [name, enName] : [name];
+
     const skillBlocks = await prisma.skillBlock.findMany({
       where: {
-        exercise: { name: name },
-        workout: { userId: user.id },
+        exercise: { name: { in: nameFilter } },
+        workout: {
+          userId: user.id,
+          ...(excludeWorkoutId ? { id: { not: excludeWorkoutId } } : {}),
+        },
         sets: { some: {} },
       },
       include: {

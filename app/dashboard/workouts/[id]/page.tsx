@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { workoutsApi, Workout, ApiError } from '@/lib/api/client';
+import { enToRuName } from '@/lib/exercise-names';
 
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -89,7 +90,7 @@ export default function WorkoutDetailPage() {
           return (
             <div key={block.id} className="added-block skill-block" style={{ marginBottom: '2rem' }}>
               <h3 className="block-title" style={{ color: 'var(--color-secondary)', marginBottom: '1rem' }}>
-                🏋️ Skill: {block.exercise.name}
+                🏋️ Skill: {enToRuName(block.exercise.name)}
               </h3>
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Подходы:</strong> {block.sets.length}
@@ -103,7 +104,7 @@ export default function WorkoutDetailPage() {
 
         {workout.wodBlocks.map(block => {
           const wodDetails = block.exercises.map(ex => {
-            const parts = [ex.exercise.name];
+            const parts = [enToRuName(ex.exercise.name)];
             if (ex.reps) parts.unshift(`${ex.reps}×`);
             if (ex.weight) parts.push(`@ ${ex.weight}кг`);
             return parts.join(' ');

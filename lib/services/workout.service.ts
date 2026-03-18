@@ -1,4 +1,5 @@
 import { PrismaClient, ResultType } from '@prisma/client';
+import { ruToEnName } from '@/lib/exercise-names';
 
 const prisma = new PrismaClient();
 
@@ -37,11 +38,15 @@ export class WorkoutService {
       throw new Error('Название упражнения не может быть пустым');
     }
 
+    // Попробуем конвертировать русское название в английское
+    const enName = ruToEnName(normalizedName);
+
     // Шаг 1: Поиск в глобальном справочнике (case-insensitive)
+    // Пробуем и оригинальное название, и английский эквивалент
     const globalExercise = await prisma.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName
+          in: enName !== normalizedName ? [normalizedName, enName] : [normalizedName]
         },
         isGlobal: true
       }
@@ -55,7 +60,7 @@ export class WorkoutService {
     const userExercise = await prisma.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName
+          in: enName !== normalizedName ? [normalizedName, enName] : [normalizedName]
         },
         userId: userId,
         isGlobal: false

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Workout } from '@/lib/api/client';
+import { enToRuName } from '@/lib/exercise-names';
 
 interface WorkoutCardProps {
   workout: Workout;
@@ -30,7 +31,7 @@ export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
             const maxWeight = Math.max(...block.sets.map(s => s.weight));
             return (
               <div key={block.id} className="workout-block skill">
-                <div className="block-title">🏋️ Skill: {block.exercise.name}</div>
+                <div className="block-title">🏋️ Skill: {enToRuName(block.exercise.name)}</div>
                 <div className="workout-details">
                   <span className="detail-item">{block.sets.length} подходов</span>
                   {maxWeight > 0 && (

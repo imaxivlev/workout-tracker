@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { workoutsApi, exercisesApi, ApiError, WorkoutInput, Workout } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
+import { enToRuName } from '@/lib/exercise-names';
 
 type WodType = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
 type WodLevel = 'RX' | 'SCALED';
@@ -12,7 +13,6 @@ interface SkillSetForm { reps: string; weight: string; }
 interface SkillBlockForm {
   exerciseName: string;
   sets: SkillSetForm[];
-  maxWeight: string;
 }
 
 interface WodExerciseForm {
@@ -53,7 +53,7 @@ function parseMmSs(value: string): number {
   return parseInt(value) || 0;
 }
 
-function SkillHint({ exerciseName }: { exerciseName: string }) {
+function SkillHint({ exerciseName, excludeWorkoutId }: { exerciseName: string; excludeWorkoutId?: string }) {
   const [hint, setHint] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,7 +61,7 @@ function SkillHint({ exerciseName }: { exerciseName: string }) {
       setHint(null);
       return;
     }
-    exercisesApi.getLastHistory(exerciseName)
+    exercisesApi.getLastHistory(exerciseName, excludeWorkoutId)
       .then(data => {
         if (data.lastWeight && data.lastDate) {
           const dateStr = new Date(data.lastDate).toLocaleDateString('ru-RU');
@@ -101,12 +101,11 @@ function workoutToBlocks(workout: Workout): BlockItem[] {
     blocks.push({
       type: 'skill',
       data: {
-        exerciseName: sb.exercise.name,
+        exerciseName: enToRuName(sb.exercise.name),
         sets: sb.sets.map(s => ({
           reps: String(s.reps),
           weight: s.weight > 0 ? String(s.weight) : '',
         })),
-        maxWeight: '',
       },
     });
   }
@@ -124,7 +123,7 @@ function workoutToBlocks(workout: Workout): BlockItem[] {
         resultSeconds: wb.resultDisplay || '',
         resultTotalReps: wb.resultTotalReps ? String(wb.resultTotalReps) : '',
         exercises: wb.exercises.map(ex => ({
-          exerciseName: ex.exercise.name,
+          exerciseName: enToRuName(ex.exercise.name),
           reps: ex.reps ? String(ex.reps) : '',
           weight: ex.weight ? String(ex.weight) : '',
           ladderRepsPerRound: [],
@@ -172,7 +171,7 @@ export default function EditWorkoutPage() {
   // --- Добавление блоков ---
   function addSkillBlock() {
     const defaultSets = Array.from({ length: 5 }, () => ({ reps: '', weight: '' }));
-    setBlocks(prev => [...prev, { type: 'skill', data: { exerciseName: '', sets: defaultSets, maxWeight: '' } }]);
+    setBlocks(prev => [...prev, { type: 'skill', data: { exerciseName: '', sets: defaultSets } }]);
   }
 
   function addWodBlock() {
@@ -225,10 +224,6 @@ export default function EditWorkoutPage() {
       ...b,
       sets: b.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s),
     }));
-  }
-
-  function updateSkillMaxWeight(idx: number, value: string) {
-    updateSkillData(idx, b => ({ ...b, maxWeight: value }));
   }
 
   // --- WOD helpers ---
@@ -413,7 +408,7 @@ export default function EditWorkoutPage() {
                       placeholder="Начните вводить или кликните для списка"
                       inputClassName="form-input exercise-search"
                     />
-                    <SkillHint exerciseName={skill.exerciseName} />
+                    <SkillHint exerciseName={skill.exerciseName} excludeWorkoutId={id} />
                   </div>
 
                   <div className="form-group">
@@ -474,19 +469,6 @@ export default function EditWorkoutPage() {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Максимальный вес (кг)</label>
-                    <input
-                      type="number"
-                      value={skill.maxWeight}
-                      onChange={e => updateSkillMaxWeight(bi, e.target.value)}
-                      className="form-input"
-                      style={{ width: '150px' }}
-                      placeholder="120"
-                      min="0.5"
-                      step="0.5"
-                    />
-                  </div>
                 </div>
               );
             }

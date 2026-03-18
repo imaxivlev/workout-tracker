@@ -12,7 +12,6 @@ interface SkillSetForm { reps: string; weight: string; }
 interface SkillBlockForm {
   exerciseName: string;
   sets: SkillSetForm[];
-  maxWeight: string;
 }
 
 interface WodExerciseForm {
@@ -108,7 +107,7 @@ export default function NewWorkoutPage() {
   // --- Добавление блоков ---
   function addSkillBlock() {
     const defaultSets = Array.from({ length: 5 }, () => ({ reps: '', weight: '' }));
-    setBlocks(prev => [...prev, { type: 'skill', data: { exerciseName: '', sets: defaultSets, maxWeight: '' } }]);
+    setBlocks(prev => [...prev, { type: 'skill', data: { exerciseName: '', sets: defaultSets } }]);
   }
 
   function addWodBlock() {
@@ -161,10 +160,6 @@ export default function NewWorkoutPage() {
       ...b,
       sets: b.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s),
     }));
-  }
-
-  function updateSkillMaxWeight(idx: number, value: string) {
-    updateSkillData(idx, b => ({ ...b, maxWeight: value }));
   }
 
   // --- WOD helpers ---
@@ -393,19 +388,6 @@ export default function NewWorkoutPage() {
                     </div>
                   </div>
 
-                  <div className="form-group">
-                    <label>Максимальный вес (кг)</label>
-                    <input
-                      type="number"
-                      value={skill.maxWeight}
-                      onChange={e => updateSkillMaxWeight(bi, e.target.value)}
-                      className="form-input"
-                      style={{ width: '150px' }}
-                      placeholder="120"
-                      min="0.5"
-                      step="0.5"
-                    />
-                  </div>
                 </div>
               );
             }

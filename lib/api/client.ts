@@ -308,8 +308,12 @@ export const exercisesApi = {
     return apiFetch<{ exercises: Exercise[] }>(`/api/exercises?${params.toString()}`);
   },
 
-  async getLastHistory(name: string) {
-    return apiFetch<{ lastWeight: number | null; lastDate: string | null }>(`/api/exercises/history?name=${encodeURIComponent(name)}`);
+  async getLastHistory(name: string, excludeWorkoutId?: string) {
+    let url = `/api/exercises/history?name=${encodeURIComponent(name)}`;
+    if (excludeWorkoutId) {
+      url += `&excludeWorkoutId=${encodeURIComponent(excludeWorkoutId)}`;
+    }
+    return apiFetch<{ lastWeight: number | null; lastDate: string | null }>(url);
   },
 };
 

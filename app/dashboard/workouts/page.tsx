@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { workoutsApi, WorkoutsResponse, ApiError } from '@/lib/api/client';
+import { enToRuName } from '@/lib/exercise-names';
 import { WorkoutCard } from '@/app/components/WorkoutCard';
 import { CustomDatePicker } from '@/app/components/CustomDatePicker';
 
@@ -99,10 +100,10 @@ export default function WorkoutsPage() {
     if (exerciseFilter.trim()) {
       const term = exerciseFilter.trim().toLowerCase();
       const hasSkillMatch = w.skillBlocks.some(b =>
-        b.exercise.name.toLowerCase().includes(term)
+        b.exercise.name.toLowerCase().includes(term) || enToRuName(b.exercise.name).toLowerCase().includes(term)
       );
       const hasWodMatch = w.wodBlocks.some(b =>
-        b.exercises.some(e => e.exercise.name.toLowerCase().includes(term))
+        b.exercises.some(e => e.exercise.name.toLowerCase().includes(term) || enToRuName(e.exercise.name).toLowerCase().includes(term))
       );
       if (!hasSkillMatch && !hasWodMatch) return false;
     }
