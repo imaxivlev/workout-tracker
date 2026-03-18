@@ -1,7 +1,38 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { exercisesApi, Exercise } from '@/lib/api/client';
+
+// Русские названия для глобальных упражнений
+const EXERCISE_RU_NAMES: Record<string, string> = {
+  'Back Squat': 'Приседания со штангой на спине (Back Squat)',
+  'Front Squat': 'Фронтальные приседания (Front Squat)',
+  'Deadlift': 'Становая тяга (Deadlift)',
+  'Bench Press': 'Жим лежа (Bench Press)',
+  'Overhead Press': 'Жим стоя (Overhead Press)',
+  'Snatch': 'Рывок (Snatch)',
+  'Clean & Jerk': 'Толчок (Clean & Jerk)',
+  'Clean': 'Взятие на грудь (Clean)',
+  'Pull-ups': 'Подтягивания (Pull-ups)',
+  'Push-ups': 'Отжимания (Push-ups)',
+  'Burpees': 'Берпи (Burpees)',
+  'Box Jumps': 'Запрыгивания на коробку (Box Jumps)',
+  'Kettlebell Swing': 'Махи гирей (Kettlebell Swing)',
+  'Thruster': 'Трастеры (Thrusters)',
+  'Wall Balls': 'Броски мяча (Wall Balls)',
+  'Rope Climbs': 'Лазание по канату (Rope Climbs)',
+  'Row': 'Гребля (Row)',
+  'Bike': 'Велотренажер (Bike)',
+  'Run': 'Бег (Run)',
+  'SkiErg': 'Лыжный тренажер (SkiErg)',
+  'Ring Muscle-ups': 'Выходы на кольцах (Ring Muscle-ups)',
+  'Bar Muscle-ups': 'Выходы на перекладине (Bar Muscle-ups)',
+  'Squats': 'Приседания (Squats)',
+};
+
+function formatExerciseName(name: string): string {
+  return EXERCISE_RU_NAMES[name] || name;
+}
 
 interface ExerciseAutocompleteProps {
   value: string;
@@ -12,11 +43,24 @@ interface ExerciseAutocompleteProps {
 }
 
 export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassName, wrapperClassName }: ExerciseAutocompleteProps) {
-  const [suggestions, setSuggestions] = useState<Exercise[]>([]);
+  const [allExercises, setAllExercises] = useState<Exercise[]>([]);
+  const [filtered, setFiltered] = useState<Exercise[]>([]);
   const [open, setOpen] = useState(false);
-  const [searching, setSearching] = useState(false);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Загрузить все упражнения один раз
+  const loadExercises = useCallback(async () => {
+    if (loaded) return;
+    try {
+      const data = await exercisesApi.search('', 200);
+      setAllExercises(data.exercises);
+      setLoaded(true);
+    } catch {
+      // ignore
+    }
+  }, [loaded]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -28,36 +72,54 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  function handleInput(v: string) {
-    onChange(v);
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+  function handleFocus() {
+    loadExercises().then(() => {
+      // При фокусе — показать все или отфильтрованные
+      filterList(value);
+      setOpen(true);
+    });
+  }
 
-    if (v.length < 2) {
-      setSuggestions([]);
-      setOpen(false);
+  function filterList(query: string) {
+    if (!query.trim()) {
+      setFiltered(allExercises);
       return;
     }
+    const lower = query.toLowerCase();
+    const result = allExercises.filter(ex => {
+      const ruName = formatExerciseName(ex.name).toLowerCase();
+      return ruName.includes(lower) || ex.name.toLowerCase().includes(lower);
+    });
+    setFiltered(result);
+  }
 
-    setSearching(true);
-    timeoutRef.current = setTimeout(async () => {
-      try {
-        const data = await exercisesApi.search(v);
-        setSuggestions(data.exercises);
-        setOpen(data.exercises.length > 0);
-      } catch {
-        setSuggestions([]);
-        setOpen(false);
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
+  function handleInput(v: string) {
+    onChange(v);
+    filterList(v);
+    setOpen(true);
   }
 
   function selectSuggestion(name: string) {
     onChange(name);
     setOpen(false);
-    setSuggestions([]);
   }
+
+  function handleBlur() {
+    blurTimeout.current = setTimeout(() => setOpen(false), 200);
+  }
+
+  function handleMouseDownItem() {
+    // Предотвратить закрытие от blur
+    if (blurTimeout.current) clearTimeout(blurTimeout.current);
+  }
+
+  // Обновить фильтр когда загрузятся упражнения
+  useEffect(() => {
+    if (loaded && open) {
+      filterList(value);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loaded]);
 
   return (
     <div ref={wrapperRef} className={wrapperClassName} style={{ position: 'relative', flex: 1 }}>
@@ -65,33 +127,26 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
         type="text"
         value={value}
         onChange={e => handleInput(e.target.value)}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
         className={inputClassName || "form-input"}
-        placeholder={placeholder || 'Название упражнения'}
+        placeholder={placeholder || 'Начните вводить или кликните для списка'}
         autoComplete="off"
         required
       />
-      {searching && (
-        <span style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }}>
-          ...
-        </span>
-      )}
-      {open && suggestions.length > 0 && (
-        <ul className="autocomplete-dropdown active">
-          {suggestions.map(ex => (
-            <li
+      {open && filtered.length > 0 && (
+        <div className="autocomplete-dropdown active">
+          {filtered.map(ex => (
+            <div
               key={ex.id}
+              onMouseDown={handleMouseDownItem}
               onClick={() => selectSuggestion(ex.name)}
               className="autocomplete-item"
             >
-              {ex.name}
-              {ex.isGlobal && (
-                <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                  глобальное
-                </span>
-              )}
-            </li>
+              {formatExerciseName(ex.name)}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

@@ -9,6 +9,7 @@ async function main() {
   const globalExercises = [
     'Snatch',
     'Clean & Jerk',
+    'Clean',
     'Back Squat',
     'Front Squat',
     'Deadlift',
@@ -22,6 +23,13 @@ async function main() {
     'Thruster',
     'Wall Balls',
     'Rope Climbs',
+    'Row',
+    'Bike',
+    'Run',
+    'SkiErg',
+    'Squats',
+    'Ring Muscle-ups',
+    'Bar Muscle-ups',
   ];
 
   // Создание глобальных упражнений

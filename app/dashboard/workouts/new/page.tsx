@@ -37,7 +37,7 @@ type BlockItem =
   | { type: 'skill'; data: SkillBlockForm }
   | { type: 'wod'; data: WodBlockForm };
 
-const CARDIO_TERMS = ['bike', 'row', 'run', 'skierg'];
+const CARDIO_TERMS = ['bike', 'row', 'run', 'skierg', 'assault bike', 'гребля', 'велотренажер', 'бег', 'лыжный тренажер'];
 function isCardio(name: string): boolean {
   const lower = name.toLowerCase();
   return CARDIO_TERMS.some(t => lower.includes(t));
@@ -535,7 +535,7 @@ export default function NewWorkoutPage() {
                                     value={ex.reps}
                                     onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
                                     className="form-input-sm"
-                                    placeholder="Повт."
+                                    placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт.'}
                                     min="1"
                                     required
                                   />
