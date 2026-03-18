@@ -2,7 +2,7 @@
   "name": "Workout Tracker - CrossFit Training Log",
   "short_name": "Workout Tracker",
   "description": "Track your CrossFit workouts, monitor progress, and achieve your fitness goals",
-  "start_url": "/workout-tracker",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#1A1A1A",
   "theme_color": "#DC2626",

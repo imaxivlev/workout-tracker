@@ -17,10 +17,7 @@ const EXERCISES_CACHE = `workout-tracker-exercises-${CACHE_VERSION}`;
 
 // Статические ресурсы для кэширования
 const STATIC_ASSETS = [
-  '/workout-tracker',
-  '/workout-tracker/index.html',
-  '/workout-tracker/styles.css',
-  '/workout-tracker/script.js',
+  '/',
   '/manifest.json',
   '/workout-tracker/icon-192.png',
   '/workout-tracker/icon-512.png'
