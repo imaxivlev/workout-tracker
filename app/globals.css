@@ -2775,3 +2775,85 @@ body.auth-page {
     margin-top: 0.75rem;
     font-style: italic;
 }
+
+/* Install PWA Banner */
+.install-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: linear-gradient(135deg, var(--color-primary), var(--color-accent, #b91c1c));
+    color: #fff;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    position: relative;
+    z-index: 100;
+}
+
+.install-banner-text {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.install-banner-close {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: 0 0 0 0.75rem;
+    line-height: 1;
+    opacity: 0.8;
+}
+
+.install-banner-close:hover {
+    opacity: 1;
+}
+
+/* Install page */
+.install-section {
+    margin-bottom: 2rem;
+}
+
+.install-steps {
+    list-style: none;
+    counter-reset: step;
+    padding: 0;
+    margin: 1rem 0 0;
+}
+
+.install-steps li {
+    counter-increment: step;
+    padding: 0.75rem 0 0.75rem 3rem;
+    position: relative;
+    color: var(--text-primary);
+    line-height: 1.5;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.install-steps li:last-child {
+    border-bottom: none;
+}
+
+.install-steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 0.75rem;
+    width: 2rem;
+    height: 2rem;
+    background: var(--color-primary);
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.install-icon {
+    margin-left: 0.25rem;
+}

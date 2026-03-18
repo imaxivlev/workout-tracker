@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/client';
+import { InstallBanner } from '@/app/components/InstallBanner';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="app-shell">
+      <InstallBanner />
       {/* Верхняя навигация (десктоп) */}
       <nav className="navbar">
         <div className="nav-container">
