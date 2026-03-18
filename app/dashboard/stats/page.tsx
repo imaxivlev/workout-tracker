@@ -71,7 +71,7 @@ function ProgressChart({ chartData, loading }: { chartData: ChartData; loading: 
     const { labels, values } = chartData;
     const dpr = window.devicePixelRatio || 1;
     const W = canvas.offsetWidth || 400;
-    const H = 300;
+    const H = 400;
     canvas.width = W * dpr;
     canvas.height = H * dpr;
     canvas.style.width = W + 'px';
@@ -162,13 +162,13 @@ function ProgressChart({ chartData, loading }: { chartData: ChartData; loading: 
   }, [chartData]);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '300px' }}>
+    <div style={{ position: 'relative', width: '100%', height: '400px' }}>
       {loading && (
         <div className="loading-state" style={{ position: 'absolute', inset: 0 }}>
           <div className="spinner" />
         </div>
       )}
-      <canvas ref={canvasRef} style={{ width: '100%', height: '300px', display: 'block' }} />
+      <canvas ref={canvasRef} style={{ width: '100%', height: '400px', display: 'block' }} />
     </div>
   );
 }
@@ -310,7 +310,7 @@ export default function StatsPage() {
             className="form-select"
             value={selectedExerciseId}
             onChange={e => setSelectedExerciseId(e.target.value)}
-            style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}
+            style={{ flex: 1, minWidth: '250px', maxWidth: '300px' }}
           >
             {exercises.length === 0 && <option value="">Нет упражнений</option>}
             {exercises.map(ex => (
@@ -321,14 +321,14 @@ export default function StatsPage() {
             className="form-select"
             value={detail}
             onChange={e => setDetail(e.target.value as DetailLevel)}
-            style={{ flex: 1, minWidth: '130px', maxWidth: '180px' }}
+            style={{ flex: 1, minWidth: '150px', maxWidth: '200px' }}
           >
             <option value="day">По дням</option>
             <option value="week">По неделям</option>
             <option value="month">По месяцам</option>
           </select>
         </div>
-        <div className="chart-container" style={{ position: 'relative', height: '300px', width: '100%' }}>
+        <div className="chart-container" style={{ position: 'relative', height: '400px', width: '100%' }}>
           <ProgressChart chartData={chartData} loading={chartLoading} />
         </div>
       </div>
