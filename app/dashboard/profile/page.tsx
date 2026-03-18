@@ -18,6 +18,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState('male');
 
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -69,14 +70,20 @@ export default function ProfilePage() {
       setDisplayName(name || user.email);
       setFullName(name);
 
-      if (newPassword) {
+      if (newPassword || confirmPassword) {
+        if (!currentPassword) {
+          setError('Введите текущий пароль');
+          setSaving(false);
+          return;
+        }
         if (newPassword !== confirmPassword) {
           setError('Пароли не совпадают');
           setSaving(false);
           return;
         }
         try {
-          await userApi.changePassword('', newPassword, confirmPassword);
+          await userApi.changePassword(currentPassword, newPassword, confirmPassword);
+          setCurrentPassword('');
           setNewPassword('');
           setConfirmPassword('');
         } catch (err) {
@@ -155,6 +162,17 @@ export default function ProfilePage() {
 
             <div className="account-section" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
               <h3 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Смена пароля</h3>
+              <div className="form-group">
+                <label>Текущий пароль</label>
+                <input
+                  type="password"
+                  className="form-input"
+                  placeholder="••••••••"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  autoComplete="current-password"
+                />
+              </div>
               <div className="form-row">
                 <div className="form-group">
                   <label>Новый пароль</label>

@@ -2140,9 +2140,13 @@ body.auth-page {
 .auth-container {
     width: 100%;
     max-width: 420px;
+    min-height: 100vh;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    padding: 1rem;
 }
 
 .auth-logo-wrapper {
@@ -2230,6 +2234,11 @@ body.auth-page {
 .forgot-password {
     color: var(--color-primary);
     text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
 }
 
 .forgot-password:hover {
