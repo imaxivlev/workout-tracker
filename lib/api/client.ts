@@ -302,9 +302,10 @@ export interface Exercise {
 }
 
 export const exercisesApi = {
-  async search(query: string, limit?: number) {
+  async search(query: string, limit?: number, withData?: boolean) {
     const params = new URLSearchParams({ query });
     if (limit) params.set('limit', String(limit));
+    if (withData) params.set('withData', 'true');
     return apiFetch<{ exercises: Exercise[] }>(`/api/exercises?${params.toString()}`);
   },
 

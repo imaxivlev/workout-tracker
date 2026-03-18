@@ -203,7 +203,7 @@ export default function StatsPage() {
   }, [period]);
 
   useEffect(() => {
-    exercisesApi.search('', 200).then(data => {
+    exercisesApi.search('', 200, true).then(data => {
       setExercises(data.exercises);
       if (data.exercises.length > 0) setSelectedExerciseId(data.exercises[0].id);
     }).catch(() => {});

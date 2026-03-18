@@ -25,6 +25,31 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query') || '';
     const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const withData = searchParams.get('withData') === 'true';
+
+    // Если withData — вернуть только упражнения, по которым есть Skill-блоки у пользователя
+    if (withData) {
+      const exercises = await prisma.exerciseDict.findMany({
+        where: {
+          skillBlocks: {
+            some: {
+              workout: { userId: user.id },
+              sets: { some: {} },
+            },
+          },
+          ...(query ? { name: { contains: query } } : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          isGlobal: true,
+        },
+        orderBy: { name: 'asc' },
+        take: limit,
+      });
+
+      return NextResponse.json({ exercises }, { status: 200 });
+    }
 
     // Поиск в глобальном справочнике
     const globalExercises = await prisma.exerciseDict.findMany({
