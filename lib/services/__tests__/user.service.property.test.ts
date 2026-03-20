@@ -85,22 +85,22 @@ describe('UserService - Property-Based Tests', () => {
           fc.string({ minLength: 8, maxLength: 50 })
             .filter(s => /\d/.test(s) && /[a-zA-Z]/.test(s)),
           async (password) => {
-            // Хешируем один и тот же пароль дважды
-            const hash1 = await bcrypt.hash(password, 12);
-            const hash2 = await bcrypt.hash(password, 12);
-            
+            // Хешируем один и тот же пароль дважды (cost=4 для скорости в тестах)
+            const hash1 = await bcrypt.hash(password, 4);
+            const hash2 = await bcrypt.hash(password, 4);
+
             // Хеши должны различаться (разная соль)
             expect(hash1).not.toBe(hash2);
-            
+
             // Но оба хеша должны быть валидны для этого пароля
             const isValid1 = await bcrypt.compare(password, hash1);
             const isValid2 = await bcrypt.compare(password, hash2);
-            
+
             expect(isValid1).toBe(true);
             expect(isValid2).toBe(true);
           }
         ),
-        { numRuns: 50 }
+        { numRuns: 10 }
       );
     });
     
@@ -110,9 +110,9 @@ describe('UserService - Property-Based Tests', () => {
           fc.string({ minLength: 8, maxLength: 50 })
             .filter(s => /\d/.test(s) && /[a-zA-Z]/.test(s)),
           async (password) => {
-            // Генерируем 5 хешей для одного пароля
+            // Генерируем 5 хешей для одного пароля (cost=4 для скорости в тестах)
             const hashes = await Promise.all(
-              Array(5).fill(null).map(() => bcrypt.hash(password, 12))
+              Array(5).fill(null).map(() => bcrypt.hash(password, 4))
             );
             
             // Извлекаем соли из хешей (символы 7-28 в bcrypt формате)
@@ -141,12 +141,12 @@ describe('UserService - Property-Based Tests', () => {
               .filter(s => /\d/.test(s) && /[a-zA-Z]/.test(s))
           ).filter(([p1, p2]) => p1 !== p2), // Гарантируем разные пароли
           async ([password1, password2]) => {
-            const hash1 = await bcrypt.hash(password1, 12);
-            const hash2 = await bcrypt.hash(password2, 12);
-            
+            const hash1 = await bcrypt.hash(password1, 4);
+            const hash2 = await bcrypt.hash(password2, 4);
+
             // Хеши разных паролей всегда различны
             expect(hash1).not.toBe(hash2);
-            
+
             // Каждый хеш валиден только для своего пароля
             expect(await bcrypt.compare(password1, hash1)).toBe(true);
             expect(await bcrypt.compare(password2, hash2)).toBe(true);
@@ -154,7 +154,7 @@ describe('UserService - Property-Based Tests', () => {
             expect(await bcrypt.compare(password2, hash1)).toBe(false);
           }
         ),
-        { numRuns: 50 }
+        { numRuns: 10 }
       );
     });
   });

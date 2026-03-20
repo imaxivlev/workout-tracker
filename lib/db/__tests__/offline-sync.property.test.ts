@@ -44,7 +44,7 @@ describe('Offline Sync Property Tests', () => {
    * Генератор валидных данных тренировки
    */
   const workoutDataArbitrary = fc.record({
-    date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+    date: fc.date({ min: new Date('2020-01-01'), max: new Date(), noInvalidDate: true })
       .map(d => d.toISOString().split('T')[0]),
     comment: fc.option(fc.string({ maxLength: 500 }), { nil: undefined }),
     skillBlocks: fc.option(
@@ -103,6 +103,9 @@ describe('Offline Sync Property Tests', () => {
       fc.asyncProperty(
         fc.array(workoutDataArbitrary, { minLength: 1, maxLength: 10 }),
         async (workouts) => {
+          // Очистка перед каждой итерацией
+          await clearAllData();
+
           // Добавляем несколько тренировок в очередь
           const ids = await Promise.all(
             workouts.map(w => addPendingWorkout(w))

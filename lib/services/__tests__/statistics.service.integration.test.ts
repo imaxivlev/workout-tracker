@@ -53,9 +53,9 @@ describe('StatisticsService Integration Tests', () => {
 
   describe('18.3.1 Расчет 1RM (формула Эпли)', () => {
     it('должен рассчитать 1RM по формуле: weight × (1 + reps / 30)', () => {
-      // 100 кг × (1 + 5/30) = 100 × 1.1667 = 116.67 → округление до 117.0
+      // 100 кг × (1 + 5/30) = 100 × 1.1667 = 116.67 → округление до 0.5 кг = 116.5
       const result = statisticsService.calculate1RM(100, 5);
-      expect(result).toBeCloseTo(117.0, 0);
+      expect(result).toBe(116.5);
     });
 
     it('должен вернуть исходный вес при reps = 1', () => {

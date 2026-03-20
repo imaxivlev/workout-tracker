@@ -49,7 +49,7 @@ describe('MigrationService Integration Tests', () => {
           comment: 'Мигрированная тренировка',
           skillBlocks: [
             {
-              exerciseName: 'Back Squat',
+              exercise: 'Back Squat',
               sets: [
                 { reps: 5, weight: 100 },
                 { reps: 5, weight: 110 },
@@ -86,15 +86,13 @@ describe('MigrationService Integration Tests', () => {
           date: '2024-01-16',
           wodBlocks: [
             {
-              wodType: 'FOR_TIME',
+              type: 'For Time',
               level: 'RX',
               isLadder: false,
-              resultType: 'TIME',
-              resultDisplay: '15:30',
-              resultSeconds: 930,
+              result: '15:30',
               exercises: [
-                { exerciseName: 'Thruster', reps: 21, weight: 42.5, orderIndex: 1 },
-                { exerciseName: 'Pull-up', reps: 21, orderIndex: 2 },
+                { name: 'Thruster', reps: 21, weight: 42.5 },
+                { name: 'Pull-up', reps: 21 },
               ],
             },
           ],
@@ -111,15 +109,15 @@ describe('MigrationService Integration Tests', () => {
       const localStorageData = [
         {
           date: '2024-01-10',
-          skillBlocks: [{ exerciseName: 'Deadlift', sets: [{ reps: 5, weight: 140 }] }],
+          skillBlocks: [{ exercise: 'Deadlift', sets: [{ reps: 5, weight: 140 }] }],
         },
         {
           date: '2024-01-12',
-          skillBlocks: [{ exerciseName: 'Bench Press', sets: [{ reps: 8, weight: 80 }] }],
+          skillBlocks: [{ exercise: 'Bench Press', sets: [{ reps: 8, weight: 80 }] }],
         },
         {
           date: '2024-01-14',
-          skillBlocks: [{ exerciseName: 'Back Squat', sets: [{ reps: 5, weight: 120 }] }],
+          skillBlocks: [{ exercise: 'Back Squat', sets: [{ reps: 5, weight: 120 }] }],
         },
       ];
 
@@ -138,11 +136,11 @@ describe('MigrationService Integration Tests', () => {
       const localStorageData = [
         {
           date: 'invalid-date',
-          skillBlocks: [{ exerciseName: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
+          skillBlocks: [{ exercise: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
         },
         {
           date: '2024-01-15',
-          skillBlocks: [{ exerciseName: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
+          skillBlocks: [{ exercise: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
         },
       ];
 
@@ -167,7 +165,7 @@ describe('MigrationService Integration Tests', () => {
       const dates = ['2023-06-15', '2023-09-20', '2024-01-05'];
       const localStorageData = dates.map(date => ({
         date,
-        skillBlocks: [{ exerciseName: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
+        skillBlocks: [{ exercise: 'Back Squat', sets: [{ reps: 5, weight: 100 }] }],
       }));
 
       await migrationService.migrateWorkouts(testUserId, localStorageData);
@@ -190,8 +188,8 @@ describe('MigrationService Integration Tests', () => {
         {
           date: '2024-01-15',
           skillBlocks: [
-            { exerciseName: 'Migration Custom Exercise 1', sets: [{ reps: 10, weight: 50 }] },
-            { exerciseName: 'Migration Custom Exercise 2', sets: [{ reps: 8, weight: 60 }] },
+            { exercise: 'Migration Custom Exercise 1', sets: [{ reps: 10, weight: 50 }] },
+            { exercise: 'Migration Custom Exercise 2', sets: [{ reps: 8, weight: 60 }] },
           ],
         },
       ];

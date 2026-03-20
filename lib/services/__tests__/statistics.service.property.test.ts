@@ -305,7 +305,7 @@ describe('StatisticsService - Streak Property Tests', () => {
       fc.assert(
         fc.property(
           fc.array(
-            fc.date({ min: new Date('2024-01-01'), max: new Date('2024-12-31') }),
+            fc.date({ min: new Date('2024-01-01'), max: new Date('2024-12-31'), noInvalidDate: true }),
             { minLength: 1, maxLength: 52 }
           ),
           (dates) => {

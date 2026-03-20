@@ -19,6 +19,7 @@ export default defineConfig({
       ],
     },
     testTimeout: 30000, // 30 секунд для property-based тестов
+    fileParallelism: false, // тесты с БД не могут работать параллельно
   },
   resolve: {
     alias: {

@@ -34,12 +34,18 @@ export const RU_TO_EN: Record<string, string> = Object.fromEntries(
   Object.entries(EN_TO_RU).map(([en, ru]) => [ru, en])
 );
 
+// Безопасный доступ к маппингу (защита от prototype pollution)
+function safeGet(map: Record<string, string>, key: string): string | undefined {
+  return Object.prototype.hasOwnProperty.call(map, key) ? map[key] : undefined;
+}
+
 /**
  * Конвертирует русское название в английское (для API)
  * Если маппинг не найден — возвращает как есть
  */
 export function ruToEnName(name: string): string {
-  return RU_TO_EN[name.trim()] || name.trim();
+  const trimmed = name.trim();
+  return safeGet(RU_TO_EN, trimmed) || trimmed;
 }
 
 /**
@@ -47,7 +53,8 @@ export function ruToEnName(name: string): string {
  * Если маппинг не найден — возвращает как есть
  */
 export function enToRuName(name: string): string {
-  return EN_TO_RU[name.trim()] || name.trim();
+  const trimmed = name.trim();
+  return safeGet(EN_TO_RU, trimmed) || trimmed;
 }
 
 /**
@@ -55,6 +62,6 @@ export function enToRuName(name: string): string {
  * "Back Squat" → "Приседания со штангой на спине (Back Squat)"
  */
 export function formatForDropdown(enName: string): string {
-  const ru = EN_TO_RU[enName];
+  const ru = safeGet(EN_TO_RU, enName);
   return ru ? `${ru} (${enName})` : enName;
 }

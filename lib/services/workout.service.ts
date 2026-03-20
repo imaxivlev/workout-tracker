@@ -72,15 +72,26 @@ export class WorkoutService {
     }
 
     // Шаг 3: Создание нового пользовательского упражнения
-    const newExercise = await prisma.exerciseDict.create({
-      data: {
-        name: normalizedName,
-        isGlobal: false,
-        userId: userId
+    // Используем try-catch для обработки race condition при параллельных запросах
+    try {
+      const newExercise = await prisma.exerciseDict.create({
+        data: {
+          name: normalizedName,
+          isGlobal: false,
+          userId: userId
+        }
+      });
+      return newExercise.id;
+    } catch (error: any) {
+      // Если уникальное ограничение нарушено — упражнение уже создано параллельным запросом
+      if (error.code === 'P2002') {
+        const existing = await prisma.exerciseDict.findFirst({
+          where: { name: normalizedName, userId, isGlobal: false }
+        });
+        if (existing) return existing.id;
       }
-    });
-
-    return newExercise.id;
+      throw error;
+    }
   }
 
   /**
@@ -734,9 +745,15 @@ export class WorkoutService {
 
     // Шаг 3: Требование 10.5 - Каскадное удаление тренировки
     // Prisma автоматически удалит все связанные блоки и подходы благодаря onDelete: Cascade
-    await prisma.workout.delete({
-      where: { id: workoutId }
-    });
+    try {
+      await prisma.workout.delete({
+        where: { id: workoutId }
+      });
+    } catch (error: any) {
+      // P2025: запись уже удалена (идемпотентность при параллельных запросах)
+      if (error.code === 'P2025') return;
+      throw error;
+    }
   }
 
   /**

@@ -15,35 +15,43 @@ const prisma = new PrismaClient();
 describe('WorkoutService - Property-Based Tests', () => {
   const workoutService = new WorkoutService();
   
-  // Очистка тестовых данных после каждого теста
+  // Очистка тестовых данных после каждого теста (порядок: дочерние → родительские)
   afterEach(async () => {
+    await prisma.skillSet.deleteMany({});
+    await prisma.skillBlock.deleteMany({});
+    await prisma.wodExercise.deleteMany({});
+    await prisma.wodBlock.deleteMany({});
+    await prisma.workout.deleteMany({});
     await prisma.exerciseDict.deleteMany({
       where: { isGlobal: false }
     });
     await prisma.user.deleteMany({});
   });
   
+  // Счетчик для уникальных email в property-based тестах
+  let emailCounter = 0;
+  const uniqueEmail = () => `prop-test-${++emailCounter}-${Date.now()}@example.com`;
+
   /**
    * Свойство 4: Консистентность резолва упражнений
-   * 
-   * Для любого названия упражнения и пользователя, повторный резолв одного 
-   * и того же названия упражнения для одного пользователя всегда должен 
+   *
+   * Для любого названия упражнения и пользователя, повторный резолв одного
+   * и того же названия упражнения для одного пользователя всегда должен
    * возвращать один и тот же ID.
-   * 
+   *
    * **Validates: Requirements 6.3-6.5**
    */
   describe('Свойство 4: Консистентность резолва упражнений', () => {
     it('повторный резолв одного и того же названия возвращает один и тот же ID', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0), // Название упражнения
-          async (email, exerciseName) => {
-            // Создаем тестового пользователя
+          async (exerciseName) => {
+            // Создаем тестового пользователя с уникальным email
             const user = await prisma.user.create({
               data: {
-                email,
+                email: uniqueEmail(),
                 passwordHash: 'test-hash',
                 verified: true
               }
@@ -76,7 +84,6 @@ describe('WorkoutService - Property-Based Tests', () => {
               where: {
                 name: {
                   equals: exerciseName.trim(),
-                  mode: 'insensitive'
                 },
                 userId: user.id
               }
@@ -87,7 +94,6 @@ describe('WorkoutService - Property-Based Tests', () => {
               where: {
                 name: {
                   equals: exerciseName.trim(),
-                  mode: 'insensitive'
                 },
                 isGlobal: true
               }
@@ -105,7 +111,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('резолв не зависит от регистра символов', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0 && /[a-zA-Z]/.test(s)),
           async (email, exerciseName) => {
@@ -148,7 +154,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('резолв игнорирует пробелы в начале и конце', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0),
           fc.integer({ min: 0, max: 5 }), // Количество пробелов в начале
@@ -189,8 +195,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0),
@@ -269,7 +275,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('новое упражнение создается автоматически с is_global = false', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0)
             // Фильтруем глобальные упражнения
@@ -298,7 +304,6 @@ describe('WorkoutService - Property-Based Tests', () => {
               where: {
                 name: {
                   equals: exerciseName.trim(),
-                  mode: 'insensitive'
                 },
                 OR: [
                   { isGlobal: true },
@@ -356,7 +361,7 @@ describe('WorkoutService - Property-Based Tests', () => {
       
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.constantFrom(...globalExercises),
           async (email, exerciseName) => {
             // Создаем тестового пользователя
@@ -391,7 +396,6 @@ describe('WorkoutService - Property-Based Tests', () => {
               where: {
                 name: {
                   equals: exerciseName,
-                  mode: 'insensitive'
                 },
                 userId: user.id,
                 isGlobal: false
@@ -416,7 +420,7 @@ describe('WorkoutService - Property-Based Tests', () => {
       
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.constantFrom(...globalExercises),
           async (email, exerciseName) => {
             // Создаем тестового пользователя
@@ -463,7 +467,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('пользовательское упражнение имеет приоритет над глобальным для конкретного пользователя', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           async (email) => {
             // Создаем тестового пользователя
             const user = await prisma.user.create({
@@ -527,7 +531,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('успешная транзакция фиксирует все изменения', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
               .map(d => d.toISOString().split('T')[0]),
@@ -598,8 +602,7 @@ describe('WorkoutService - Property-Based Tests', () => {
                 where: {
                   name: {
                     equals: exerciseName,
-                    mode: 'insensitive'
-                  },
+                    },
                   OR: [
                     { isGlobal: true },
                     { userId: user.id }
@@ -618,7 +621,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('ошибка при резолве упражнения откатывает всю транзакцию', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           async (email) => {
             // Создаем тестового пользователя
             const user = await prisma.user.create({
@@ -676,7 +679,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('успешная транзакция с множественными блоками создает все записи атомарно', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.integer({ min: 2, max: 3 }), // Количество skill блоков
           async (email, skillBlocksCount) => {
             // Создаем тестового пользователя
@@ -740,7 +743,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('повторное удаление одной и той же тренировки не вызывает ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
               .map(d => d.toISOString().split('T')[0]),
@@ -813,7 +816,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('удаление несуществующей тренировки не вызывает ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.uuid(),
           async (email, nonExistentWorkoutId) => {
             // Создаем тестового пользователя
@@ -848,7 +851,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('множественные одновременные удаления одной тренировки не вызывают ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.integer({ min: 2, max: 5 }), // Количество одновременных удалений
           async (email, concurrentDeleteCount) => {
             // Создаем тестового пользователя
@@ -895,7 +898,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('идемпотентность сохраняется после каскадного удаления связанных данных', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.integer({ min: 1, max: 3 }), // Количество skill блоков
           async (email, skillBlocksCount) => {
             // Создаем тестового пользователя
@@ -986,8 +989,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           async ([email1, email2]) => {
             // Создаем двух пользователей
@@ -1058,7 +1061,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('пустое название упражнения вызывает ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.constantFrom('', '   ', '\t', '\n'),
           async (email, emptyName) => {
             // Создаем тестового пользователя
@@ -1083,7 +1086,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('резолв работает с длинными названиями упражнений', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 40, maxLength: 100 })
             .filter(s => s.trim().length > 0),
           async (email, longName) => {
@@ -1118,7 +1121,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('резолв работает с названиями, содержащими специальные символы', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0)
             .map(s => s + ' & ' + s), // Добавляем специальный символ
@@ -1154,7 +1157,6 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('множественные одновременные резолвы одного названия создают только одно упражнение', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
           fc.string({ minLength: 3, maxLength: 50 })
             .filter(s => s.trim().length > 0)
             .filter(s => {
@@ -1168,11 +1170,11 @@ describe('WorkoutService - Property-Based Tests', () => {
               return !globalNames.includes(normalized);
             }),
           fc.integer({ min: 2, max: 10 }),
-          async (email, exerciseName, concurrentCount) => {
-            // Создаем тестового пользователя
+          async (exerciseName, concurrentCount) => {
+            // Создаем тестового пользователя с гарантированно уникальным email
             const user = await prisma.user.create({
               data: {
-                email,
+                email: `${crypto.randomUUID()}@test.com`,
                 passwordHash: 'test-hash',
                 verified: true
               }
@@ -1194,7 +1196,6 @@ describe('WorkoutService - Property-Based Tests', () => {
               where: {
                 name: {
                   equals: exerciseName.trim(),
-                  mode: 'insensitive'
                 },
                 userId: user.id,
                 isGlobal: false
@@ -1222,8 +1223,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
@@ -1288,8 +1289,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.integer({ min: 1, max: 3 }), // Количество тренировок для user1
           fc.integer({ min: 1, max: 3 }), // Количество тренировок для user2
@@ -1393,7 +1394,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('пользователь не может получить доступ к несуществующей тренировке', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.uuid(),
           async (email, nonExistentWorkoutId) => {
             // Создаем пользователя
@@ -1432,8 +1433,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.string({ minLength: 3, maxLength: 30 })
             .filter(s => s.trim().length > 0),
@@ -1519,8 +1520,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.date({ min: new Date('2024-01-01'), max: new Date('2024-01-31') })
             .map(d => d.toISOString().split('T')[0]),
@@ -1598,8 +1599,6 @@ describe('WorkoutService - Property-Based Tests', () => {
       );
     });
   });
-});
-
 
   /**
    * Свойство 5: Идемпотентность удаления тренировки
@@ -1613,7 +1612,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('повторное удаление одной и той же тренировки не вызывает ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
               .map(d => d.toISOString().split('T')[0]),
@@ -1685,7 +1684,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('удаление несуществующей тренировки не вызывает ошибку', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.uuid(),
           fc.integer({ min: 1, max: 3 }), // Количество попыток удаления
           async (email, nonExistentWorkoutId, deleteAttempts) => {
@@ -1724,7 +1723,7 @@ describe('WorkoutService - Property-Based Tests', () => {
     it('идемпотентность сохраняется при удалении тренировок с разными типами блоков', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
               .map(d => d.toISOString().split('T')[0]),
@@ -1819,8 +1818,8 @@ describe('WorkoutService - Property-Based Tests', () => {
       await fc.assert(
         fc.asyncProperty(
           fc.tuple(
-            fc.emailAddress(),
-            fc.emailAddress()
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
+            fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.record({
             date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
