@@ -425,7 +425,7 @@ export default function WorkoutsPage() {
                 onChange={e => setExerciseFilter(e.target.value)}
               />
             </div>
-            <div className="period-selector">
+            <div className="period-selector" style={{ marginBottom: 0 }}>
               <button className={`period-btn${typeFilter === 'all' ? ' active' : ''}`} onClick={() => setTypeFilter('all')}>Все</button>
               <button className={`period-btn${typeFilter === 'skill' ? ' active' : ''}`} onClick={() => setTypeFilter('skill')}>Skill</button>
               <button className={`period-btn${typeFilter === 'wod' ? ' active' : ''}`} onClick={() => setTypeFilter('wod')}>WOD</button>

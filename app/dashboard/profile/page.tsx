@@ -2,7 +2,7 @@
 
 import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { userApi, ApiError, authApi } from '@/lib/api/client';
+import { userApi, ApiError, authApi, clubsApi } from '@/lib/api/client';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -21,6 +21,35 @@ export default function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Club leaderboard visibility
+  const [clubId, setClubId] = useState<string | null>(null);
+  const [showInLeaderboard, setShowInLeaderboard] = useState(true);
+
+  useEffect(() => {
+    // Load club membership
+    clubsApi.getMy().then(({ club }) => {
+      if (club) {
+        setClubId(club.id);
+        // Load current visibility
+        clubsApi.getMembers(club.id).then(({ members }) => {
+          userApi.getProfile().then(({ user }) => {
+            const me = members.find(m => m.userId === user.id);
+            if (me) setShowInLeaderboard(me.showInLeaderboard);
+          }).catch(() => {});
+        }).catch(() => {});
+      }
+    }).catch(() => {});
+  }, []);
+
+  async function toggleLeaderboardVisibility() {
+    if (!clubId) return;
+    const newVal = !showInLeaderboard;
+    try {
+      await clubsApi.updateLeaderboardVisibility(clubId, newVal);
+      setShowInLeaderboard(newVal);
+    } catch {}
+  }
 
   useEffect(() => {
     userApi.getProfile()
@@ -159,6 +188,21 @@ export default function ProfilePage() {
                 <option value="female">Женский</option>
               </select>
             </div>
+
+            {clubId && (
+              <div className="account-section" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
+                <h3 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Клуб</h3>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <input
+                    type="checkbox"
+                    checked={showInLeaderboard}
+                    onChange={toggleLeaderboardVisibility}
+                    style={{ width: 16, height: 16, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                  />
+                  Показывать меня в лидербордах клуба
+                </label>
+              </div>
+            )}
 
             <div className="account-section" style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '1px solid var(--border-color)' }}>
               <h3 className="section-title" style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Смена пароля</h3>
