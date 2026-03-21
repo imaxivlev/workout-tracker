@@ -24,7 +24,8 @@ model User {
   exercises           ExerciseDict[]
   verificationTokens  VerificationToken[]
   passwordResetTokens PasswordResetToken[]
-  
+  clubMemberships     ClubMember[]
+
   @@map("users")
   @@index([email])
 }
@@ -177,4 +178,66 @@ model WodExercise {
   @@map("wod_exercises")
   @@index([wodBlockId])
   @@index([exerciseDictId])
+}
+
+// =====================
+// Club system
+// =====================
+
+enum ClubRole {
+  OWNER
+  COACH
+  ATHLETE
+
+  @@map("club_role")
+}
+
+model Club {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  name        String   @db.VarChar(200)
+  slug        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  city        String?  @db.VarChar(100)
+  logo        String?  @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  members ClubMember[]
+  invites ClubInvite[]
+
+  @@map("clubs")
+  @@index([slug])
+}
+
+model ClubMember {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  clubId    String   @map("club_id") @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  role      ClubRole @default(ATHLETE)
+  joinedAt  DateTime @default(now()) @map("joined_at")
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@map("club_members")
+  @@index([clubId])
+  @@index([userId])
+}
+
+model ClubInvite {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  clubId    String   @map("club_id") @db.VarChar(36)
+  code      String   @unique @db.VarChar(20)
+  createdBy String   @map("created_by") @db.VarChar(36)
+  maxUses   Int?     @map("max_uses")
+  usedCount Int      @default(0) @map("used_count")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@map("club_invites")
+  @@index([code])
+  @@index([clubId])
 }

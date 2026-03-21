@@ -379,6 +379,149 @@ export const migrationApi = {
   },
 };
 
+// --- Clubs ---
+
+export interface Club {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  city: string | null;
+  logo: string | null;
+  memberCount: number;
+  myRole: 'OWNER' | 'COACH' | 'ATHLETE' | null;
+  createdAt: string;
+}
+
+export interface ClubMember {
+  userId: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: 'OWNER' | 'COACH' | 'ATHLETE';
+  joinedAt: string;
+}
+
+export interface ClubWorkoutTemplate {
+  signature: string;
+  firstWorkoutId: string;
+  date: string;
+  athleteCount: number;
+  athletes: Array<{ userId: string; name: string; workoutId: string }>;
+  skillBlocks: Array<{
+    exerciseName: string;
+    sets: Array<{ reps: number; weight: number }>;
+  }>;
+  wodBlocks: Array<{
+    wodType: string;
+    level: string;
+    timeCapSeconds: number | null;
+    isLadder: boolean;
+    exercises: Array<{ exerciseName: string; reps: number; weight: number | null }>;
+  }>;
+}
+
+export interface WodLeaderboardEntry {
+  userId: string;
+  name: string;
+  workoutId: string;
+  wodType: string;
+  level: string;
+  resultDisplay: string;
+  resultSeconds: number | null;
+  resultTotalReps: number | null;
+  rank?: number;
+}
+
+export interface MonthlyLeaderboardEntry {
+  userId: string;
+  name: string;
+  workoutCount: number;
+  tonnage: number;
+  activeDays: number;
+}
+
+export const clubsApi = {
+  async create(data: { name: string; description?: string; city?: string }) {
+    return apiFetch<{ club: Club }>('/api/clubs', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async getMy() {
+    return apiFetch<{ club: Club | null }>('/api/clubs/my');
+  },
+
+  async getById(id: string) {
+    return apiFetch<{ club: Club }>(`/api/clubs/${id}`);
+  },
+
+  async update(id: string, data: { name?: string; description?: string; city?: string }) {
+    return apiFetch<{ club: Club }>(`/api/clubs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async join(code: string) {
+    return apiFetch<{ club: Club; message: string }>('/api/clubs/join', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
+    });
+  },
+
+  async leave(id: string) {
+    return apiFetch<{ message: string }>(`/api/clubs/${id}/leave`, { method: 'POST' });
+  },
+
+  async createInvite(id: string, options?: { maxUses?: number; expiresInDays?: number }) {
+    return apiFetch<{ invite: { code: string; expiresAt: string | null } }>(`/api/clubs/${id}/invite`, {
+      method: 'POST',
+      body: JSON.stringify(options || {}),
+    });
+  },
+
+  async getMembers(id: string) {
+    return apiFetch<{ members: ClubMember[] }>(`/api/clubs/${id}/members`);
+  },
+
+  async updateMemberRole(clubId: string, userId: string, role: string) {
+    return apiFetch<{ message: string }>(`/api/clubs/${clubId}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    });
+  },
+
+  async removeMember(clubId: string, userId: string) {
+    return apiFetch<{ message: string }>(`/api/clubs/${clubId}/members/${userId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  async getTodayWorkouts(id: string, date?: string) {
+    const qs = date ? `?date=${date}` : '';
+    return apiFetch<{ templates: ClubWorkoutTemplate[]; date: string }>(`/api/clubs/${id}/workouts/today${qs}`);
+  },
+
+  async getWodLeaderboard(id: string, date: string, signature?: string) {
+    const params = new URLSearchParams({ type: 'wod', date });
+    if (signature) params.set('signature', signature);
+    return apiFetch<{ type: string; date: string; entries: WodLeaderboardEntry[] }>(
+      `/api/clubs/${id}/leaderboard?${params.toString()}`
+    );
+  },
+
+  async getMonthlyLeaderboard(id: string, year?: number, month?: number) {
+    const params = new URLSearchParams({ type: 'monthly' });
+    if (year) params.set('year', String(year));
+    if (month) params.set('month', String(month));
+    return apiFetch<{ type: string; year: number; month: number; entries: MonthlyLeaderboardEntry[] }>(
+      `/api/clubs/${id}/leaderboard?${params.toString()}`
+    );
+  },
+};
+
 // --- CSRF ---
 
 export async function getCsrfToken(): Promise<string> {
