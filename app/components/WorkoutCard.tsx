@@ -46,7 +46,13 @@ export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
             <div key={block.id} className="workout-block wod">
               <div className="block-title">⚡ WOD: {block.wodType}</div>
               <div className="workout-footer">
-                <span className="result-time">⏱ {block.resultDisplay} ({block.level})</span>
+                {block.wodType === 'EMOM' || block.wodType === 'TABATA' ? (
+                  <span className="result-time">
+                    {block.timeCapSeconds ? `${Math.floor(block.timeCapSeconds / 60)} мин` : block.level}
+                  </span>
+                ) : (
+                  <span className="result-time">⏱ {block.resultDisplay} ({block.level})</span>
+                )}
               </div>
             </div>
           ))}

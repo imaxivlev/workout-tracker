@@ -241,6 +241,10 @@ export const workoutsApi = {
   async delete(id: string) {
     return apiFetch<void>(`/api/workouts/${id}`, { method: 'DELETE' });
   },
+
+  async getDates() {
+    return apiFetch<{ dates: Record<string, { hasSkill: boolean; hasWod: boolean }> }>('/api/workouts/dates');
+  },
 };
 
 // --- Statistics ---

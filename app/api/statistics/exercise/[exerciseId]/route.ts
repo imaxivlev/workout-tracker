@@ -63,7 +63,7 @@ export async function GET(
       {
         exerciseName: exercise.name,
         personalRecords,
-        history,
+        progressHistory: history,
       },
       { status: 200 }
     );

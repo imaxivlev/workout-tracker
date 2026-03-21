@@ -27,6 +27,9 @@ export const EN_TO_RU: Record<string, string> = {
   'Ring Muscle-ups': 'Выходы на кольцах',
   'Bar Muscle-ups': 'Выходы на перекладине',
   'Squats': 'Приседания',
+  'Double Unders': 'Двойные прыжки на скакалке',
+  'Single Unders': 'Прыжки на скакалке',
+  'Weighted Pull-ups': 'Подтягивания с весом',
 };
 
 // Обратный маппинг: русские → английские

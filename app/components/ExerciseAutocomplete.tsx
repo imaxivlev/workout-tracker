@@ -92,17 +92,31 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
 
   return (
     <div ref={wrapperRef} className={wrapperClassName} style={{ position: 'relative', flex: 1 }}>
-      <input
-        type="text"
-        value={value}
-        onChange={e => handleInput(e.target.value)}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className={inputClassName || "form-input"}
-        placeholder={placeholder || 'Начните вводить или кликните для списка'}
-        autoComplete="off"
-        required
-      />
+      <div style={{ position: 'relative' }}>
+        <input
+          type="text"
+          value={value}
+          onChange={e => handleInput(e.target.value)}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+          className={inputClassName || "form-input"}
+          placeholder={placeholder || 'Начните вводить или кликните для списка'}
+          autoComplete="off"
+          required
+          style={value ? { paddingRight: '2.2rem' } : undefined}
+        />
+        {value && (
+          <button
+            type="button"
+            className="autocomplete-clear-btn"
+            onMouseDown={e => { e.preventDefault(); onChange(''); filterList(''); }}
+            tabIndex={-1}
+            aria-label="Очистить"
+          >
+            ×
+          </button>
+        )}
+      </div>
       {open && filtered.length > 0 && (
         <div className="autocomplete-dropdown active">
           {filtered.map(ex => (

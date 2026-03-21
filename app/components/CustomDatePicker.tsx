@@ -2,12 +2,18 @@
 
 import { useState, useRef, useEffect } from 'react';
 
+export interface WorkoutDateMarker {
+  hasSkill: boolean;
+  hasWod: boolean;
+}
+
 interface CustomDatePickerProps {
   startDate: string;  // YYYY-MM-DD
   endDate: string;    // YYYY-MM-DD
   onChange: (start: string, end: string) => void;
   onApply: () => void;
   onReset: () => void;
+  workoutDates?: Record<string, WorkoutDateMarker>;
 }
 
 type Preset = 'today' | 'yesterday' | 'week' | 'month' | 'quarter' | 'all' | 'custom';
@@ -76,11 +82,12 @@ interface CalendarMonthProps {
   today: string;
   onDayClick: (ymd: string) => void;
   onDayHover: (ymd: string) => void;
+  workoutDates?: Record<string, WorkoutDateMarker>;
 }
 
 function CalendarMonth({
   year, month, startDate, endDate, hoverDate, today,
-  onDayClick, onDayHover,
+  onDayClick, onDayHover, workoutDates,
 }: CalendarMonthProps) {
   const days = getDaysInMonth(year, month);
   const firstWd = getFirstWeekday(year, month);
@@ -120,6 +127,8 @@ function CalendarMonth({
           else if (isEnd) cls += ' range-end';
           else if (inRange) cls += ' range-between';
 
+          const marker = workoutDates?.[ymd];
+
           return (
             <div
               key={ymd}
@@ -130,6 +139,12 @@ function CalendarMonth({
               title={ymd}
             >
               {parseInt(ymd.split('-')[2])}
+              {marker && (
+                <span className="workout-dots">
+                  {marker.hasWod && <span className="dot dot-wod" />}
+                  {marker.hasSkill && <span className="dot dot-skill" />}
+                </span>
+              )}
             </div>
           );
         })}
@@ -138,7 +153,7 @@ function CalendarMonth({
   );
 }
 
-export function CustomDatePicker({ startDate, endDate, onChange, onApply, onReset }: CustomDatePickerProps) {
+export function CustomDatePicker({ startDate, endDate, onChange, onApply, onReset, workoutDates }: CustomDatePickerProps) {
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<Preset | null>(null);
   const [hoverDate, setHoverDate] = useState('');
@@ -355,6 +370,7 @@ export function CustomDatePicker({ startDate, endDate, onChange, onApply, onRese
                   today={today}
                   onDayClick={handleDayClick}
                   onDayHover={setHoverDate}
+                  workoutDates={workoutDates}
                 />
               ))}
             </div>

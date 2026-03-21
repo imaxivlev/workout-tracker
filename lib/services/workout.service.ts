@@ -233,11 +233,15 @@ export class WorkoutService {
       throw new Error('Название упражнения не может быть пустым');
     }
 
+    // Попробуем конвертировать русское название в английское
+    const enName = ruToEnName(normalizedName);
+    const nameVariants = enName !== normalizedName ? [normalizedName, enName] : [normalizedName];
+
     // Поиск в глобальном справочнике
     const globalExercise = await tx.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName
+          in: nameVariants
         },
         isGlobal: true
       }
@@ -251,7 +255,7 @@ export class WorkoutService {
     const userExercise = await tx.exerciseDict.findFirst({
       where: {
         name: {
-          equals: normalizedName
+          in: nameVariants
         },
         userId: userId,
         isGlobal: false

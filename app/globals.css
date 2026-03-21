@@ -169,8 +169,9 @@ body {
 /* Pagination */
 
 .pagination-container {
-    flex-direction: row !important;
-    /* Override inline style */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
     justify-content: center;
     gap: 0.5rem;
 }
@@ -529,6 +530,27 @@ input[type=number]::-webkit-outer-spin-button {
     display: block;
 }
 
+.autocomplete-clear-btn {
+    position: absolute;
+    right: 0.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0.2rem 0.4rem;
+    border-radius: 50%;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+.autocomplete-clear-btn:hover {
+    opacity: 1;
+    color: var(--color-primary);
+}
+
 .autocomplete-item {
     padding: 0.75rem 1rem;
     cursor: pointer;
@@ -823,6 +845,19 @@ input[type=number]::-webkit-outer-spin-button {
 .period-btn.active {
     background: var(--color-primary);
     border-color: var(--color-primary);
+}
+
+.chart-tooltip {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    text-align: center;
+    white-space: nowrap;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
 .stats-grid {
@@ -1208,12 +1243,35 @@ input[type=number]::-webkit-outer-spin-button {
 .day-cell {
     aspect-ratio: 1;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     border-radius: 4px;
     font-size: 0.9rem;
     color: var(--text-primary);
+    position: relative;
+}
+
+.workout-dots {
+    display: flex;
+    gap: 2px;
+    position: absolute;
+    bottom: 2px;
+}
+
+.workout-dots .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+}
+
+.workout-dots .dot-wod {
+    background: #ef4444;
+}
+
+.workout-dots .dot-skill {
+    background: #22c55e;
 }
 
 .day-cell:hover:not(.empty) {

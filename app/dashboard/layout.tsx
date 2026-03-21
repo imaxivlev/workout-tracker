@@ -34,13 +34,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 href="/dashboard/workouts"
                 className={`nav-link ${pathname.startsWith('/dashboard/workouts') && pathname !== '/dashboard/workouts/new' ? 'active' : ''}`}
               >
-                История
-              </Link>
-              <Link
-                href="/dashboard/stats"
-                className={`nav-link ${pathname.startsWith('/dashboard/stats') ? 'active' : ''}`}
-              >
-                Статистика
+                Тренировки
               </Link>
             </div>
           </div>
@@ -89,7 +83,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span className="mobile-nav-label">История</span>
+          <span className="mobile-nav-label">Тренировки</span>
         </Link>
         <Link
           href="/dashboard/workouts/new"
@@ -100,17 +94,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <line x1="5" y1="12" x2="19" y2="12" />
           </svg>
           <span className="mobile-nav-label">Создать</span>
-        </Link>
-        <Link
-          href="/dashboard/stats"
-          className={`mobile-nav-item ${pathname.startsWith('/dashboard/stats') ? 'active' : ''}`}
-        >
-          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="20" x2="12" y2="10" />
-            <line x1="18" y1="20" x2="18" y2="4" />
-            <line x1="6" y1="20" x2="6" y2="16" />
-          </svg>
-          <span className="mobile-nav-label">Статистика</span>
         </Link>
         <Link
           href="/dashboard/profile"

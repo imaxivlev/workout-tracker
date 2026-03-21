@@ -117,10 +117,16 @@ export default function WorkoutDetailPage() {
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Тип:</strong> {block.level ? block.level.toUpperCase() : 'RX'}
               </div>
+              {block.wodType !== 'EMOM' && block.wodType !== 'TABATA' ? (
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Результат:</strong> {block.resultDisplay}
                 {block.timeCapSeconds ? ` (тайм-кап: ${Math.floor(block.timeCapSeconds / 60)} мин)` : ''}
               </div>
+              ) : block.timeCapSeconds ? (
+              <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                <strong>Время:</strong> {Math.floor(block.timeCapSeconds / 60)} мин
+              </div>
+              ) : null}
               {wodDetails.length > 0 && (
                 <div className="detail-row" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                   {wodDetails.map((line, i) => (

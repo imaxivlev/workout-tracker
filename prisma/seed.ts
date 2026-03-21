@@ -30,6 +30,9 @@ async function main() {
     'Squats',
     'Ring Muscle-ups',
     'Bar Muscle-ups',
+    'Double Unders',
+    'Single Unders',
+    'Weighted Pull-ups',
   ];
 
   // Создание глобальных упражнений

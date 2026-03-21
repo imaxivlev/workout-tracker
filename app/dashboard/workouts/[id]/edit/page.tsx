@@ -43,6 +43,25 @@ function isCardio(name: string): boolean {
   return CARDIO_TERMS.some(t => lower.includes(t));
 }
 
+const BODYWEIGHT_TERMS = [
+  'pull-ups', 'подтягивания', 'push-ups', 'отжимания',
+  'burpees', 'берпи', 'box jumps', 'запрыгивания на коробку',
+  'rope climbs', 'лазание по канату',
+  'ring muscle-ups', 'выходы на кольцах',
+  'bar muscle-ups', 'выходы на перекладине',
+  'double unders', 'двойные прыжки на скакалке',
+  'single unders', 'прыжки на скакалке',
+];
+function isBodyweight(name: string): boolean {
+  const lower = name.toLowerCase();
+  if (lower.includes('с весом') || lower.includes('weighted')) return false;
+  return BODYWEIGHT_TERMS.some(t => lower.includes(t));
+}
+
+function shouldHideWeight(name: string): boolean {
+  return isCardio(name) || isBodyweight(name);
+}
+
 function parseMmSs(value: string): number {
   const parts = value.split(':');
   if (parts.length === 2) {
@@ -51,6 +70,19 @@ function parseMmSs(value: string): number {
     return mm * 60 + ss;
   }
   return parseInt(value) || 0;
+}
+
+function formatMmSsInput(raw: string, prev: string): string {
+  const digits = raw.replace(/[^\d]/g, '');
+  if (digits.length === 0) return '';
+  if (digits.length <= 2) return digits;
+  const mm = digits.slice(0, 2);
+  const ss = digits.slice(2, 4);
+  return `${mm}:${ss}`;
+}
+
+function isValidMmSs(value: string): boolean {
+  return /^\d{1,2}:\d{2}$/.test(value);
 }
 
 function SkillHint({ exerciseName, excludeWorkoutId }: { exerciseName: string; excludeWorkoutId?: string }) {
@@ -220,10 +252,17 @@ export default function EditWorkoutPage() {
   }
 
   function updateSkillSet(idx: number, setIdx: number, field: keyof SkillSetForm, value: string) {
-    updateSkillData(idx, b => ({
-      ...b,
-      sets: b.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s),
-    }));
+    updateSkillData(idx, b => {
+      const prevValue = b.sets[0]?.[field] ?? '';
+      return {
+        ...b,
+        sets: b.sets.map((s, j) => {
+          if (j === setIdx) return { ...s, [field]: value };
+          if (setIdx === 0 && (s[field] === prevValue || !s[field])) return { ...s, [field]: value };
+          return s;
+        }),
+      };
+    });
   }
 
   // --- WOD helpers ---
@@ -258,7 +297,13 @@ export default function EditWorkoutPage() {
       exercises: b.exercises.map((e, j) => {
         if (j !== exIdx) return e;
         const arr = [...(e.ladderRepsPerRound || [])];
+        const prevValue = arr[0] ?? '';
         arr[roundIdx] = value;
+        if (roundIdx === 0) {
+          for (let r = 1; r < arr.length; r++) {
+            if (!arr[r] || arr[r] === prevValue) arr[r] = value;
+          }
+        }
         return { ...e, ladderRepsPerRound: arr };
       }),
     }));
@@ -286,10 +331,18 @@ export default function EditWorkoutPage() {
       return;
     }
 
+    const wodBlocks_ = blocks.filter((b): b is { type: 'wod'; data: WodBlockForm } => b.type === 'wod').map(b => b.data);
+    for (const w of wodBlocks_) {
+      if (w.wodType === 'FOR_TIME' && !isValidMmSs(w.resultDisplay)) {
+        setError('Время результата должно быть в формате ММ:СС (например, 04:20)');
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const skillBlocks = blocks.filter((b): b is { type: 'skill'; data: SkillBlockForm } => b.type === 'skill').map(b => b.data);
-      const wodBlocks = blocks.filter((b): b is { type: 'wod'; data: WodBlockForm } => b.type === 'wod').map(b => b.data);
+      const wodBlocks = wodBlocks_;
 
       const payload: WorkoutInput = {
         date,
@@ -308,7 +361,9 @@ export default function EditWorkoutPage() {
               timeCapSeconds: b.timeCapSeconds ? parseInt(b.timeCapSeconds) * 60 : undefined,
               isLadder: b.isLadder,
               resultType: b.wodType === 'FOR_TIME' ? 'TIME' as const : b.wodType === 'AMRAP' ? 'REPS' as const : 'TIME' as const,
-              resultDisplay: b.resultDisplay,
+              resultDisplay: (b.wodType === 'EMOM' || b.wodType === 'TABATA')
+                ? (b.timeCapSeconds ? `${b.timeCapSeconds} мин` : b.wodType)
+                : b.resultDisplay,
               resultSeconds: b.wodType === 'FOR_TIME' && b.resultSeconds ? parseMmSs(b.resultSeconds) : undefined,
               resultTotalReps: b.wodType === 'AMRAP' && b.resultTotalReps ? parseInt(b.resultTotalReps) : undefined,
               exercises: b.exercises.map(ex => {
@@ -320,7 +375,7 @@ export default function EditWorkoutPage() {
                 return {
                   exerciseName: ex.exerciseName,
                   reps,
-                  weight: ex.weight && !isCardio(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
+                  weight: ex.weight && !shouldHideWeight(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
                 };
               }),
             }))
@@ -451,7 +506,7 @@ export default function EditWorkoutPage() {
                     </div>
                   </div>
 
-                  <div className="form-group">
+                  {!shouldHideWeight(skill.exerciseName) && <div className="form-group">
                     <label>Вес для каждого подхода (кг, необязательно)</label>
                     <div className="sets-inputs-container sets-container weight-inputs-container">
                       {skill.sets.map((set, si) => (
@@ -467,7 +522,7 @@ export default function EditWorkoutPage() {
                         />
                       ))}
                     </div>
-                  </div>
+                  </div>}
 
                 </div>
               );
@@ -560,7 +615,7 @@ export default function EditWorkoutPage() {
                   <label>Упражнения</label>
                   <div className="wod-exercises-container">
                     {wod.exercises.map((ex, ei) => (
-                      <div key={ei} className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${isCardio(ex.exerciseName) ? ' no-weight' : ''}`}>
+                      <div key={ei} className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${shouldHideWeight(ex.exerciseName) ? ' no-weight' : ''}`}>
                         <div className="wod-row-scroller">
                           <ExerciseAutocomplete
                             value={ex.exerciseName}
@@ -606,7 +661,7 @@ export default function EditWorkoutPage() {
                                 <div className="ladder-reps-container" style={{ display: 'none' }} />
                               </>
                             )}
-                            {!isCardio(ex.exerciseName) && (
+                            {!shouldHideWeight(ex.exerciseName) && (
                               <input
                                 type="number"
                                 value={ex.weight}
@@ -632,6 +687,7 @@ export default function EditWorkoutPage() {
                   </button>
                 </div>
 
+                {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && (
                 <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                   <label>Результат</label>
                   <div className="form-row" style={{ gap: '0.5rem' }}>
@@ -648,22 +704,35 @@ export default function EditWorkoutPage() {
                       <option value="time">Время</option>
                       <option value="reps">Количество повторений</option>
                     </select>
+                    {wod.wodType === 'AMRAP' ? (
                     <input
-                      type="text"
-                      value={wod.wodType === 'AMRAP' ? wod.resultTotalReps : wod.resultDisplay}
-                      onChange={e => {
-                        if (wod.wodType === 'AMRAP') {
-                          updateWodBlock(bi, { resultTotalReps: e.target.value, resultDisplay: e.target.value });
-                        } else {
-                          updateWodBlock(bi, { resultDisplay: e.target.value, resultSeconds: e.target.value });
-                        }
-                      }}
+                      type="number"
+                      value={wod.resultTotalReps}
+                      onChange={e => updateWodBlock(bi, { resultTotalReps: e.target.value, resultDisplay: e.target.value })}
                       className="form-input result-input"
-                      placeholder={wod.wodType === 'AMRAP' ? '420' : '04:20'}
+                      placeholder="420"
+                      min="1"
                       required
                     />
+                    ) : (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={wod.resultDisplay}
+                      onChange={e => {
+                        const formatted = formatMmSsInput(e.target.value, wod.resultDisplay);
+                        updateWodBlock(bi, { resultDisplay: formatted, resultSeconds: formatted });
+                      }}
+                      className="form-input result-input"
+                      placeholder="ММ:СС"
+                      maxLength={5}
+                      pattern="\d{1,2}:\d{2}"
+                      required
+                    />
+                    )}
                   </div>
                 </div>
+                )}
               </div>
             );
           })}
