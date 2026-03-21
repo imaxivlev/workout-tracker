@@ -2920,214 +2920,520 @@ body.auth-page {
 /* Club system styles        */
 /* ========================= */
 
+.club-page {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+/* Header */
 .club-header {
-    margin-bottom: 1.5rem;
+    margin-bottom: 1rem;
 }
 
-.club-city {
-    color: var(--text-secondary);
-    font-size: 0.9rem;
-    margin-top: 0.25rem;
-}
-
-.club-meta {
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    margin-top: 0.25rem;
-}
-
-/* Tabs */
-.tabs-container {
+.club-header-top {
     display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border-color);
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
 }
 
-.tab-btn {
-    background: none;
-    border: none;
+.club-header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.club-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.club-sub {
+    display: flex;
+    gap: 0.5rem;
     color: var(--text-secondary);
-    padding: 0.75rem 1rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
+    font-size: 0.8rem;
+    margin-top: 0.2rem;
+}
+
+.club-settings-btn {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
     transition: all 0.2s;
 }
 
-.tab-btn:hover {
+.club-settings-btn:hover {
+    color: var(--text-primary);
+    background: var(--border-color);
+}
+
+/* Tabs */
+.club-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 1rem;
+    gap: 0;
+}
+
+.club-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.6rem 0;
+    font-size: 0.85rem;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.club-tab:hover {
     color: var(--text-primary);
 }
 
-.tab-btn.active {
+.club-tab.active {
     color: var(--color-primary);
     border-bottom-color: var(--color-primary);
+    font-weight: 600;
 }
 
-/* Club feed */
-.club-athletes-list {
+/* Section */
+.club-section {
+    animation: fadeIn 0.2s ease;
+}
+
+/* Feed header */
+.club-feed-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.club-date-input {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color-scheme: dark;
+}
+
+/* WOD Card */
+.club-wod-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+
+.club-wod-header {
+    padding: 0.6rem 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.club-wod-athletes-count {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.club-wod-content {
+    padding: 0.75rem;
+}
+
+.club-wod-block {
+    margin-bottom: 0.6rem;
+}
+
+.club-wod-block:last-child {
+    margin-bottom: 0;
+}
+
+.club-wod-block-top {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+}
+
+.club-wod-block-badge {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.club-wod-block-badge.skill {
+    background: rgba(48, 255, 136, 0.15);
+    color: var(--color-secondary);
+}
+
+.club-wod-block-badge.wod {
+    background: rgba(255, 59, 48, 0.15);
+    color: var(--color-primary);
+}
+
+.club-wod-block-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-top: 0.2rem;
+}
+
+.club-wod-block-detail {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-top: 0.1rem;
+}
+
+.club-wod-time {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+.club-wod-exercises {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+}
+
+.club-wod-exercise {
+    display: flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+}
+
+.club-wod-reps {
+    font-weight: 600;
+    color: var(--color-primary);
+    min-width: 1.5rem;
+}
+
+.club-wod-weight {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+}
+
+/* WOD Footer */
+.club-wod-footer {
+    padding: 0.6rem 0.75rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.club-wod-athletes {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-top: 0.75rem;
+    gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
 }
 
-.athlete-chip {
+.club-wod-athlete {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
-    padding: 0.2rem 0.5rem;
-    border-radius: 1rem;
-    font-size: 0.75rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    white-space: nowrap;
 }
 
-/* Badges */
-.badge {
-    display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 0.25rem;
-    font-size: 0.75rem;
+.club-wod-athlete.more {
+    color: var(--color-primary);
+}
+
+.club-wod-use-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Empty state */
+.club-empty {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.club-empty-icon {
+    margin-bottom: 0.5rem;
+}
+
+/* Leaderboard */
+.club-lb-tabs {
+    display: flex;
+    gap: 0;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    padding: 3px;
+    margin-bottom: 1rem;
+}
+
+.club-lb-tab {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    padding: 0.4rem 0;
+    font-size: 0.8rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.2s;
+    text-align: center;
+}
+
+.club-lb-tab.active {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
     font-weight: 600;
+}
+
+.club-lb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.club-lb-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.club-lb-row.top {
+    border-color: rgba(255, 59, 48, 0.2);
+    background: rgba(255, 59, 48, 0.03);
+}
+
+.club-lb-rank {
+    width: 2rem;
+    text-align: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.club-lb-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.club-lb-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.club-lb-stats {
+    display: flex;
+    gap: 0.75rem;
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.15rem;
+}
+
+.club-lb-result {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 500;
+    margin-top: 0.1rem;
+}
+
+.club-lb-level {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.05rem 0.3rem;
+    border-radius: 3px;
     text-transform: uppercase;
 }
 
-.badge-info {
-    background: rgba(59, 130, 246, 0.2);
-    color: #60a5fa;
-}
-
-.badge-rx {
+.club-lb-level.rx {
     background: rgba(34, 197, 94, 0.2);
     color: #4ade80;
 }
 
-.badge-scaled {
+.club-lb-level.scaled {
     background: rgba(251, 191, 36, 0.2);
     color: #fbbf24;
 }
 
-.badge-role {
-    font-size: 0.7rem;
-    padding: 0.1rem 0.4rem;
+/* Members */
+.club-members-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
 
-.badge-owner {
-    background: rgba(255, 59, 48, 0.2);
+.club-member-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.club-member-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    flex-shrink: 0;
+}
+
+.club-member-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.club-member-name {
+    font-weight: 500;
+    font-size: 0.9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.club-member-role {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.club-member-role.owner {
+    background: rgba(255, 59, 48, 0.15);
     color: var(--color-primary);
 }
 
-.badge-coach {
-    background: rgba(59, 130, 246, 0.2);
+.club-member-role.coach {
+    background: rgba(59, 130, 246, 0.15);
     color: #60a5fa;
 }
 
-.badge-athlete {
-    background: rgba(100, 100, 100, 0.2);
+.club-member-role.athlete {
+    background: rgba(100, 100, 100, 0.15);
     color: var(--text-secondary);
 }
 
-/* Leaderboard table */
-.leaderboard-table {
-    width: 100%;
-    border-collapse: collapse;
+/* Invite */
+.club-invite-section {
+    margin-bottom: 1.25rem;
 }
 
-.leaderboard-table th {
-    text-align: left;
-    padding: 0.5rem;
-    border-bottom: 1px solid var(--border-color);
-    color: var(--text-secondary);
-    font-size: 0.8rem;
-    font-weight: 500;
-    text-transform: uppercase;
+.club-invite-result {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
 }
 
-.leaderboard-table td {
-    padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 0.9rem;
-}
-
-.leaderboard-table tr.top-three td {
-    background: rgba(255, 59, 48, 0.05);
-}
-
-.rank-cell {
-    width: 2.5rem;
-    text-align: center;
-}
-
-/* Members */
-.members-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.member-card {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 0.5rem;
-    padding: 0.75rem 1rem;
-}
-
-.member-info {
+.club-invite-row {
     display: flex;
     align-items: center;
     gap: 0.5rem;
 }
 
-.member-name {
-    font-weight: 500;
-}
-
-/* Invite code */
-.invite-code {
-    background: var(--bg-tertiary);
+.club-invite-code {
+    background: var(--bg-primary);
     color: var(--color-accent);
-    padding: 0.5rem 1rem;
-    border-radius: 0.375rem;
-    font-size: 1.25rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 1.1rem;
     letter-spacing: 0.15em;
     font-family: monospace;
+    font-weight: 600;
 }
 
-.hint-text {
-    color: var(--text-secondary);
+.club-invite-copy {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
     font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-/* Empty state */
-.empty-state {
-    text-align: center;
-    padding: 2rem 1rem;
+.club-invite-copy:hover {
+    border-color: var(--color-primary);
+}
+
+.club-invite-hint {
     color: var(--text-secondary);
+    font-size: 0.75rem;
+    margin-top: 0.4rem;
 }
 
-/* Auth container reuse for join/create */
+/* Auth pages for club join/create */
 .auth-container {
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 50vh;
+    padding: 1rem;
 }
 
 .auth-card {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
-    border-radius: 0.75rem;
-    padding: 2rem;
+    border-radius: 12px;
+    padding: 1.5rem;
     width: 100%;
     max-width: 400px;
 }
 
 .auth-title {
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
     margin-bottom: 0.25rem;
 }
 
 .auth-subtitle {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     margin-bottom: 0.5rem;
 }
 
@@ -3137,7 +3443,7 @@ body.auth-page {
     color: var(--text-secondary);
     cursor: pointer;
     text-decoration: underline;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 .btn-link:hover {

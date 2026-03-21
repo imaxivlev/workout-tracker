@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, FormEvent, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { workoutsApi, exercisesApi, ApiError, WorkoutInput } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
 
@@ -129,16 +129,92 @@ function Toast({ message, onHide }: { message: string; onHide: () => void }) {
   );
 }
 
-export default function NewWorkoutPage() {
+export default function NewWorkoutPageWrapper() {
+  return (
+    <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
+      <NewWorkoutPage />
+    </Suspense>
+  );
+}
+
+function NewWorkoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [comment, setComment] = useState('');
   const [blocks, setBlocks] = useState<BlockItem[]>([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
+  const [templateApplied, setTemplateApplied] = useState(false);
 
   const hideToast = useCallback(() => setToast(''), []);
+
+  // Предзаполнение из шаблона клуба
+  useEffect(() => {
+    if (templateApplied) return;
+
+    // Параметр date
+    const dateParam = searchParams.get('date');
+    if (dateParam) setDate(dateParam);
+
+    // Параметр clubTemplate — JSON из страницы клуба
+    const clubTemplate = searchParams.get('clubTemplate');
+    if (clubTemplate) {
+      try {
+        const tmpl = JSON.parse(clubTemplate);
+        if (tmpl.date) setDate(tmpl.date);
+
+        const newBlocks: BlockItem[] = [];
+
+        // Skill блоки
+        if (tmpl.skillBlocks) {
+          for (const sb of tmpl.skillBlocks) {
+            const sets = sb.sets?.length > 0
+              ? sb.sets.map((s: any) => ({ reps: String(s.reps || ''), weight: String(s.weight || '') }))
+              : Array.from({ length: 5 }, () => ({ reps: '', weight: '' }));
+            newBlocks.push({
+              type: 'skill',
+              data: { exerciseName: sb.exerciseName || '', sets },
+            });
+          }
+        }
+
+        // WOD блоки
+        if (tmpl.wodBlocks) {
+          for (const wb of tmpl.wodBlocks) {
+            newBlocks.push({
+              type: 'wod',
+              data: {
+                wodType: wb.wodType || 'FOR_TIME',
+                level: wb.level || 'RX',
+                timeCapSeconds: wb.timeCapSeconds ? String(Math.floor(wb.timeCapSeconds / 60)) : '',
+                isLadder: wb.isLadder || false,
+                ladderRounds: 5,
+                resultDisplay: '',
+                resultSeconds: '',
+                resultTotalReps: '',
+                exercises: (wb.exercises || []).map((ex: any) => ({
+                  exerciseName: ex.exerciseName || '',
+                  reps: String(ex.reps || ''),
+                  weight: ex.weight ? String(ex.weight) : '',
+                  ladderRepsPerRound: [],
+                })),
+              },
+            });
+          }
+        }
+
+        if (newBlocks.length > 0) {
+          setBlocks(newBlocks);
+          setToast('Шаблон тренировки загружен — заполните свой результат');
+        }
+      } catch {
+        // Невалидный JSON — игнорируем
+      }
+    }
+    setTemplateApplied(true);
+  }, [searchParams, templateApplied]);
 
   // --- Добавление блоков ---
   function addSkillBlock() {

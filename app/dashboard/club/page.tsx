@@ -49,7 +49,6 @@ export default function ClubPage() {
     }
   }
 
-  // Загрузка данных при смене таба
   const loadTabData = useCallback(async () => {
     if (!club) return;
 
@@ -104,6 +103,16 @@ export default function ClubPage() {
     setTimeout(() => setInviteCopied(false), 2000);
   }
 
+  /** Собираем query string для предзаполнения формы из шаблона */
+  function buildTemplateQuery(tmpl: ClubWorkoutTemplate): string {
+    const data = {
+      date: tmpl.date,
+      skillBlocks: tmpl.skillBlocks,
+      wodBlocks: tmpl.wodBlocks,
+    };
+    return `/dashboard/workouts/new?clubTemplate=${encodeURIComponent(JSON.stringify(data))}`;
+  }
+
   if (loading) {
     return <div className="loading-container"><div className="loading-spinner" /></div>;
   }
@@ -113,114 +122,142 @@ export default function ClubPage() {
   const isOwnerOrCoach = club.myRole === 'OWNER' || club.myRole === 'COACH';
 
   return (
-    <div>
+    <div className="container club-page">
       {/* Заголовок клуба */}
       <div className="club-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 className="page-title">{club.name}</h1>
-            {club.city && <p className="club-city">{club.city}</p>}
-            <p className="club-meta">{club.memberCount} участник(ов)</p>
+        <div className="club-header-top">
+          <div className="club-header-info">
+            <h1 className="club-title">{club.name}</h1>
+            <div className="club-sub">
+              {club.city && <span className="club-city">{club.city}</span>}
+              <span className="club-members-count">{club.memberCount} участник(ов)</span>
+            </div>
           </div>
           {isOwnerOrCoach && (
-            <Link href="/dashboard/club/settings" className="btn btn-secondary btn-sm">
-              Настройки
+            <Link href="/dashboard/club/settings" className="club-settings-btn" title="Настройки">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
             </Link>
           )}
         </div>
       </div>
 
       {/* Табы */}
-      <div className="tabs-container" style={{ marginBottom: '1rem' }}>
-        <button
-          className={`tab-btn ${tab === 'feed' ? 'active' : ''}`}
-          onClick={() => setTab('feed')}
-        >
-          Тренировки дня
-        </button>
-        <button
-          className={`tab-btn ${tab === 'leaderboard' ? 'active' : ''}`}
-          onClick={() => setTab('leaderboard')}
-        >
-          Лидерборд
-        </button>
-        <button
-          className={`tab-btn ${tab === 'members' ? 'active' : ''}`}
-          onClick={() => setTab('members')}
-        >
-          Участники
-        </button>
+      <div className="club-tabs">
+        {(['feed', 'leaderboard', 'members'] as Tab[]).map(t => (
+          <button
+            key={t}
+            className={`club-tab ${tab === t ? 'active' : ''}`}
+            onClick={() => setTab(t)}
+          >
+            {t === 'feed' ? 'WOD дня' : t === 'leaderboard' ? 'Лидерборд' : 'Участники'}
+          </button>
+        ))}
       </div>
 
       {/* === Тренировки дня === */}
       {tab === 'feed' && (
-        <div>
-          <div style={{ marginBottom: '1rem' }}>
+        <div className="club-section">
+          <div className="club-feed-header">
             <input
               type="date"
               value={feedDate}
               onChange={(e) => setFeedDate(e.target.value)}
-              className="form-input"
-              style={{ maxWidth: '200px' }}
+              className="club-date-input"
             />
+            {isOwnerOrCoach && (
+              <Link
+                href={`/dashboard/workouts/new?date=${feedDate}`}
+                className="btn btn-primary btn-sm"
+              >
+                + Добавить WOD
+              </Link>
+            )}
           </div>
 
           {templates.length === 0 ? (
-            <div className="empty-state">
-              <p>На эту дату пока нет тренировок в клубе</p>
+            <div className="club-empty">
+              <div className="club-empty-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <p>На {feedDate === new Date().toISOString().split('T')[0] ? 'сегодня' : feedDate} пока нет тренировок</p>
+              {isOwnerOrCoach && (
+                <Link
+                  href={`/dashboard/workouts/new?date=${feedDate}`}
+                  className="btn btn-primary btn-sm"
+                  style={{ marginTop: '0.75rem' }}
+                >
+                  Добавить тренировку
+                </Link>
+              )}
             </div>
           ) : (
-            <div className="club-feed">
+            <div className="club-feed-list">
               {templates.map((tmpl) => (
-                <div key={tmpl.signature} className="card" style={{ marginBottom: '1rem' }}>
-                  <div className="card-body">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <span className="badge badge-info">
-                        {tmpl.athleteCount} атлет(ов)
-                      </span>
-                      <Link
-                        href={`/dashboard/workouts/new?template=${tmpl.firstWorkoutId}&date=${tmpl.date}`}
-                        className="btn btn-primary btn-sm"
-                      >
-                        Взять шаблон
-                      </Link>
-                    </div>
+                <div key={tmpl.signature} className="club-wod-card">
+                  {/* Шапка карточки */}
+                  <div className="club-wod-header">
+                    <span className="club-wod-athletes-count">
+                      {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
+                    </span>
+                  </div>
 
-                    {/* SKILL блоки */}
+                  {/* Блоки тренировки */}
+                  <div className="club-wod-content">
                     {tmpl.skillBlocks.map((sb, i) => (
-                      <div key={i} className="workout-block skill-block">
-                        <div className="block-header">
-                          <span className="block-type-badge skill">SKILL</span>
-                          <span className="exercise-name">{sb.exerciseName}</span>
+                      <div key={`s${i}`} className="club-wod-block">
+                        <div className="club-wod-block-badge skill">SKILL</div>
+                        <div className="club-wod-block-name">{sb.exerciseName}</div>
+                        <div className="club-wod-block-detail">
+                          {sb.sets.length} подход(ов)
+                          {sb.sets[0]?.weight > 0 && ` · ${sb.sets[0].weight} кг`}
                         </div>
                       </div>
                     ))}
 
-                    {/* WOD блоки */}
                     {tmpl.wodBlocks.map((wb, i) => (
-                      <div key={i} className="workout-block wod-block">
-                        <div className="block-header">
-                          <span className="block-type-badge wod">{wb.wodType}</span>
+                      <div key={`w${i}`} className="club-wod-block">
+                        <div className="club-wod-block-top">
+                          <div className="club-wod-block-badge wod">{wb.wodType}</div>
                           {wb.timeCapSeconds && (
-                            <span className="time-cap">{Math.floor(wb.timeCapSeconds / 60)} мин</span>
+                            <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>
                           )}
                         </div>
-                        <div className="wod-exercises-list">
+                        <div className="club-wod-exercises">
                           {wb.exercises.map((ex, j) => (
-                            <div key={j} className="wod-exercise-item">
-                              {ex.reps} {ex.exerciseName}
-                              {ex.weight ? ` (${ex.weight} кг)` : ''}
+                            <div key={j} className="club-wod-exercise">
+                              <span className="club-wod-reps">{ex.reps}</span>
+                              <span>{ex.exerciseName}</span>
+                              {ex.weight ? <span className="club-wod-weight">({ex.weight} кг)</span> : null}
                             </div>
                           ))}
                         </div>
                       </div>
                     ))}
+                  </div>
 
-                    <div className="club-athletes-list">
-                      {tmpl.athletes.map(a => (
-                        <span key={a.userId} className="athlete-chip">{a.name}</span>
+                  {/* Атлеты */}
+                  <div className="club-wod-footer">
+                    <div className="club-wod-athletes">
+                      {tmpl.athletes.slice(0, 5).map(a => (
+                        <span key={a.userId} className="club-wod-athlete">{a.name}</span>
                       ))}
+                      {tmpl.athletes.length > 5 && (
+                        <span className="club-wod-athlete more">+{tmpl.athletes.length - 5}</span>
+                      )}
                     </div>
+                    <Link
+                      href={buildTemplateQuery(tmpl)}
+                      className="btn btn-primary btn-sm club-wod-use-btn"
+                    >
+                      Записать результат
+                    </Link>
                   </div>
                 </div>
               ))}
@@ -231,16 +268,16 @@ export default function ClubPage() {
 
       {/* === Лидерборд === */}
       {tab === 'leaderboard' && (
-        <div>
-          <div className="tabs-container" style={{ marginBottom: '1rem' }}>
+        <div className="club-section">
+          <div className="club-lb-tabs">
             <button
-              className={`tab-btn ${lbType === 'monthly' ? 'active' : ''}`}
+              className={`club-lb-tab ${lbType === 'monthly' ? 'active' : ''}`}
               onClick={() => setLbType('monthly')}
             >
               За месяц
             </button>
             <button
-              className={`tab-btn ${lbType === 'wod' ? 'active' : ''}`}
+              className={`club-lb-tab ${lbType === 'wod' ? 'active' : ''}`}
               onClick={() => setLbType('wod')}
             >
               WOD дня
@@ -248,76 +285,56 @@ export default function ClubPage() {
           </div>
 
           {lbType === 'monthly' ? (
-            <div className="leaderboard">
-              {monthlyEntries.length === 0 ? (
-                <div className="empty-state"><p>Нет данных за этот месяц</p></div>
-              ) : (
-                <table className="leaderboard-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Атлет</th>
-                      <th>Тренировок</th>
-                      <th>Тоннаж</th>
-                      <th>Дней</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {monthlyEntries.map((e, i) => (
-                      <tr key={e.userId} className={i < 3 ? 'top-three' : ''}>
-                        <td className="rank-cell">
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-                        </td>
-                        <td>{e.name}</td>
-                        <td>{e.workoutCount}</td>
-                        <td>{e.tonnage > 1000 ? `${(e.tonnage / 1000).toFixed(1)}т` : `${e.tonnage}кг`}</td>
-                        <td>{e.activeDays}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            monthlyEntries.length === 0 ? (
+              <div className="club-empty"><p>Нет данных за этот месяц</p></div>
+            ) : (
+              <div className="club-lb-list">
+                {monthlyEntries.map((e, i) => (
+                  <div key={e.userId} className={`club-lb-row ${i < 3 ? 'top' : ''}`}>
+                    <div className="club-lb-rank">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                    </div>
+                    <div className="club-lb-info">
+                      <div className="club-lb-name">{e.name}</div>
+                      <div className="club-lb-stats">
+                        <span>{e.workoutCount} трен.</span>
+                        <span>{e.tonnage > 1000 ? `${(e.tonnage / 1000).toFixed(1)}т` : `${Math.round(e.tonnage)}кг`}</span>
+                        <span>{e.activeDays} дн.</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           ) : (
             <div>
-              <div style={{ marginBottom: '1rem' }}>
+              <div className="club-feed-header" style={{ marginBottom: '0.75rem' }}>
                 <input
                   type="date"
                   value={wodDate}
                   onChange={(e) => setWodDate(e.target.value)}
-                  className="form-input"
-                  style={{ maxWidth: '200px' }}
+                  className="club-date-input"
                 />
               </div>
               {wodEntries.length === 0 ? (
-                <div className="empty-state"><p>Нет результатов WOD за эту дату</p></div>
+                <div className="club-empty"><p>Нет результатов WOD за эту дату</p></div>
               ) : (
-                <table className="leaderboard-table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Атлет</th>
-                      <th>Уровень</th>
-                      <th>Результат</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {wodEntries.map((e, i) => (
-                      <tr key={`${e.userId}-${e.workoutId}`} className={i < 3 ? 'top-three' : ''}>
-                        <td className="rank-cell">
-                          {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (e.rank || i + 1)}
-                        </td>
-                        <td>{e.name}</td>
-                        <td>
-                          <span className={`badge ${e.level === 'RX' ? 'badge-rx' : 'badge-scaled'}`}>
-                            {e.level}
-                          </span>
-                        </td>
-                        <td>{e.resultDisplay}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="club-lb-list">
+                  {wodEntries.map((e, i) => (
+                    <div key={`${e.userId}-${e.workoutId}`} className={`club-lb-row ${i < 3 ? 'top' : ''}`}>
+                      <div className="club-lb-rank">
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (e.rank || i + 1)}
+                      </div>
+                      <div className="club-lb-info">
+                        <div className="club-lb-name">
+                          {e.name}
+                          <span className={`club-lb-level ${e.level.toLowerCase()}`}>{e.level}</span>
+                        </div>
+                        <div className="club-lb-result">{e.resultDisplay}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}
@@ -326,21 +343,21 @@ export default function ClubPage() {
 
       {/* === Участники === */}
       {tab === 'members' && (
-        <div>
+        <div className="club-section">
           {isOwnerOrCoach && (
-            <div className="invite-section" style={{ marginBottom: '1.5rem' }}>
+            <div className="club-invite-section">
               <button onClick={handleCreateInvite} className="btn btn-primary btn-sm">
                 Создать приглашение
               </button>
               {inviteCode && (
-                <div className="invite-code-display" style={{ marginTop: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <code className="invite-code">{inviteCode}</code>
-                    <button onClick={copyInviteCode} className="btn btn-secondary btn-sm">
-                      {inviteCopied ? 'Скопировано!' : 'Копировать'}
+                <div className="club-invite-result">
+                  <div className="club-invite-row">
+                    <code className="club-invite-code">{inviteCode}</code>
+                    <button onClick={copyInviteCode} className="club-invite-copy">
+                      {inviteCopied ? '✓' : 'Копировать'}
                     </button>
                   </div>
-                  <p className="hint-text" style={{ marginTop: '0.25rem' }}>
+                  <p className="club-invite-hint">
                     Отправьте этот код атлетам для вступления в клуб
                   </p>
                 </div>
@@ -348,14 +365,17 @@ export default function ClubPage() {
             </div>
           )}
 
-          <div className="members-list">
+          <div className="club-members-list">
             {members.map(m => (
-              <div key={m.userId} className="member-card">
-                <div className="member-info">
-                  <span className="member-name">
+              <div key={m.userId} className="club-member-row">
+                <div className="club-member-avatar">
+                  {(m.firstName?.[0] || m.email[0]).toUpperCase()}
+                </div>
+                <div className="club-member-info">
+                  <span className="club-member-name">
                     {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.email}
                   </span>
-                  <span className={`badge badge-role badge-${m.role.toLowerCase()}`}>
+                  <span className={`club-member-role ${m.role.toLowerCase()}`}>
                     {m.role === 'OWNER' ? 'Владелец' : m.role === 'COACH' ? 'Тренер' : 'Атлет'}
                   </span>
                 </div>
