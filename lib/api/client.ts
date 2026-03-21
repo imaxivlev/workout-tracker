@@ -399,6 +399,7 @@ export interface ClubMember {
   firstName: string | null;
   lastName: string | null;
   role: 'OWNER' | 'COACH' | 'ATHLETE';
+  showInLeaderboard: boolean;
   joinedAt: string;
 }
 
@@ -430,6 +431,7 @@ export interface WodLeaderboardEntry {
   resultDisplay: string;
   resultSeconds: number | null;
   resultTotalReps: number | null;
+  weightsUsed: string | null;
   rank?: number;
 }
 
@@ -439,6 +441,20 @@ export interface MonthlyLeaderboardEntry {
   workoutCount: number;
   tonnage: number;
   activeDays: number;
+}
+
+export interface SkillLeaderboardEntry {
+  exerciseName: string;
+  athletes: Array<{
+    rank: number;
+    userId: string;
+    name: string;
+    maxWeight: number;
+    best1RM: number;
+    bestReps: number;
+    bestWeightForReps: number;
+    date: string;
+  }>;
 }
 
 export const clubsApi = {
@@ -519,6 +535,25 @@ export const clubsApi = {
     return apiFetch<{ type: string; year: number; month: number; entries: MonthlyLeaderboardEntry[] }>(
       `/api/clubs/${id}/leaderboard?${params.toString()}`
     );
+  },
+
+  async getAllTimeLeaderboard(id: string) {
+    return apiFetch<{ type: string; entries: MonthlyLeaderboardEntry[] }>(
+      `/api/clubs/${id}/leaderboard?type=all`
+    );
+  },
+
+  async getSkillLeaderboard(id: string) {
+    return apiFetch<{ type: string; entries: SkillLeaderboardEntry[] }>(
+      `/api/clubs/${id}/leaderboard?type=skill`
+    );
+  },
+
+  async updateLeaderboardVisibility(id: string, show: boolean) {
+    return apiFetch<{ showInLeaderboard: boolean }>(`/api/clubs/${id}/leaderboard-visibility`, {
+      method: 'PATCH',
+      body: JSON.stringify({ show }),
+    });
   },
 };
 

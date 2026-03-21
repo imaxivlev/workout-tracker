@@ -93,7 +93,7 @@ export default function ClubSettingsPage() {
   if (!club) return null;
 
   return (
-    <div>
+    <div className="club-page">
       <h1 className="page-title">Настройки клуба</h1>
 
       {/* Форма редактирования */}

@@ -307,6 +307,7 @@ export class ClubService {
       firstName: m.user.firstName,
       lastName: m.user.lastName,
       role: m.role,
+      showInLeaderboard: m.showInLeaderboard,
       joinedAt: m.joinedAt.toISOString(),
     }));
   }
@@ -409,15 +410,36 @@ export class ClubService {
   }
 
   /**
-   * Получение лидерборда по WOD дня (тренировки с одинаковой структурой на дату)
+   * Обновление настройки видимости в лидерборде
    */
-  async getWodLeaderboard(clubId: string, date: string, wodSignature?: string): Promise<WodLeaderboardEntry[]> {
-    const memberIds = await prisma.clubMember.findMany({
-      where: { clubId },
+  async updateLeaderboardVisibility(clubId: string, userId: string, show: boolean): Promise<void> {
+    const member = await prisma.clubMember.findUnique({
+      where: { clubId_userId: { clubId, userId } }
+    });
+    if (!member) throw new Error('NOT_MEMBER');
+
+    await prisma.clubMember.update({
+      where: { id: member.id },
+      data: { showInLeaderboard: show }
+    });
+  }
+
+  /**
+   * Получение leaderboard-видимых userId клуба
+   */
+  private async getVisibleUserIds(clubId: string): Promise<string[]> {
+    const members = await prisma.clubMember.findMany({
+      where: { clubId, showInLeaderboard: true },
       select: { userId: true }
     });
+    return members.map(m => m.userId);
+  }
 
-    const userIds = memberIds.map(m => m.userId);
+  /**
+   * WOD лидерборд (тренировки с одинаковой структурой на дату)
+   */
+  async getWodLeaderboard(clubId: string, date: string, wodSignature?: string): Promise<WodLeaderboardEntry[]> {
+    const userIds = await this.getVisibleUserIds(clubId);
 
     const workouts = await prisma.workout.findMany({
       where: {
@@ -443,16 +465,20 @@ export class ClubService {
       }
     });
 
-    // Фильтруем по сигнатуре если указана
     const filtered = wodSignature
       ? workouts.filter(w => this.workoutSignature(w) === wodSignature)
       : workouts;
 
-    // Строим лидерборд для каждого WOD блока
     const entries: WodLeaderboardEntry[] = [];
 
     for (const w of filtered) {
       for (const wb of w.wodBlocks) {
+        // Собираем краткое описание весов для прозрачности
+        const weightsInfo = wb.exercises
+          .filter(e => e.weight && Number(e.weight) > 0)
+          .map(e => `${e.exercise.name} ${Number(e.weight)}кг`)
+          .join(', ');
+
         entries.push({
           userId: w.user.id,
           name: this.displayName(w.user),
@@ -462,33 +488,27 @@ export class ClubService {
           resultDisplay: wb.resultDisplay,
           resultSeconds: wb.resultSeconds,
           resultTotalReps: wb.resultTotalReps,
+          weightsUsed: weightsInfo || null,
         });
       }
     }
 
     // Сортировка: RX перед Scaled, затем по результату
     entries.sort((a, b) => {
-      // RX выше Scaled
       if (a.level !== b.level) return a.level === 'RX' ? -1 : 1;
-
-      // FOR_TIME: меньше = лучше
       if (a.wodType === 'FOR_TIME' && a.resultSeconds != null && b.resultSeconds != null) {
         return a.resultSeconds - b.resultSeconds;
       }
-
-      // AMRAP: больше = лучше
       if (a.wodType === 'AMRAP' && a.resultTotalReps != null && b.resultTotalReps != null) {
         return b.resultTotalReps - a.resultTotalReps;
       }
-
       return 0;
     });
 
-    // Проставляем ранг
     let rank = 1;
     for (let i = 0; i < entries.length; i++) {
       if (i > 0 && entries[i].level !== entries[i - 1].level) {
-        rank = i + 1; // Сброс ранга при смене уровня
+        rank = i + 1;
       }
       entries[i].rank = rank;
       rank++;
@@ -498,33 +518,28 @@ export class ClubService {
   }
 
   /**
-   * Общий лидерборд клуба за месяц
+   * Общий лидерборд клуба за период
+   * period: 'month' | 'all'
    */
-  async getMonthlyLeaderboard(clubId: string, year: number, month: number): Promise<MonthlyLeaderboardEntry[]> {
-    const memberIds = await prisma.clubMember.findMany({
-      where: { clubId },
-      select: { userId: true },
-    });
-    const userIds = memberIds.map(m => m.userId);
+  async getGeneralLeaderboard(clubId: string, period: 'month' | 'all', year?: number, month?: number): Promise<MonthlyLeaderboardEntry[]> {
+    const userIds = await this.getVisibleUserIds(clubId);
 
-    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+    const where: any = { userId: { in: userIds } };
 
-    // Получаем все тренировки участников за месяц
+    if (period === 'month' && year && month) {
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+      where.date = { gte: startDate, lte: endDate };
+    }
+
     const workouts = await prisma.workout.findMany({
-      where: {
-        userId: { in: userIds },
-        date: { gte: startDate, lte: endDate },
-      },
+      where,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
-        skillBlocks: {
-          include: { sets: true }
-        }
+        skillBlocks: { include: { sets: true } }
       }
     });
 
-    // Агрегируем по пользователю
     const userMap = new Map<string, {
       userId: string;
       name: string;
@@ -562,8 +577,114 @@ export class ClubService {
       activeDays: e.uniqueDays.size,
     }));
 
-    // Сортировка по количеству тренировок (основной), тоннажу (вторичный)
     result.sort((a, b) => b.workoutCount - a.workoutCount || b.tonnage - a.tonnage);
+
+    return result;
+  }
+
+  /**
+   * SKILL лидерборд — доска рекордов по упражнениям
+   * Для каждого упражнения: кто поднял максимальный вес / лучший 1RM
+   */
+  async getSkillLeaderboard(clubId: string): Promise<SkillLeaderboardEntry[]> {
+    const userIds = await this.getVisibleUserIds(clubId);
+
+    // Все skill sets всех участников
+    const skillSets = await prisma.skillSet.findMany({
+      where: {
+        skillBlock: {
+          workout: { userId: { in: userIds } }
+        },
+        weight: { gt: 0 }
+      },
+      include: {
+        skillBlock: {
+          include: {
+            exercise: true,
+            workout: {
+              include: {
+                user: { select: { id: true, firstName: true, lastName: true } }
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Группируем по упражнению → пользователю → лучший результат
+    const exerciseMap = new Map<string, Map<string, {
+      userId: string;
+      name: string;
+      maxWeight: number;
+      best1RM: number;
+      bestReps: number;
+      bestWeightForReps: number;
+      date: string;
+    }>>();
+
+    for (const ss of skillSets) {
+      const exerciseName = ss.skillBlock.exercise.name;
+      const userId = ss.skillBlock.workout.userId;
+      const weight = Number(ss.weight);
+      const reps = ss.reps;
+      const date = ss.skillBlock.workout.date;
+      // Формула Эпли: 1RM = weight × (1 + reps / 30)
+      const estimated1RM = reps === 1 ? weight : Math.round(weight * (1 + reps / 30) * 2) / 2;
+
+      if (!exerciseMap.has(exerciseName)) {
+        exerciseMap.set(exerciseName, new Map());
+      }
+
+      const userMap = exerciseMap.get(exerciseName)!;
+      if (!userMap.has(userId)) {
+        userMap.set(userId, {
+          userId,
+          name: this.displayName(ss.skillBlock.workout.user),
+          maxWeight: 0,
+          best1RM: 0,
+          bestReps: 0,
+          bestWeightForReps: 0,
+          date: '',
+        });
+      }
+
+      const entry = userMap.get(userId)!;
+      if (weight > entry.maxWeight) {
+        entry.maxWeight = weight;
+      }
+      if (estimated1RM > entry.best1RM) {
+        entry.best1RM = estimated1RM;
+        entry.bestReps = reps;
+        entry.bestWeightForReps = weight;
+        entry.date = date;
+      }
+    }
+
+    // Собираем результат
+    const result: SkillLeaderboardEntry[] = [];
+
+    for (const [exerciseName, userMap] of exerciseMap) {
+      const athletes = Array.from(userMap.values());
+      // Сортируем по best1RM
+      athletes.sort((a, b) => b.best1RM - a.best1RM);
+
+      result.push({
+        exerciseName,
+        athletes: athletes.map((a, i) => ({
+          rank: i + 1,
+          userId: a.userId,
+          name: a.name,
+          maxWeight: a.maxWeight,
+          best1RM: a.best1RM,
+          bestReps: a.bestReps,
+          bestWeightForReps: a.bestWeightForReps,
+          date: a.date,
+        })),
+      });
+    }
+
+    // Сортируем упражнения по количеству атлетов (популярные первыми)
+    result.sort((a, b) => b.athletes.length - a.athletes.length);
 
     return result;
   }
@@ -667,6 +788,7 @@ export interface ClubMemberResponse {
   firstName: string | null;
   lastName: string | null;
   role: ClubRole;
+  showInLeaderboard: boolean;
   joinedAt: string;
 }
 
@@ -702,6 +824,7 @@ export interface WodLeaderboardEntry {
   resultDisplay: string;
   resultSeconds: number | null;
   resultTotalReps: number | null;
+  weightsUsed: string | null;
   rank?: number;
 }
 
@@ -711,4 +834,18 @@ export interface MonthlyLeaderboardEntry {
   workoutCount: number;
   tonnage: number;
   activeDays: number;
+}
+
+export interface SkillLeaderboardEntry {
+  exerciseName: string;
+  athletes: Array<{
+    rank: number;
+    userId: string;
+    name: string;
+    maxWeight: number;
+    best1RM: number;
+    bestReps: number;
+    bestWeightForReps: number;
+    date: string;
+  }>;
 }

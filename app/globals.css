@@ -2921,9 +2921,15 @@ body.auth-page {
 /* ========================= */
 
 .club-page {
-    max-width: 600px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 1rem 2rem;
+}
+
+@media (max-width: 768px) {
+    .club-page {
+        padding: 0.75rem 1rem;
+    }
 }
 
 /* Header */
@@ -3014,6 +3020,26 @@ body.auth-page {
     animation: fadeIn 0.2s ease;
 }
 
+/* Feed grid for desktop */
+.club-feed-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 0.75rem;
+}
+
+@media (max-width: 768px) {
+    .club-feed-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Leaderboard grid for desktop */
+.club-lb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.35rem;
+}
+
 /* Feed header */
 .club-feed-header {
     display: flex;
@@ -3038,7 +3064,6 @@ body.auth-page {
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    margin-bottom: 0.75rem;
     overflow: hidden;
 }
 
@@ -3405,6 +3430,80 @@ body.auth-page {
     color: var(--text-secondary);
     font-size: 0.75rem;
     margin-top: 0.4rem;
+}
+
+/* Privacy toggle */
+.club-lb-privacy {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+}
+
+.club-lb-privacy-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+}
+
+.club-lb-privacy-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--color-primary);
+    cursor: pointer;
+}
+
+/* WOD leaderboard weights */
+.club-lb-weights {
+    color: var(--text-tertiary);
+    font-size: 0.75rem;
+    margin-left: 0.25rem;
+}
+
+/* SKILL leaderboard (PR board) */
+.club-skill-lb {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.club-skill-exercise {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.club-skill-exercise-name {
+    padding: 0.6rem 0.75rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.club-skill-athletes {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.club-skill-athletes .club-lb-row {
+    border-radius: 0;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0;
+}
+
+.club-skill-athletes .club-lb-row:last-child {
+    border-bottom: none;
 }
 
 /* Auth pages for club join/create */

@@ -210,11 +210,12 @@ model Club {
 }
 
 model ClubMember {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  clubId    String   @map("club_id") @db.VarChar(36)
-  userId    String   @map("user_id") @db.VarChar(36)
-  role      ClubRole @default(ATHLETE)
-  joinedAt  DateTime @default(now()) @map("joined_at")
+  id               String   @id @default(uuid()) @db.VarChar(36)
+  clubId           String   @map("club_id") @db.VarChar(36)
+  userId           String   @map("user_id") @db.VarChar(36)
+  role             ClubRole @default(ATHLETE)
+  showInLeaderboard Boolean @default(true) @map("show_in_leaderboard")
+  joinedAt         DateTime @default(now()) @map("joined_at")
 
   club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

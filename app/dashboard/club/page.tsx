@@ -2,10 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { clubsApi, Club, ClubWorkoutTemplate, MonthlyLeaderboardEntry, WodLeaderboardEntry } from '@/lib/api/client';
+import { clubsApi, Club, ClubWorkoutTemplate, MonthlyLeaderboardEntry, WodLeaderboardEntry, SkillLeaderboardEntry } from '@/lib/api/client';
 import Link from 'next/link';
 
 type Tab = 'feed' | 'leaderboard' | 'members';
+type LbType = 'monthly' | 'all' | 'wod' | 'skill';
 
 export default function ClubPage() {
   const router = useRouter();
@@ -18,17 +19,21 @@ export default function ClubPage() {
   const [feedDate, setFeedDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Leaderboard
-  const [lbType, setLbType] = useState<'wod' | 'monthly'>('monthly');
+  const [lbType, setLbType] = useState<LbType>('monthly');
   const [monthlyEntries, setMonthlyEntries] = useState<MonthlyLeaderboardEntry[]>([]);
   const [wodEntries, setWodEntries] = useState<WodLeaderboardEntry[]>([]);
+  const [skillEntries, setSkillEntries] = useState<SkillLeaderboardEntry[]>([]);
   const [wodDate, setWodDate] = useState(() => new Date().toISOString().split('T')[0]);
 
   // Members
-  const [members, setMembers] = useState<Array<{ userId: string; email: string; firstName: string | null; lastName: string | null; role: string; joinedAt: string }>>([]);
+  const [members, setMembers] = useState<Array<{ userId: string; email: string; firstName: string | null; lastName: string | null; role: string; showInLeaderboard: boolean; joinedAt: string }>>([]);
 
   // Invite
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+
+  // Privacy
+  const [showInLb, setShowInLb] = useState(true);
 
   useEffect(() => {
     loadClub();
@@ -42,6 +47,12 @@ export default function ClubPage() {
         return;
       }
       setClub(myClub);
+      // Загрузим текущую настройку видимости
+      try {
+        const { members: m } = await clubsApi.getMembers(myClub.id);
+        const me = m.find((mm: any) => mm.role); // Текущего юзера определим при загрузке members tab
+        // Пока просто загрузим
+      } catch {}
     } catch {
       router.push('/dashboard/club/join');
     } finally {
@@ -65,11 +76,21 @@ export default function ClubPage() {
           const { entries } = await clubsApi.getMonthlyLeaderboard(club.id);
           setMonthlyEntries(entries);
         } catch { setMonthlyEntries([]); }
-      } else {
+      } else if (lbType === 'all') {
+        try {
+          const { entries } = await clubsApi.getAllTimeLeaderboard(club.id);
+          setMonthlyEntries(entries);
+        } catch { setMonthlyEntries([]); }
+      } else if (lbType === 'wod') {
         try {
           const { entries } = await clubsApi.getWodLeaderboard(club.id, wodDate);
           setWodEntries(entries);
         } catch { setWodEntries([]); }
+      } else if (lbType === 'skill') {
+        try {
+          const { entries } = await clubsApi.getSkillLeaderboard(club.id);
+          setSkillEntries(entries);
+        } catch { setSkillEntries([]); }
       }
     }
 
@@ -103,7 +124,15 @@ export default function ClubPage() {
     setTimeout(() => setInviteCopied(false), 2000);
   }
 
-  /** Собираем query string для предзаполнения формы из шаблона */
+  async function toggleLeaderboardVisibility() {
+    if (!club) return;
+    const newValue = !showInLb;
+    try {
+      await clubsApi.updateLeaderboardVisibility(club.id, newValue);
+      setShowInLb(newValue);
+    } catch {}
+  }
+
   function buildTemplateQuery(tmpl: ClubWorkoutTemplate): string {
     const data = {
       date: tmpl.date,
@@ -168,10 +197,7 @@ export default function ClubPage() {
               className="club-date-input"
             />
             {isOwnerOrCoach && (
-              <Link
-                href={`/dashboard/workouts/new?date=${feedDate}`}
-                className="btn btn-primary btn-sm"
-              >
+              <Link href={`/dashboard/workouts/new?date=${feedDate}`} className="btn btn-primary btn-sm">
                 + Добавить WOD
               </Link>
             )}
@@ -179,20 +205,9 @@ export default function ClubPage() {
 
           {templates.length === 0 ? (
             <div className="club-empty">
-              <div className="club-empty-icon">
-                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" opacity="0.3">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
-              </div>
               <p>На {feedDate === new Date().toISOString().split('T')[0] ? 'сегодня' : feedDate} пока нет тренировок</p>
               {isOwnerOrCoach && (
-                <Link
-                  href={`/dashboard/workouts/new?date=${feedDate}`}
-                  className="btn btn-primary btn-sm"
-                  style={{ marginTop: '0.75rem' }}
-                >
+                <Link href={`/dashboard/workouts/new?date=${feedDate}`} className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem' }}>
                   Добавить тренировку
                 </Link>
               )}
@@ -201,14 +216,12 @@ export default function ClubPage() {
             <div className="club-feed-list">
               {templates.map((tmpl) => (
                 <div key={tmpl.signature} className="club-wod-card">
-                  {/* Шапка карточки */}
                   <div className="club-wod-header">
                     <span className="club-wod-athletes-count">
                       {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
                     </span>
                   </div>
 
-                  {/* Блоки тренировки */}
                   <div className="club-wod-content">
                     {tmpl.skillBlocks.map((sb, i) => (
                       <div key={`s${i}`} className="club-wod-block">
@@ -225,9 +238,7 @@ export default function ClubPage() {
                       <div key={`w${i}`} className="club-wod-block">
                         <div className="club-wod-block-top">
                           <div className="club-wod-block-badge wod">{wb.wodType}</div>
-                          {wb.timeCapSeconds && (
-                            <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>
-                          )}
+                          {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
                         </div>
                         <div className="club-wod-exercises">
                           {wb.exercises.map((ex, j) => (
@@ -242,20 +253,14 @@ export default function ClubPage() {
                     ))}
                   </div>
 
-                  {/* Атлеты */}
                   <div className="club-wod-footer">
                     <div className="club-wod-athletes">
                       {tmpl.athletes.slice(0, 5).map(a => (
                         <span key={a.userId} className="club-wod-athlete">{a.name}</span>
                       ))}
-                      {tmpl.athletes.length > 5 && (
-                        <span className="club-wod-athlete more">+{tmpl.athletes.length - 5}</span>
-                      )}
+                      {tmpl.athletes.length > 5 && <span className="club-wod-athlete more">+{tmpl.athletes.length - 5}</span>}
                     </div>
-                    <Link
-                      href={buildTemplateQuery(tmpl)}
-                      className="btn btn-primary btn-sm club-wod-use-btn"
-                    >
+                    <Link href={buildTemplateQuery(tmpl)} className="btn btn-primary btn-sm club-wod-use-btn">
                       Записать результат
                     </Link>
                   </div>
@@ -269,24 +274,35 @@ export default function ClubPage() {
       {/* === Лидерборд === */}
       {tab === 'leaderboard' && (
         <div className="club-section">
+          {/* Подтабы лидерборда */}
           <div className="club-lb-tabs">
-            <button
-              className={`club-lb-tab ${lbType === 'monthly' ? 'active' : ''}`}
-              onClick={() => setLbType('monthly')}
-            >
-              За месяц
-            </button>
-            <button
-              className={`club-lb-tab ${lbType === 'wod' ? 'active' : ''}`}
-              onClick={() => setLbType('wod')}
-            >
-              WOD дня
-            </button>
+            {(['monthly', 'all', 'wod', 'skill'] as LbType[]).map(t => (
+              <button
+                key={t}
+                className={`club-lb-tab ${lbType === t ? 'active' : ''}`}
+                onClick={() => setLbType(t)}
+              >
+                {t === 'monthly' ? 'Месяц' : t === 'all' ? 'Всё время' : t === 'wod' ? 'WOD' : 'Рекорды'}
+              </button>
+            ))}
           </div>
 
-          {lbType === 'monthly' ? (
+          {/* Переключатель видимости */}
+          <div className="club-lb-privacy">
+            <label className="club-lb-privacy-label">
+              <input
+                type="checkbox"
+                checked={showInLb}
+                onChange={toggleLeaderboardVisibility}
+              />
+              <span>Показывать меня в лидербордах</span>
+            </label>
+          </div>
+
+          {/* Monthly / All-time */}
+          {(lbType === 'monthly' || lbType === 'all') && (
             monthlyEntries.length === 0 ? (
-              <div className="club-empty"><p>Нет данных за этот месяц</p></div>
+              <div className="club-empty"><p>Нет данных за {lbType === 'monthly' ? 'этот месяц' : 'всё время'}</p></div>
             ) : (
               <div className="club-lb-list">
                 {monthlyEntries.map((e, i) => (
@@ -306,7 +322,10 @@ export default function ClubPage() {
                 ))}
               </div>
             )
-          ) : (
+          )}
+
+          {/* WOD leaderboard */}
+          {lbType === 'wod' && (
             <div>
               <div className="club-feed-header" style={{ marginBottom: '0.75rem' }}>
                 <input
@@ -330,13 +349,48 @@ export default function ClubPage() {
                           {e.name}
                           <span className={`club-lb-level ${e.level.toLowerCase()}`}>{e.level}</span>
                         </div>
-                        <div className="club-lb-result">{e.resultDisplay}</div>
+                        <div className="club-lb-result">
+                          {e.resultDisplay}
+                          {e.weightsUsed && <span className="club-lb-weights"> · {e.weightsUsed}</span>}
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
               )}
             </div>
+          )}
+
+          {/* SKILL leaderboard — PR Board */}
+          {lbType === 'skill' && (
+            skillEntries.length === 0 ? (
+              <div className="club-empty"><p>Пока нет данных по Skill упражнениям</p></div>
+            ) : (
+              <div className="club-skill-lb">
+                {skillEntries.map(entry => (
+                  <div key={entry.exerciseName} className="club-skill-exercise">
+                    <div className="club-skill-exercise-name">{entry.exerciseName}</div>
+                    <div className="club-skill-athletes">
+                      {entry.athletes.slice(0, 5).map(a => (
+                        <div key={a.userId} className={`club-lb-row ${a.rank <= 3 ? 'top' : ''}`}>
+                          <div className="club-lb-rank">
+                            {a.rank === 1 ? '🥇' : a.rank === 2 ? '🥈' : a.rank === 3 ? '🥉' : a.rank}
+                          </div>
+                          <div className="club-lb-info">
+                            <div className="club-lb-name">{a.name}</div>
+                            <div className="club-lb-stats">
+                              <span>1RM: {a.best1RM} кг</span>
+                              <span>Макс: {a.maxWeight} кг</span>
+                              <span>{a.bestWeightForReps}кг × {a.bestReps}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
           )}
         </div>
       )}
