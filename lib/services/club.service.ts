@@ -394,6 +394,7 @@ export class ClubService {
           level: wb.level,
           timeCapSeconds: wb.timeCapSeconds,
           isLadder: wb.isLadder,
+          ladderRounds: wb.ladderRounds ?? null,
           exercises: wb.exercises.map(e => ({
             exerciseName: e.exercise.name,
             reps: e.reps,
@@ -445,6 +446,7 @@ export class ClubService {
       where: {
         userId: { in: userIds },
         date,
+        isTemplateOnly: false,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
@@ -471,6 +473,8 @@ export class ClubService {
       for (const wb of w.wodBlocks) {
         // Фильтрация по типу WOD (FOR_TIME, AMRAP и т.д.)
         if (wodType && wb.wodType !== wodType) continue;
+        // Пропускаем блоки без результата (шаблоны)
+        if (!wb.resultDisplay && !wb.resultSeconds && !wb.resultTotalReps) continue;
         // Собираем краткое описание весов для прозрачности
         const weightsInfo = wb.exercises
           .filter(e => e.weight && Number(e.weight) > 0)

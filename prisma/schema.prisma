@@ -153,6 +153,7 @@ model WodBlock {
   level            WodLevel
   timeCapSeconds   Int?       @map("time_cap_seconds")
   isLadder         Boolean    @default(false) @map("is_ladder")
+  ladderRounds     Int?       @map("ladder_rounds")
   resultType       ResultType @map("result_type")
   resultDisplay    String     @map("result_display") @db.VarChar(50) // "15:30" or "5+12"
   resultSeconds    Int?       @map("result_seconds") // For TIME type

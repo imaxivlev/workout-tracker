@@ -206,11 +206,16 @@ function NewWorkoutPage() {
         // WOD блоки (поддержка объединённых RX/SC из шаблона клуба)
         if (tmpl.wodBlocks) {
           for (const wb of tmpl.wodBlocks) {
+            const isLadder = wb.isLadder || false;
+            const rounds = wb.ladderRounds || 5;
+
             const mapExercises = (exs: any[]) => (exs || []).map((ex: any) => ({
               exerciseName: ex.exerciseName || '',
               reps: String(ex.reps || ''),
               weight: ex.weight ? String(ex.weight) : '',
-              ladderRepsPerRound: [],
+              ladderRepsPerRound: isLadder
+                ? Array.from({ length: rounds }, () => String(ex.reps || ''))
+                : [],
             }));
 
             const hasScaled = wb._hasScaled === true;
@@ -221,8 +226,8 @@ function NewWorkoutPage() {
                 wodType: wb.wodType || 'FOR_TIME',
                 level: wb.level || 'RX',
                 timeCapSeconds: wb.timeCapSeconds ? String(Math.floor(wb.timeCapSeconds / 60)) : '',
-                isLadder: wb.isLadder || false,
-                ladderRounds: 5,
+                isLadder,
+                ladderRounds: rounds,
                 resultDisplay: '',
                 resultSeconds: '',
                 resultTotalReps: '',
@@ -364,7 +369,8 @@ function NewWorkoutPage() {
       const oldRep = b.exercises[exIdx]?.ladderRepsPerRound?.[roundIdx] ?? '';
       const newExercises = b.exercises.map((e, j) => {
         if (j !== exIdx) return e;
-        const arr = [...(e.ladderRepsPerRound || [])];
+        // Гарантируем массив нужной длины
+        const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRound || [])[i] || '');
         const prevValue = arr[0] ?? '';
         arr[roundIdx] = value;
         if (roundIdx === 0) {
@@ -526,6 +532,7 @@ function NewWorkoutPage() {
                   level,
                   timeCapSeconds: b.timeCapSeconds ? parseInt(b.timeCapSeconds) * 60 : undefined,
                   isLadder: b.isLadder,
+                  ladderRounds: b.isLadder ? b.ladderRounds : undefined,
                   resultType: b.wodType === 'FOR_TIME' ? 'TIME' as const : b.wodType === 'AMRAP' ? 'REPS' as const : 'TIME' as const,
                   resultDisplay: (b.wodType === 'EMOM' || b.wodType === 'TABATA')
                     ? (b.timeCapSeconds ? `${b.timeCapSeconds} мин` : b.wodType)

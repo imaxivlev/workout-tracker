@@ -173,6 +173,7 @@ export class WorkoutService {
                 level: wodBlock.level,
                 timeCapSeconds: wodBlock.timeCapSeconds || null,
                 isLadder: wodBlock.isLadder,
+                ladderRounds: wodBlock.isLadder ? (wodBlock.ladderRounds || null) : null,
                 resultType: this.determineResultType(wodBlock.wodType),
                 resultDisplay: wodBlock.resultDisplay,
                 resultSeconds: wodBlock.resultSeconds || null,
@@ -434,6 +435,7 @@ export class WorkoutService {
         level: wb.level,
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
+        ladderRounds: wb.ladderRounds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -542,6 +544,7 @@ export class WorkoutService {
         level: wb.level,
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
+        ladderRounds: wb.ladderRounds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -821,6 +824,7 @@ export class WorkoutService {
         level: wb.level,
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
+        ladderRounds: wb.ladderRounds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -866,6 +870,7 @@ interface WodBlockInput {
   level: 'RX' | 'SCALED';
   timeCapSeconds?: number;
   isLadder: boolean;
+  ladderRounds?: number;
   resultDisplay: string;
   resultSeconds?: number;
   resultTotalReps?: number;
@@ -900,6 +905,7 @@ interface WorkoutResponse {
     level: string;
     timeCapSeconds: number | null;
     isLadder: boolean;
+    ladderRounds: number | null;
     resultType: string;
     resultDisplay: string;
     resultSeconds: number | null;

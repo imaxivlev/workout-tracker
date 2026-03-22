@@ -192,6 +192,7 @@ export interface WorkoutInput {
     level: 'RX' | 'SCALED';
     timeCapSeconds?: number;
     isLadder: boolean;
+    ladderRounds?: number;
     resultType: 'TIME' | 'REPS' | 'WEIGHT';
     resultDisplay: string;
     resultSeconds?: number;
@@ -420,6 +421,7 @@ export interface ClubWorkoutTemplate {
     level: string;
     timeCapSeconds: number | null;
     isLadder: boolean;
+    ladderRounds: number | null;
     exercises: Array<{ exerciseName: string; reps: number; weight: number | null }>;
   }>;
 }

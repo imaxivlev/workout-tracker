@@ -302,7 +302,7 @@ export default function ClubPage() {
                             <div className="club-wod-exercises">
                               {wb.exercises.map((ex, j) => (
                                 <div key={j} className="club-wod-exercise">
-                                  <span className="club-wod-reps">{ex.reps}</span>
+                                  {ex.reps > 0 && <span className="club-wod-reps">{ex.reps}</span>}
                                   <span>{ex.exerciseName}</span>
                                   {ex.weight ? <span className="club-wod-weight">({ex.weight} кг)</span> : null}
                                 </div>
@@ -318,13 +318,12 @@ export default function ClubPage() {
                             {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <div className="club-wod-actions">
                           {isOwnerOrCoach && (
                             <>
                               <Link
                                 href={`/dashboard/workouts/${tmpl.firstWorkoutId}/edit`}
-                                className="btn btn-sm"
-                                style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                                className="club-wod-action-btn club-wod-edit-btn"
                                 title="Редактировать"
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
@@ -332,8 +331,7 @@ export default function ClubPage() {
                               <button
                                 type="button"
                                 onClick={() => handleDeleteTemplate(tmpl)}
-                                className="btn btn-sm"
-                                style={{ background: 'var(--bg-tertiary)', color: 'var(--color-primary)', padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                                className="club-wod-action-btn club-wod-delete-btn"
                                 title="Удалить"
                               >
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>

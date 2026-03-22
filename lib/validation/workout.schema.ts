@@ -92,6 +92,7 @@ const wodBlockSchema = z.object({
     .positive('Лимит времени должен быть положительным')
     .optional(),
   isLadder: z.boolean(),
+  ladderRounds: z.number().int().min(1).max(20).optional(),
   resultType: resultTypeSchema,
   resultDisplay: z.string()
     .max(50, 'Отображаемый результат не может быть длиннее 50 символов')

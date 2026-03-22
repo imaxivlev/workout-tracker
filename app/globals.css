@@ -3191,6 +3191,42 @@ body.auth-page {
     color: var(--color-primary);
 }
 
+.club-wod-actions {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+}
+
+.club-wod-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.club-wod-action-btn:hover {
+    background: var(--bg-tertiary);
+}
+
+.club-wod-edit-btn:hover {
+    color: var(--color-secondary);
+    border-color: var(--color-secondary);
+}
+
+.club-wod-delete-btn:hover {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+}
+
 .club-wod-use-btn {
     flex-shrink: 0;
     white-space: nowrap;
