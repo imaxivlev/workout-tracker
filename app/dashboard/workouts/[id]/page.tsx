@@ -6,6 +6,13 @@ import Link from 'next/link';
 import { workoutsApi, Workout, ApiError } from '@/lib/api/client';
 import { enToRuName } from '@/lib/exercise-names';
 
+const wodTypeLabels: Record<string, string> = {
+  FOR_TIME: 'На время',
+  AMRAP: 'КМБР',
+  EMOM: 'EMOM',
+  TABATA: 'Табата',
+};
+
 export default function WorkoutDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -90,7 +97,7 @@ export default function WorkoutDetailPage() {
           return (
             <div key={block.id} className="added-block skill-block" style={{ marginBottom: '2rem' }}>
               <h3 className="block-title" style={{ color: 'var(--color-secondary)', marginBottom: '1rem' }}>
-                🏋️ Skill: {enToRuName(block.exercise.name)}
+                🏋️ Скилл: {enToRuName(block.exercise.name)}
               </h3>
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Подходы:</strong> {block.sets.length}
@@ -112,7 +119,7 @@ export default function WorkoutDetailPage() {
           return (
             <div key={block.id} className="added-block wod-block" style={{ marginBottom: '2rem' }}>
               <h3 className="block-title" style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>
-                ⚡ WOD: {block.wodType}{block.isLadder ? ' · Лесенка' : ''}
+                ⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}{block.isLadder ? ' · Лесенка' : ''}
               </h3>
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Тип:</strong> {block.level ? block.level.toUpperCase() : 'RX'}

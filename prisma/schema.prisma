@@ -17,14 +17,16 @@ model User {
   lastName      String?   @map("last_name") @db.VarChar(100)
   avatar        String?   @db.VarChar(500)
   verified      Boolean   @default(false)
+  isAdmin       Boolean   @default(false) @map("is_admin")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
-  
+
   workouts            Workout[]
   exercises           ExerciseDict[]
   verificationTokens  VerificationToken[]
   passwordResetTokens PasswordResetToken[]
   clubMemberships     ClubMember[]
+  consents            UserConsent[]
 
   @@map("users")
   @@index([email])
@@ -80,8 +82,9 @@ model Workout {
   userId          String   @map("user_id") @db.VarChar(36)
   date            String   @db.VarChar(10) // YYYY-MM-DD format
   comment         String?  @db.Text
-  isClubTemplate  Boolean  @default(false) @map("is_club_template")
-  isTemplateOnly  Boolean  @default(false) @map("is_template_only")
+  isClubTemplate    Boolean  @default(false) @map("is_club_template")
+  isTemplateOnly    Boolean  @default(false) @map("is_template_only")
+  showInLeaderboard Boolean  @default(true) @map("show_in_leaderboard")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -244,4 +247,24 @@ model ClubInvite {
   @@map("club_invites")
   @@index([code])
   @@index([clubId])
+}
+
+// =====================
+// User consents
+// =====================
+
+model UserConsent {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  userId      String   @map("user_id") @db.VarChar(36)
+  consentType String   @map("consent_type") @db.VarChar(50) // cookies, privacy_policy, terms
+  accepted    Boolean  @default(true)
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_consents")
+  @@index([userId])
+  @@index([consentType])
 }

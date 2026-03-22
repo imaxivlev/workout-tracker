@@ -124,7 +124,8 @@ export class WorkoutService {
             date: data.date,
             comment: data.comment || null,
             isClubTemplate: data.isClubTemplate ?? false,
-            isTemplateOnly: data.isTemplateOnly ?? false
+            isTemplateOnly: data.isTemplateOnly ?? false,
+            showInLeaderboard: data.showInLeaderboard ?? true
           }
         });
 
@@ -853,6 +854,7 @@ interface CreateWorkoutRequest {
   comment?: string;
   isClubTemplate?: boolean;
   isTemplateOnly?: boolean;
+  showInLeaderboard?: boolean;
   skillBlocks?: SkillBlockInput[];
   wodBlocks?: WodBlockInput[];
 }

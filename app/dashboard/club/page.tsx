@@ -8,6 +8,13 @@ import Link from 'next/link';
 type Tab = 'leaderboard' | 'members';
 type LbType = 'activity' | 'wod' | 'skill';
 
+const wodTypeLabels: Record<string, string> = {
+  FOR_TIME: 'На время',
+  AMRAP: 'КМБР',
+  EMOM: 'EMOM',
+  TABATA: 'Табата',
+};
+
 export default function ClubPage() {
   const router = useRouter();
   const [club, setClub] = useState<Club | null>(null);
@@ -78,7 +85,7 @@ export default function ClubPage() {
           }
           setWodSignatures([...allWodTypes].map(wt => ({
             signature: wt,
-            label: wt === 'FOR_TIME' ? 'For Time' : wt === 'AMRAP' ? 'AMRAP' : wt === 'EMOM' ? 'EMOM' : wt === 'TABATA' ? 'Tabata' : wt,
+            label: wt === 'FOR_TIME' ? 'На время' : wt === 'AMRAP' ? 'КМБР' : wt === 'EMOM' ? 'EMOM' : wt === 'TABATA' ? 'Табата' : wt,
           })));
         } catch { setTemplates([]); setWodSignatures([]); }
         try {
@@ -169,9 +176,13 @@ export default function ClubPage() {
 
   async function handleDeleteTemplate(tmpl: ClubWorkoutTemplate) {
     if (!club) return;
-    if (!confirm('Удалить этот шаблон тренировки?')) return;
+    const hasOtherAthletes = tmpl.athleteCount > 1;
+    const msg = hasOtherAthletes
+      ? `По этому шаблону уже записаны результаты (${tmpl.athleteCount - 1} атлет(ов)). Шаблон будет убран из ВОД дня, но тренировки атлетов сохранятся. Продолжить?`
+      : 'Удалить этот шаблон тренировки?';
+    if (!confirm(msg)) return;
     try {
-      await clubsApi.deleteClubWorkout(club.id, tmpl.firstWorkoutId);
+      const res = await clubsApi.deleteClubWorkout(club.id, tmpl.firstWorkoutId);
       setTemplates(prev => prev.filter(t => t.signature !== tmpl.signature));
       loadTabData();
     } catch (e: any) {
@@ -234,7 +245,7 @@ export default function ClubPage() {
                 className={`club-lb-tab ${lbType === t ? 'active' : ''}`}
                 onClick={() => setLbType(t)}
               >
-                {t === 'wod' ? 'WOD дня' : t === 'activity' ? 'Активность' : 'Тяжелая атлетика'}
+                {t === 'wod' ? 'ВОД дня' : t === 'activity' ? 'Активность' : 'Тяжёлая атлетика'}
               </button>
             ))}
           </div>
@@ -251,7 +262,7 @@ export default function ClubPage() {
                 />
                 {isOwnerOrCoach && (
                   <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="btn btn-primary btn-sm">
-                    + Добавить WOD
+                    + Добавить ВОД
                   </Link>
                 )}
               </div>
@@ -264,7 +275,7 @@ export default function ClubPage() {
                     onChange={(e) => setSelectedWodSignature(e.target.value)}
                     style={{ width: '100%' }}
                   >
-                    <option value="">Все WOD</option>
+                    <option value="">Все ВОД</option>
                     {wodSignatures.map(ws => (
                       <option key={ws.signature} value={ws.signature}>{ws.label}</option>
                     ))}
@@ -282,7 +293,7 @@ export default function ClubPage() {
                       <div className="club-wod-content">
                         {tmpl.skillBlocks.map((sb, i) => (
                           <div key={`s${i}`} className="club-wod-block">
-                            <div className="club-wod-block-badge skill">SKILL</div>
+                            <div className="club-wod-block-badge skill">СКИЛЛ</div>
                             <div className="club-wod-block-name">{sb.exerciseName}</div>
                             <div className="club-wod-block-detail">
                               {sb.sets.length} подход(ов)
@@ -295,7 +306,7 @@ export default function ClubPage() {
                         {tmpl.wodBlocks.map((wb, i) => (
                           <div key={`w${i}`} className="club-wod-block">
                             <div className="club-wod-block-top">
-                              <div className="club-wod-block-badge wod">{wb.wodType}</div>
+                              <div className="club-wod-block-badge wod">{wodTypeLabels[wb.wodType] || wb.wodType}</div>
                               <span className={`club-lb-level ${wb.level.toLowerCase()}`}>{wb.level === 'SCALED' ? 'SC' : wb.level}</span>
                               {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
                             </div>
@@ -349,6 +360,9 @@ export default function ClubPage() {
               )}
 
               {/* Результаты (лидерборд) */}
+              {wodEntries.length > 0 && (
+                <div className="club-lb-section-title">Результаты</div>
+              )}
               {wodEntries.length === 0 && templates.length === 0 ? (
                 <div className="club-empty">
                   <p>На {wodDate === new Date().toISOString().split('T')[0] ? 'сегодня' : wodDate} пока нет тренировок</p>
@@ -368,6 +382,7 @@ export default function ClubPage() {
                           <span className={`club-lb-level ${e.level.toLowerCase()}`}>{e.level}</span>
                         </div>
                         <div className="club-lb-result">
+                          <span className="club-lb-wod-type">{wodTypeLabels[e.wodType] || e.wodType}</span>
                           {e.resultDisplay}
                           {e.weightsUsed && <span className="club-lb-weights"> · {e.weightsUsed}</span>}
                         </div>
@@ -424,7 +439,7 @@ export default function ClubPage() {
           {/* === Тяжелая атлетика (SKILL PR Board) === */}
           {lbType === 'skill' && (
             skillEntries.length === 0 ? (
-              <div className="club-empty"><p>Пока нет данных по Skill упражнениям</p></div>
+              <div className="club-empty"><p>Пока нет данных по скилл-упражнениям</p></div>
             ) : (
               <div className="club-skill-lb">
                 {skillEntries.map(entry => (

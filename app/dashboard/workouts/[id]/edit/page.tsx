@@ -327,7 +327,7 @@ export default function EditWorkoutPage() {
     setError('');
 
     if (blocks.length === 0) {
-      setError('Добавьте хотя бы один блок (Skill или WOD)');
+      setError('Добавьте хотя бы один блок (Скилл или ВОД)');
       return;
     }
 
@@ -443,7 +443,7 @@ export default function EditWorkoutPage() {
         <div className="added-blocks-list">
           {blocks.length === 0 && (
             <div className="empty-state" style={{ textAlign: 'center', padding: '2rem' }}>
-              Пока пусто. Добавьте блок Skill или WOD.
+              Пока пусто. Добавьте блок Скилл или ВОД.
             </div>
           )}
 
@@ -453,7 +453,7 @@ export default function EditWorkoutPage() {
               return (
                 <div key={`block-${bi}`} className="added-block skill-block">
                   <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>❌</button>
-                  <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>🏋️ Skill</h3>
+                  <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>🏋️ Скилл</h3>
 
                   <div className="form-group">
                     <label>Упражнение</label>
@@ -533,7 +533,7 @@ export default function EditWorkoutPage() {
             return (
               <div key={`block-${bi}`} className="added-block wod-block">
                 <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>❌</button>
-                <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>⚡ WOD</h3>
+                <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>⚡ ВОД</h3>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -543,10 +543,10 @@ export default function EditWorkoutPage() {
                       onChange={e => updateWodBlock(bi, { wodType: e.target.value as WodType })}
                       className="form-select"
                     >
-                      <option value="FOR_TIME">For Time</option>
-                      <option value="AMRAP">AMRAP</option>
+                      <option value="FOR_TIME">На время</option>
+                      <option value="AMRAP">КМБР</option>
                       <option value="EMOM">EMOM</option>
-                      <option value="TABATA">Tabata</option>
+                      <option value="TABATA">Табата</option>
                     </select>
                   </div>
                   <div className="form-group">
@@ -755,11 +755,11 @@ export default function EditWorkoutPage() {
         <div className="builder-actions">
           <button type="button" className="btn-add-block" onClick={addSkillBlock}>
             <span style={{ fontSize: '2rem' }}>🏋️</span>
-            Добавить Skill
+            Добавить Скилл
           </button>
           <button type="button" className="btn-add-block" onClick={addWodBlock}>
             <span style={{ fontSize: '2rem' }}>⚡</span>
-            Добавить WOD
+            Добавить ВОД
           </button>
         </div>
 

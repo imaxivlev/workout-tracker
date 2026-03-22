@@ -9,6 +9,13 @@ interface WorkoutCardProps {
   onDelete?: (id: string) => void;
 }
 
+const wodTypeLabels: Record<string, string> = {
+  FOR_TIME: 'На время',
+  AMRAP: 'КМБР',
+  EMOM: 'EMOM',
+  TABATA: 'Табата',
+};
+
 function formatShortDate(dateStr: string): string {
   const date = new Date(dateStr);
   const day = date.getDate();
@@ -31,7 +38,7 @@ export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
             const maxWeight = Math.max(...block.sets.map(s => s.weight));
             return (
               <div key={block.id} className="workout-block skill">
-                <div className="block-title">🏋️ Skill: {enToRuName(block.exercise.name)}</div>
+                <div className="block-title">🏋️ Скилл: {enToRuName(block.exercise.name)}</div>
                 <div className="workout-details">
                   <span className="detail-item">{block.sets.length} подходов</span>
                   {maxWeight > 0 && (
@@ -44,7 +51,7 @@ export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
 
           {workout.wodBlocks.map(block => (
             <div key={block.id} className="workout-block wod">
-              <div className="block-title">⚡ WOD: {block.wodType}</div>
+              <div className="block-title">⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}</div>
               <div className="workout-footer">
                 {block.wodType === 'EMOM' || block.wodType === 'TABATA' ? (
                   <span className="result-time">

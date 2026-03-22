@@ -183,6 +183,7 @@ export interface WorkoutInput {
   comment?: string;
   isClubTemplate?: boolean;
   isTemplateOnly?: boolean;
+  showInLeaderboard?: boolean;
   skillBlocks?: Array<{
     exerciseName: string;
     sets: Array<{ reps: number; weight: number }>;
@@ -443,6 +444,7 @@ export interface MonthlyLeaderboardEntry {
   userId: string;
   name: string;
   workoutCount: number;
+  rxCount: number;
   tonnage: number;
   activeDays: number;
 }
@@ -573,3 +575,184 @@ export async function getCsrfToken(): Promise<string> {
   const data = await apiFetch<{ csrfToken: string }>('/api/csrf-token');
   return data.csrfToken;
 }
+
+// --- Admin ---
+
+export interface AdminStats {
+  stats: {
+    usersCount: number;
+    clubsCount: number;
+    workoutsCount: number;
+    exercisesCount: number;
+    consentsCount: number;
+  };
+  recentUsers: Array<{ id: string; email: string; firstName: string | null; lastName: string | null; createdAt: string }>;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  verified: boolean;
+  isAdmin: boolean;
+  createdAt: string;
+  workoutsCount: number;
+  clubsCount: number;
+}
+
+export interface AdminClub {
+  id: string;
+  name: string;
+  slug: string;
+  city: string | null;
+  createdAt: string;
+  membersCount: number;
+}
+
+export interface AdminWorkout {
+  id: string;
+  date: string;
+  comment: string | null;
+  isClubTemplate: boolean;
+  createdAt: string;
+  user: { id: string; email: string; firstName: string | null; lastName: string | null };
+  skillBlocksCount: number;
+  wodBlocksCount: number;
+}
+
+export interface AdminExercise {
+  id: string;
+  name: string;
+  isGlobal: boolean;
+  createdAt: string;
+  user: { id: string; email: string; firstName: string | null } | null;
+}
+
+export interface AdminConsent {
+  id: string;
+  userId: string;
+  consentType: string;
+  accepted: boolean;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  user: { id: string; email: string; firstName: string | null; lastName: string | null };
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export const adminApi = {
+  async getStats() {
+    return apiFetch<AdminStats>('/api/admin');
+  },
+
+  // Users
+  async getUsers(params?: { page?: number; limit?: number; search?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    const qs = q.toString();
+    return apiFetch<{ users: AdminUser[]; pagination: Pagination }>(`/api/admin/users${qs ? `?${qs}` : ''}`);
+  },
+
+  async getUser(id: string) {
+    return apiFetch<{ user: unknown }>(`/api/admin/users/${id}`);
+  },
+
+  async updateUser(id: string, data: Partial<{ firstName: string; lastName: string; email: string; verified: boolean; isAdmin: boolean }>) {
+    return apiFetch<{ user: unknown }>(`/api/admin/users/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteUser(id: string) {
+    return apiFetch<{ message: string }>(`/api/admin/users/${id}`, { method: 'DELETE' });
+  },
+
+  // Clubs
+  async getClubs(params?: { page?: number; limit?: number; search?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    const qs = q.toString();
+    return apiFetch<{ clubs: AdminClub[]; pagination: Pagination }>(`/api/admin/clubs${qs ? `?${qs}` : ''}`);
+  },
+
+  async getClub(id: string) {
+    return apiFetch<{ club: unknown }>(`/api/admin/clubs/${id}`);
+  },
+
+  async updateClub(id: string, data: Partial<{ name: string; city: string; description: string }>) {
+    return apiFetch<{ club: unknown }>(`/api/admin/clubs/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteClub(id: string) {
+    return apiFetch<{ message: string }>(`/api/admin/clubs/${id}`, { method: 'DELETE' });
+  },
+
+  // Workouts
+  async getWorkouts(params?: { page?: number; limit?: number; userId?: string; date?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.userId) q.set('userId', params.userId);
+    if (params?.date) q.set('date', params.date);
+    const qs = q.toString();
+    return apiFetch<{ workouts: AdminWorkout[]; pagination: Pagination }>(`/api/admin/workouts${qs ? `?${qs}` : ''}`);
+  },
+
+  async deleteWorkout(id: string) {
+    return apiFetch<{ message: string }>(`/api/admin/workouts/${id}`, { method: 'DELETE' });
+  },
+
+  // Exercises
+  async getExercises(params?: { page?: number; limit?: number; search?: string; filter?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.search) q.set('search', params.search);
+    if (params?.filter) q.set('filter', params.filter);
+    const qs = q.toString();
+    return apiFetch<{ exercises: AdminExercise[]; pagination: Pagination }>(`/api/admin/exercises${qs ? `?${qs}` : ''}`);
+  },
+
+  async createExercise(name: string) {
+    return apiFetch<{ exercise: AdminExercise }>('/api/admin/exercises', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    });
+  },
+
+  async updateExercise(id: string, data: Partial<{ name: string; isGlobal: boolean }>) {
+    return apiFetch<{ exercise: unknown }>(`/api/admin/exercises/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async deleteExercise(id: string) {
+    return apiFetch<{ message: string }>(`/api/admin/exercises/${id}`, { method: 'DELETE' });
+  },
+
+  // Consents
+  async getConsents(params?: { page?: number; limit?: number; type?: string }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    if (params?.type) q.set('type', params.type);
+    const qs = q.toString();
+    return apiFetch<{ consents: AdminConsent[]; pagination: Pagination }>(`/api/admin/consents${qs ? `?${qs}` : ''}`);
+  },
+};

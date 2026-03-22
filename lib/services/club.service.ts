@@ -325,42 +325,44 @@ export class ClubService {
 
     const userIds = memberIds.map(m => m.userId);
 
-    // Получаем тренировки участников за указанную дату (только клубные шаблоны + все тренировки для группировки)
-    const workouts = await prisma.workout.findMany({
+    const workoutInclude = {
+      user: { select: { id: true, firstName: true, lastName: true } },
+      skillBlocks: {
+        include: {
+          exercise: true,
+          sets: { orderBy: { setNumber: 'asc' as const } }
+        }
+      },
+      wodBlocks: {
+        include: {
+          exercises: {
+            include: { exercise: true },
+            orderBy: { orderIndex: 'asc' as const }
+          }
+        }
+      }
+    };
+
+    // Шаг 1: Загружаем только тренировки-шаблоны (isClubTemplate: true)
+    const templateWorkouts = await prisma.workout.findMany({
       where: {
         userId: { in: userIds },
         date,
+        isClubTemplate: true,
       },
-      include: {
-        user: { select: { id: true, firstName: true, lastName: true } },
-        skillBlocks: {
-          include: {
-            exercise: true,
-            sets: { orderBy: { setNumber: 'asc' } }
-          }
-        },
-        wodBlocks: {
-          include: {
-            exercises: {
-              include: { exercise: true },
-              orderBy: { orderIndex: 'asc' }
-            }
-          }
-        }
-      },
+      include: workoutInclude,
       orderBy: { createdAt: 'asc' }
     });
 
-    if (workouts.length === 0) return [];
+    if (templateWorkouts.length === 0) return [];
 
-    // Группируем по структуре (одинаковые WOD блоки = одна тренировка дня)
+    // Шаг 2: Создаём шаблоны из тренировок с isClubTemplate
     const templates: ClubWorkoutTemplate[] = [];
-    const seen = new Set<string>();
+    const signatureSet = new Set<string>();
 
-    for (const w of workouts) {
+    for (const w of templateWorkouts) {
       const signature = this.workoutSignature(w);
-      if (seen.has(signature)) {
-        // Добавляем атлета к существующему шаблону
+      if (signatureSet.has(signature)) {
         const tmpl = templates.find(t => t.signature === signature);
         if (tmpl) {
           tmpl.athleteCount++;
@@ -373,7 +375,7 @@ export class ClubService {
         continue;
       }
 
-      seen.add(signature);
+      signatureSet.add(signature);
 
       templates.push({
         signature,
@@ -402,6 +404,34 @@ export class ClubService {
           }))
         })),
       });
+    }
+
+    // Шаг 3: Загружаем остальные тренировки (без isClubTemplate) и добавляем атлетов к подходящим шаблонам
+    const allWorkouts = await prisma.workout.findMany({
+      where: {
+        userId: { in: userIds },
+        date,
+        isClubTemplate: false,
+        isTemplateOnly: false,
+      },
+      include: workoutInclude,
+      orderBy: { createdAt: 'asc' }
+    });
+
+    for (const w of allWorkouts) {
+      // Ищем шаблон, чьи WOD-блоки покрывают все блоки атлета
+      const tmpl = templates.find(t => this.workoutMatchesTemplate(w, t));
+      if (tmpl) {
+        if (!tmpl.athletes.some(a => a.userId === w.user.id)) {
+          tmpl.athleteCount++;
+          tmpl.athletes.push({
+            userId: w.user.id,
+            name: this.displayName(w.user),
+            workoutId: w.id,
+          });
+        }
+      }
+      // Тренировки без совпадения с шаблоном НЕ создают новый шаблон
     }
 
     // Сортируем: больше атлетов = выше
@@ -447,6 +477,7 @@ export class ClubService {
         userId: { in: userIds },
         date,
         isTemplateOnly: false,
+        showInLeaderboard: true,
       },
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
@@ -526,7 +557,7 @@ export class ClubService {
   async getGeneralLeaderboard(clubId: string, period: 'month' | 'all', year?: number, month?: number): Promise<MonthlyLeaderboardEntry[]> {
     const userIds = await this.getVisibleUserIds(clubId);
 
-    const where: any = { userId: { in: userIds }, isTemplateOnly: false };
+    const where: any = { userId: { in: userIds }, isTemplateOnly: false, showInLeaderboard: true };
 
     if (period === 'month' && year && month) {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -538,7 +569,12 @@ export class ClubService {
       where,
       include: {
         user: { select: { id: true, firstName: true, lastName: true } },
-        skillBlocks: { include: { sets: true } }
+        skillBlocks: { include: { sets: true } },
+        wodBlocks: {
+          include: {
+            exercises: { select: { reps: true, weight: true } }
+          }
+        }
       }
     });
 
@@ -546,6 +582,7 @@ export class ClubService {
       userId: string;
       name: string;
       workoutCount: number;
+      rxCount: number;
       tonnage: number;
       uniqueDays: Set<string>;
     }>();
@@ -556,6 +593,7 @@ export class ClubService {
           userId: w.userId,
           name: this.displayName(w.user),
           workoutCount: 0,
+          rxCount: 0,
           tonnage: 0,
           uniqueDays: new Set(),
         });
@@ -563,6 +601,13 @@ export class ClubService {
       const entry = userMap.get(w.userId)!;
       entry.workoutCount++;
       entry.uniqueDays.add(w.date);
+
+      for (const wb of w.wodBlocks) {
+        if (wb.level === 'RX') entry.rxCount++;
+        for (const ex of wb.exercises) {
+          if (ex.weight) entry.tonnage += ex.reps * Number(ex.weight);
+        }
+      }
 
       for (const sb of w.skillBlocks) {
         for (const s of sb.sets) {
@@ -575,11 +620,18 @@ export class ClubService {
       userId: e.userId,
       name: e.name,
       workoutCount: e.workoutCount,
+      rxCount: e.rxCount,
       tonnage: Math.round(e.tonnage * 100) / 100,
       activeDays: e.uniqueDays.size,
     }));
 
-    result.sort((a, b) => b.workoutCount - a.workoutCount || b.tonnage - a.tonnage);
+    result.sort((a, b) =>
+      b.workoutCount - a.workoutCount
+      || b.rxCount - a.rxCount
+      || b.activeDays - a.activeDays
+      || b.tonnage - a.tonnage
+      || a.name.localeCompare(b.name)
+    );
 
     return result;
   }
@@ -595,7 +647,7 @@ export class ClubService {
     const skillSets = await prisma.skillSet.findMany({
       where: {
         skillBlock: {
-          workout: { userId: { in: userIds }, isTemplateOnly: false }
+          workout: { userId: { in: userIds }, isTemplateOnly: false, showInLeaderboard: true }
         },
         weight: { gt: 0 }
       },
@@ -758,15 +810,67 @@ export class ClubService {
       .join(',');
 
     const wods = workout.wodBlocks
-      .map(wb => {
-        const exs = wb.exercises
-          .map(e => `${e.exercise.name}:${e.reps}`)
-          .join('+');
-        return `${wb.wodType}[${exs}]`;
-      })
+      .map(wb => this.wodBlockSignature(wb))
+      .sort()
       .join('|');
 
     return `S{${skills}}W{${wods}}`;
+  }
+
+  /**
+   * Подпись одного WOD-блока (без level/веса — только тип + упражнения + повторения)
+   */
+  private wodBlockSignature(wb: {
+    wodType: string;
+    exercises: Array<{ exercise: { name: string }; reps: number }>;
+  }): string {
+    const exs = wb.exercises
+      .map(e => `${e.exercise.name}:${e.reps}`)
+      .sort()
+      .join('+');
+    return `${wb.wodType}[${exs}]`;
+  }
+
+  /**
+   * Проверяет, что тренировка атлета соответствует шаблону.
+   * Каждый WOD/SKILL блок атлета должен совпадать с одним из блоков шаблона.
+   * Шаблон может содержать больше блоков (RX + SC), атлет — только один из них.
+   */
+  private workoutMatchesTemplate(
+    workout: {
+      skillBlocks: Array<{ exercise: { name: string } }>;
+      wodBlocks: Array<{
+        wodType: string;
+        exercises: Array<{ exercise: { name: string }; reps: number }>;
+      }>;
+    },
+    template: ClubWorkoutTemplate
+  ): boolean {
+    // Skill блоки: имена упражнений атлета должны быть подмножеством шаблона
+    const templateSkillNames = new Set(template.skillBlocks.map(sb => sb.exerciseName));
+    const workoutSkillNames = workout.skillBlocks.map(sb => sb.exercise.name);
+    if (workoutSkillNames.length > 0 && !workoutSkillNames.every(n => templateSkillNames.has(n))) {
+      return false;
+    }
+
+    // WOD блоки: каждый блок атлета должен совпадать с одним из блоков шаблона
+    const templateWodSigs = template.wodBlocks.map(wb => {
+      const exs = wb.exercises
+        .map(e => `${e.exerciseName}:${e.reps}`)
+        .sort()
+        .join('+');
+      return `${wb.wodType}[${exs}]`;
+    });
+
+    for (const wb of workout.wodBlocks) {
+      const sig = this.wodBlockSignature(wb);
+      if (!templateWodSigs.includes(sig)) {
+        return false;
+      }
+    }
+
+    // Хотя бы один блок должен совпасть
+    return workout.wodBlocks.length > 0 || workout.skillBlocks.length > 0;
   }
 }
 
@@ -834,6 +938,7 @@ export interface MonthlyLeaderboardEntry {
   userId: string;
   name: string;
   workoutCount: number;
+  rxCount: number;
   tonnage: number;
   activeDays: number;
 }

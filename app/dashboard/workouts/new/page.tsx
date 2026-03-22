@@ -150,17 +150,20 @@ function NewWorkoutPage() {
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
   const [templateApplied, setTemplateApplied] = useState(false);
+  const hasClubTemplateParam = !!searchParams.get('clubTemplate');
+  const [fromClubTemplate, setFromClubTemplate] = useState(hasClubTemplateParam);
 
   // Club template
   const [hasClub, setHasClub] = useState(false);
   const [clubRole, setClubRole] = useState<string | null>(null);
-  const [saveAsClubTemplate, setSaveAsClubTemplate] = useState(true);
+  const [saveAsClubTemplate, setSaveAsClubTemplate] = useState(!hasClubTemplateParam);
   const [showTemplateTooltip, setShowTemplateTooltip] = useState(false);
+  const [showInLeaderboard, setShowInLeaderboard] = useState(true);
 
   const hideToast = useCallback(() => setToast(''), []);
 
   // Тренер/владелец может не заполнять результат при создании шаблона для клуба
-  const canSkipResult = hasClub && saveAsClubTemplate && (clubRole === 'OWNER' || clubRole === 'COACH');
+  const canSkipResult = hasClub && saveAsClubTemplate && !fromClubTemplate && (clubRole === 'OWNER' || clubRole === 'COACH');
 
   // Проверка членства в клубе
   useEffect(() => {
@@ -245,6 +248,8 @@ function NewWorkoutPage() {
 
         if (newBlocks.length > 0) {
           setBlocks(newBlocks);
+          setFromClubTemplate(true);
+          setSaveAsClubTemplate(false);
           setToast('Шаблон тренировки загружен — заполните свой результат');
         }
       } catch {
@@ -476,7 +481,7 @@ function NewWorkoutPage() {
     setError('');
 
     if (blocks.length === 0) {
-      setError('Добавьте хотя бы один блок (Skill или WOD)');
+      setError('Добавьте хотя бы один блок (Скилл или ВОД)');
       return;
     }
 
@@ -511,8 +516,9 @@ function NewWorkoutPage() {
       const payload: WorkoutInput = {
         date,
         comment: comment.trim() || undefined,
-        isClubTemplate: hasClub && saveAsClubTemplate ? true : undefined,
+        isClubTemplate: hasClub && saveAsClubTemplate && !fromClubTemplate ? true : undefined,
         isTemplateOnly: isTemplateOnly || undefined,
+        showInLeaderboard: showInLeaderboard,
         skillBlocks: skillBlocks.length > 0
           ? skillBlocks.map(b => ({
               exerciseName: b.exerciseName,
@@ -608,7 +614,7 @@ function NewWorkoutPage() {
         <div className="added-blocks-list">
           {blocks.length === 0 && (
             <div className="empty-state" style={{ textAlign: 'center', padding: '2rem' }}>
-              Пока пусто. Добавьте блок Skill или WOD.
+              Пока пусто. Добавьте блок Скилл или ВОД.
             </div>
           )}
 
@@ -618,7 +624,7 @@ function NewWorkoutPage() {
               return (
                 <div key={`block-${bi}`} className="added-block skill-block">
                   <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>❌</button>
-                  <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>🏋️ Skill</h3>
+                  <h3 className="block-title" style={{ color: 'var(--color-secondary)' }}>🏋️ Скилл</h3>
 
                   <div className="form-group">
                     <label>Упражнение</label>
@@ -698,7 +704,7 @@ function NewWorkoutPage() {
             return (
               <div key={`block-${bi}`} className="added-block wod-block">
                 <button type="button" className="remove-block" onClick={() => removeBlock(bi)}>❌</button>
-                <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>⚡ WOD</h3>
+                <h3 className="block-title" style={{ color: 'var(--color-primary)' }}>⚡ ВОД</h3>
 
                 <div className="form-row">
                   <div className="form-group">
@@ -708,10 +714,10 @@ function NewWorkoutPage() {
                       onChange={e => updateWodBlock(bi, { wodType: e.target.value as WodType })}
                       className="form-select"
                     >
-                      <option value="FOR_TIME">For Time</option>
-                      <option value="AMRAP">AMRAP</option>
+                      <option value="FOR_TIME">На время</option>
+                      <option value="AMRAP">КМБР</option>
                       <option value="EMOM">EMOM</option>
-                      <option value="TABATA">Tabata</option>
+                      <option value="TABATA">Табата</option>
                     </select>
                   </div>
                   {!wod.hasSeparateScaled && (
@@ -1023,9 +1029,9 @@ function NewWorkoutPage() {
           />
         </div>
 
-        {/* Чекбокс "Сохранить как шаблон в клубе" */}
-        {hasClub && (
-          <div className="club-template-checkbox" style={{ marginTop: '1.5rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+        {/* Чекбокс "Сохранить как шаблон в клубе" — скрыт при записи результата по шаблону тренера */}
+        {hasClub && !fromClubTemplate && (
+          <div className="club-template-checkbox" style={{ marginTop: '2rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
               <input
                 type="checkbox"
@@ -1050,15 +1056,30 @@ function NewWorkoutPage() {
           </div>
         )}
 
+        {/* Чекбокс "Учитывать в лидерборде" */}
+        {hasClub && (
+          <div style={{ marginTop: '1rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={showInLeaderboard}
+                onChange={e => setShowInLeaderboard(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+              />
+              <span>Учитывать тренировку в лидерборде клуба</span>
+            </label>
+          </div>
+        )}
+
         {/* Кнопки добавления блоков */}
         <div className="builder-actions">
           <button type="button" className="btn-add-block" onClick={addSkillBlock}>
             <span style={{ fontSize: '2rem' }}>🏋️</span>
-            Добавить Skill
+            Добавить Скилл
           </button>
           <button type="button" className="btn-add-block" onClick={addWodBlock}>
             <span style={{ fontSize: '2rem' }}>⚡</span>
-            Добавить WOD
+            Добавить ВОД
           </button>
         </div>
 

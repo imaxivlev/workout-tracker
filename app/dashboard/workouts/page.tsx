@@ -427,8 +427,8 @@ export default function WorkoutsPage() {
             </div>
             <div className="period-selector" style={{ marginBottom: 0 }}>
               <button className={`period-btn${typeFilter === 'all' ? ' active' : ''}`} onClick={() => setTypeFilter('all')}>Все</button>
-              <button className={`period-btn${typeFilter === 'skill' ? ' active' : ''}`} onClick={() => setTypeFilter('skill')}>Skill</button>
-              <button className={`period-btn${typeFilter === 'wod' ? ' active' : ''}`} onClick={() => setTypeFilter('wod')}>WOD</button>
+              <button className={`period-btn${typeFilter === 'skill' ? ' active' : ''}`} onClick={() => setTypeFilter('skill')}>Скилл</button>
+              <button className={`period-btn${typeFilter === 'wod' ? ' active' : ''}`} onClick={() => setTypeFilter('wod')}>ВОД</button>
             </div>
           </div>
 
@@ -507,12 +507,12 @@ export default function WorkoutsPage() {
                 <div className="stat-card">
                   <div className="stat-icon">🏋️</div>
                   <div className="stat-value">{stats?.skillSessions ?? 0}</div>
-                  <div className="stat-label">Skill сессий</div>
+                  <div className="stat-label">Скилл сессий</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon">⚡</div>
                   <div className="stat-value">{stats?.wodSessions ?? 0}</div>
-                  <div className="stat-label">WOD сессий</div>
+                  <div className="stat-label">ВОД сессий</div>
                 </div>
                 <div className="stat-card">
                   <div className="stat-icon">🏆</div>

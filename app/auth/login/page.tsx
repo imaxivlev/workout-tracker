@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { authApi, ApiError } from '@/lib/api/client';
 
 type Tab = 'login' | 'register' | 'reset';
@@ -25,6 +26,8 @@ export default function AuthPage() {
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
   const [regLoading, setRegLoading] = useState(false);
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [agreePrivacy, setAgreePrivacy] = useState(false);
 
   // Reset
   const [resetEmail, setResetEmail] = useState('');
@@ -56,13 +59,23 @@ export default function AuthPage() {
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setRegError('');
+    if (!agreeTerms || !agreePrivacy) {
+      setRegError('Необходимо принять пользовательское соглашение и политику конфиденциальности');
+      return;
+    }
     if (regPassword !== regConfirm) {
       setRegError('Пароли не совпадают');
       return;
     }
     setRegLoading(true);
     try {
-      await authApi.register(regEmail, regPassword, regFirstName.trim() || undefined, regLastName.trim() || undefined);
+      const result = await authApi.register(regEmail, regPassword, regFirstName.trim() || undefined, regLastName.trim() || undefined);
+      // Save consents (fire-and-forget, userId from response if available)
+      const userId = (result as any)?.user?.id;
+      if (userId) {
+        fetch('/api/consents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, consentType: 'terms', accepted: true }) }).catch(() => {});
+        fetch('/api/consents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, consentType: 'privacy_policy', accepted: true }) }).catch(() => {});
+      }
       setRegSuccess('Аккаунт создан! Проверьте почту для подтверждения email.');
     } catch (err) {
       if (err instanceof ApiError) {
@@ -251,6 +264,27 @@ export default function AuthPage() {
                   required
                   autoComplete="new-password"
                 />
+              </div>
+
+              <div className="consent-checkboxes" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <input
+                    type="checkbox"
+                    checked={agreeTerms}
+                    onChange={e => setAgreeTerms(e.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 1, accentColor: 'var(--color-primary)', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <span>Я принимаю <Link href="/legal/agreement" target="_blank" style={{ color: 'var(--color-primary)' }}>пользовательское соглашение</Link></span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                  <input
+                    type="checkbox"
+                    checked={agreePrivacy}
+                    onChange={e => setAgreePrivacy(e.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 1, accentColor: 'var(--color-primary)', cursor: 'pointer', flexShrink: 0 }}
+                  />
+                  <span>Я согласен с <Link href="/legal/privacy" target="_blank" style={{ color: 'var(--color-primary)' }}>политикой конфиденциальности</Link></span>
+                </label>
               </div>
 
               {regError && <div className="form-error-msg">{regError}</div>}
