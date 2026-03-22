@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     }
 
     const workouts = await prisma.workout.findMany({
-      where: { userId: authResult.user.id },
+      where: { userId: authResult.user.id, isTemplateOnly: false },
       select: {
         date: true,
         skillBlocks: { select: { id: true }, take: 1 },

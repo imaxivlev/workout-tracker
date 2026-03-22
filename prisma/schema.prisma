@@ -81,6 +81,7 @@ model Workout {
   date            String   @db.VarChar(10) // YYYY-MM-DD format
   comment         String?  @db.Text
   isClubTemplate  Boolean  @default(false) @map("is_club_template")
+  isTemplateOnly  Boolean  @default(false) @map("is_template_only")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 

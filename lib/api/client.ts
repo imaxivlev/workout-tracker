@@ -182,6 +182,7 @@ export interface WorkoutInput {
   date: string;
   comment?: string;
   isClubTemplate?: boolean;
+  isTemplateOnly?: boolean;
   skillBlocks?: Array<{
     exerciseName: string;
     sets: Array<{ reps: number; weight: number }>;
@@ -554,6 +555,12 @@ export const clubsApi = {
     return apiFetch<{ showInLeaderboard: boolean }>(`/api/clubs/${id}/leaderboard-visibility`, {
       method: 'PATCH',
       body: JSON.stringify({ show }),
+    });
+  },
+
+  async deleteClubWorkout(clubId: string, workoutId: string) {
+    return apiFetch<{ message: string }>(`/api/clubs/${clubId}/workouts/${workoutId}`, {
+      method: 'DELETE',
     });
   },
 };

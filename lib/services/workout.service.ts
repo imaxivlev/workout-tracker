@@ -123,7 +123,8 @@ export class WorkoutService {
             userId: userId,
             date: data.date,
             comment: data.comment || null,
-            isClubTemplate: data.isClubTemplate ?? false
+            isClubTemplate: data.isClubTemplate ?? false,
+            isTemplateOnly: data.isTemplateOnly ?? false
           }
         });
 
@@ -334,7 +335,8 @@ export class WorkoutService {
 
     // Построение условий фильтрации
     const where: any = {
-      userId: userId // Требование 9.1: Изоляция данных пользователей
+      userId: userId, // Требование 9.1: Изоляция данных пользователей
+      isTemplateOnly: false // Шаблоны тренера не показываются в истории
     };
 
     // Требование 9.4: Фильтрация по диапазону дат
@@ -846,6 +848,7 @@ interface CreateWorkoutRequest {
   date: string; // YYYY-MM-DD
   comment?: string;
   isClubTemplate?: boolean;
+  isTemplateOnly?: boolean;
   skillBlocks?: SkillBlockInput[];
   wodBlocks?: WodBlockInput[];
 }

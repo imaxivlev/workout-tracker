@@ -69,13 +69,17 @@ export default function ClubPage() {
         try {
           const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
           setTemplates(t);
-          setWodSignatures(t.map(tmpl => {
-            // Уникальный тип WOD + первые упражнения для читаемости
-            const wodTypes = [...new Set(tmpl.wodBlocks.map(wb => wb.wodType))];
-            const exNames = tmpl.wodBlocks.flatMap(wb => wb.exercises.map(e => e.exerciseName)).slice(0, 3);
-            const label = wodTypes.join('/') + (exNames.length ? ': ' + exNames.join(', ') : '') || tmpl.skillBlocks.map(sb => sb.exerciseName).join(', ') || 'WOD';
-            return { signature: tmpl.signature, label };
-          }));
+          // Фильтр по типу WOD (FOR_TIME, AMRAP и т.д.)
+          const allWodTypes = new Set<string>();
+          for (const tmpl of t) {
+            for (const wb of tmpl.wodBlocks) {
+              allWodTypes.add(wb.wodType);
+            }
+          }
+          setWodSignatures([...allWodTypes].map(wt => ({
+            signature: wt,
+            label: wt === 'FOR_TIME' ? 'For Time' : wt === 'AMRAP' ? 'AMRAP' : wt === 'EMOM' ? 'EMOM' : wt === 'TABATA' ? 'Tabata' : wt,
+          })));
         } catch { setTemplates([]); setWodSignatures([]); }
         try {
           const { entries } = await clubsApi.getWodLeaderboard(club.id, wodDate, selectedWodSignature || undefined);
@@ -120,12 +124,59 @@ export default function ClubPage() {
   }
 
   function buildTemplateQuery(tmpl: ClubWorkoutTemplate): string {
+    // Группируем RX/SC WOD блоки: если есть пара с одинаковым wodType — объединяем
+    const mergedWodBlocks: Array<any> = [];
+    const used = new Set<number>();
+
+    for (let i = 0; i < tmpl.wodBlocks.length; i++) {
+      if (used.has(i)) continue;
+      const wb = tmpl.wodBlocks[i];
+
+      // Ищем парный блок с другим level но тем же wodType
+      let paired = -1;
+      for (let j = i + 1; j < tmpl.wodBlocks.length; j++) {
+        if (used.has(j)) continue;
+        const other = tmpl.wodBlocks[j];
+        if (other.wodType === wb.wodType && other.level !== wb.level) {
+          paired = j;
+          break;
+        }
+      }
+
+      if (paired >= 0) {
+        used.add(paired);
+        const rxBlock = wb.level === 'RX' ? wb : tmpl.wodBlocks[paired];
+        const scBlock = wb.level === 'SCALED' ? wb : tmpl.wodBlocks[paired];
+        mergedWodBlocks.push({
+          ...rxBlock,
+          level: 'RX',
+          _hasScaled: true,
+          _scaledExercises: scBlock.exercises,
+        });
+      } else {
+        mergedWodBlocks.push(wb);
+      }
+      used.add(i);
+    }
+
     const data = {
       date: tmpl.date,
       skillBlocks: tmpl.skillBlocks,
-      wodBlocks: tmpl.wodBlocks,
+      wodBlocks: mergedWodBlocks,
     };
     return `/dashboard/workouts/new?clubTemplate=${encodeURIComponent(JSON.stringify(data))}`;
+  }
+
+  async function handleDeleteTemplate(tmpl: ClubWorkoutTemplate) {
+    if (!club) return;
+    if (!confirm('Удалить этот шаблон тренировки?')) return;
+    try {
+      await clubsApi.deleteClubWorkout(club.id, tmpl.firstWorkoutId);
+      setTemplates(prev => prev.filter(t => t.signature !== tmpl.signature));
+      loadTabData();
+    } catch (e: any) {
+      alert(e.message || 'Ошибка удаления');
+    }
   }
 
   if (loading) {
@@ -225,7 +276,7 @@ export default function ClubPage() {
               {templates.length > 0 && (
                 <div className="club-wod-details">
                   {templates
-                    .filter(tmpl => !selectedWodSignature || tmpl.signature === selectedWodSignature)
+                    .filter(tmpl => !selectedWodSignature || tmpl.wodBlocks.some(wb => wb.wodType === selectedWodSignature))
                     .map((tmpl) => (
                     <div key={tmpl.signature} className="club-wod-card">
                       <div className="club-wod-content">
@@ -235,6 +286,7 @@ export default function ClubPage() {
                             <div className="club-wod-block-name">{sb.exerciseName}</div>
                             <div className="club-wod-block-detail">
                               {sb.sets.length} подход(ов)
+                              {sb.sets[0]?.reps > 0 && ` × ${sb.sets[0].reps} повт.`}
                               {sb.sets[0]?.weight > 0 && ` · ${sb.sets[0].weight} кг`}
                             </div>
                           </div>
@@ -266,9 +318,32 @@ export default function ClubPage() {
                             {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
                           </span>
                         </div>
-                        <Link href={buildTemplateQuery(tmpl)} className="btn btn-primary btn-sm club-wod-use-btn">
-                          Записать результат
-                        </Link>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          {isOwnerOrCoach && (
+                            <>
+                              <Link
+                                href={`/dashboard/workouts/${tmpl.firstWorkoutId}/edit`}
+                                className="btn btn-sm"
+                                style={{ background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                                title="Редактировать"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
+                              </Link>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTemplate(tmpl)}
+                                className="btn btn-sm"
+                                style={{ background: 'var(--bg-tertiary)', color: 'var(--color-primary)', padding: '0.35rem 0.6rem', fontSize: '0.8rem' }}
+                                title="Удалить"
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                              </button>
+                            </>
+                          )}
+                          <Link href={buildTemplateQuery(tmpl)} className="btn btn-primary btn-sm club-wod-use-btn">
+                            Записать результат
+                          </Link>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -116,6 +116,7 @@ export const createWorkoutSchema = z.object({
   date: dateSchema,
   comment: commentSchema,
   isClubTemplate: z.boolean().optional(),
+  isTemplateOnly: z.boolean().optional(),
   skillBlocks: z.array(skillBlockSchema)
     .max(50, 'Тренировка не может содержать более 50 Skill блоков')
     .optional(),

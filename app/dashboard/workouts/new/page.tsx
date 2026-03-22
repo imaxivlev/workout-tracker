@@ -203,9 +203,18 @@ function NewWorkoutPage() {
           }
         }
 
-        // WOD блоки
+        // WOD блоки (поддержка объединённых RX/SC из шаблона клуба)
         if (tmpl.wodBlocks) {
           for (const wb of tmpl.wodBlocks) {
+            const mapExercises = (exs: any[]) => (exs || []).map((ex: any) => ({
+              exerciseName: ex.exerciseName || '',
+              reps: String(ex.reps || ''),
+              weight: ex.weight ? String(ex.weight) : '',
+              ladderRepsPerRound: [],
+            }));
+
+            const hasScaled = wb._hasScaled === true;
+
             newBlocks.push({
               type: 'wod',
               data: {
@@ -217,15 +226,14 @@ function NewWorkoutPage() {
                 resultDisplay: '',
                 resultSeconds: '',
                 resultTotalReps: '',
-                exercises: (wb.exercises || []).map((ex: any) => ({
-                  exerciseName: ex.exerciseName || '',
-                  reps: String(ex.reps || ''),
-                  weight: ex.weight ? String(ex.weight) : '',
-                  ladderRepsPerRound: [],
-                })),
+                exercises: mapExercises(wb.exercises),
                 hasSeparateScaled: false,
-                scaledExercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
-              },
+                scaledExercises: hasScaled
+                  ? mapExercises(wb._scaledExercises)
+                  : [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
+                _templateRxExercises: hasScaled ? mapExercises(wb.exercises) : undefined,
+                _templateScExercises: hasScaled ? mapExercises(wb._scaledExercises) : undefined,
+              } as any,
             });
           }
         }
@@ -490,10 +498,15 @@ function NewWorkoutPage() {
       const skillBlocks = blocks.filter((b): b is { type: 'skill'; data: SkillBlockForm } => b.type === 'skill').map(b => b.data);
       const wodBlocks = wodBlocks_;
 
+      // Определяем, является ли это шаблоном без результата (тренер/владелец создаёт шаблон)
+      const noWodResults = wodBlocks.every(b => !b.resultDisplay.trim() && !b.resultTotalReps.trim());
+      const isTemplateOnly = canSkipResult && noWodResults;
+
       const payload: WorkoutInput = {
         date,
         comment: comment.trim() || undefined,
         isClubTemplate: hasClub && saveAsClubTemplate ? true : undefined,
+        isTemplateOnly: isTemplateOnly || undefined,
         skillBlocks: skillBlocks.length > 0
           ? skillBlocks.map(b => ({
               exerciseName: b.exerciseName,
@@ -699,7 +712,17 @@ function NewWorkoutPage() {
                       <label>Уровень</label>
                       <select
                         value={wod.level}
-                        onChange={e => updateWodBlock(bi, { level: e.target.value as WodLevel })}
+                        onChange={e => {
+                          const newLevel = e.target.value as WodLevel;
+                          const data = wod as any;
+                          // Подгружаем упражнения из шаблона при переключении RX/SC
+                          if (data._templateRxExercises && data._templateScExercises) {
+                            const exercises = newLevel === 'RX' ? data._templateRxExercises : data._templateScExercises;
+                            updateWodBlock(bi, { level: newLevel, exercises: exercises.map((ex: any) => ({ ...ex })) });
+                          } else {
+                            updateWodBlock(bi, { level: newLevel });
+                          }
+                        }}
                         className="form-select"
                       >
                         <option value="RX">Rx</option>

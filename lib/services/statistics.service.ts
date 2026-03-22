@@ -41,6 +41,7 @@ export class StatisticsService {
     const workouts = await prisma.workout.findMany({
       where: {
         userId,
+        isTemplateOnly: false,
         date: {
           gte: startDate,
           lte: endDate,
@@ -76,7 +77,7 @@ export class StatisticsService {
    */
   async calculateStreak(userId: string): Promise<{ days: number; weeks: number }> {
     const workouts = await prisma.workout.findMany({
-      where: { userId },
+      where: { userId, isTemplateOnly: false },
       select: { date: true },
       orderBy: { date: 'desc' },
     });
@@ -289,7 +290,7 @@ export class StatisticsService {
   async getBestWeight(userId: string): Promise<{ exerciseName: string; weight: number; date: string } | null> {
     const skillBlocks = await prisma.skillBlock.findMany({
       where: {
-        workout: { userId },
+        workout: { userId, isTemplateOnly: false },
         sets: { some: {} },
       },
       include: {
@@ -341,6 +342,7 @@ export class StatisticsService {
     const workoutsThisMonth = await prisma.workout.count({
       where: {
         userId,
+        isTemplateOnly: false,
         date: {
           gte: startOfMonthStr,
           lte: endOfMonthStr,
@@ -363,7 +365,7 @@ export class StatisticsService {
 
     // Последние 5-10 тренировок
     const recentWorkouts = await prisma.workout.findMany({
-      where: { userId },
+      where: { userId, isTemplateOnly: false },
       include: {
         skillBlocks: {
           include: {

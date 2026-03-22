@@ -438,7 +438,7 @@ export class ClubService {
   /**
    * WOD лидерборд (тренировки с одинаковой структурой на дату)
    */
-  async getWodLeaderboard(clubId: string, date: string, wodSignature?: string): Promise<WodLeaderboardEntry[]> {
+  async getWodLeaderboard(clubId: string, date: string, wodType?: string): Promise<WodLeaderboardEntry[]> {
     const userIds = await this.getVisibleUserIds(clubId);
 
     const workouts = await prisma.workout.findMany({
@@ -465,14 +465,12 @@ export class ClubService {
       }
     });
 
-    const filtered = wodSignature
-      ? workouts.filter(w => this.workoutSignature(w) === wodSignature)
-      : workouts;
-
     const entries: WodLeaderboardEntry[] = [];
 
-    for (const w of filtered) {
+    for (const w of workouts) {
       for (const wb of w.wodBlocks) {
+        // Фильтрация по типу WOD (FOR_TIME, AMRAP и т.д.)
+        if (wodType && wb.wodType !== wodType) continue;
         // Собираем краткое описание весов для прозрачности
         const weightsInfo = wb.exercises
           .filter(e => e.weight && Number(e.weight) > 0)
@@ -524,7 +522,7 @@ export class ClubService {
   async getGeneralLeaderboard(clubId: string, period: 'month' | 'all', year?: number, month?: number): Promise<MonthlyLeaderboardEntry[]> {
     const userIds = await this.getVisibleUserIds(clubId);
 
-    const where: any = { userId: { in: userIds } };
+    const where: any = { userId: { in: userIds }, isTemplateOnly: false };
 
     if (period === 'month' && year && month) {
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
@@ -589,11 +587,11 @@ export class ClubService {
   async getSkillLeaderboard(clubId: string): Promise<SkillLeaderboardEntry[]> {
     const userIds = await this.getVisibleUserIds(clubId);
 
-    // Все skill sets всех участников
+    // Все skill sets всех участников (исключая шаблоны без результата)
     const skillSets = await prisma.skillSet.findMany({
       where: {
         skillBlock: {
-          workout: { userId: { in: userIds } }
+          workout: { userId: { in: userIds }, isTemplateOnly: false }
         },
         weight: { gt: 0 }
       },

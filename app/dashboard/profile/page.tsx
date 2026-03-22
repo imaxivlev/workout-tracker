@@ -25,6 +25,8 @@ export default function ProfilePage() {
 
   // Club leaderboard visibility
   const [clubId, setClubId] = useState<string | null>(null);
+  const [clubName, setClubName] = useState<string | null>(null);
+  const [clubRole, setClubRole] = useState<string | null>(null);
   const [showInLeaderboard, setShowInLeaderboard] = useState(true);
 
   useEffect(() => {
@@ -32,6 +34,8 @@ export default function ProfilePage() {
     clubsApi.getMy().then(({ club }) => {
       if (club) {
         setClubId(club.id);
+        setClubName(club.name);
+        setClubRole(club.myRole);
         // Load current visibility
         clubsApi.getMembers(club.id).then(({ members }) => {
           userApi.getProfile().then(({ user }) => {
@@ -157,6 +161,11 @@ export default function ProfilePage() {
           <div className="profile-info">
             <h2 className="profile-name">{displayName}</h2>
             <div className="profile-email">{email}</div>
+            {clubName && (
+              <div style={{ marginTop: '0.25rem', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                {clubName} · {clubRole === 'OWNER' ? 'Владелец' : clubRole === 'COACH' ? 'Тренер' : 'Атлет'}
+              </div>
+            )}
           </div>
           <button type="button" onClick={handleLogout} className="btn-danger">
             Выйти
