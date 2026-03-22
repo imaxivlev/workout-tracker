@@ -70,7 +70,10 @@ export default function ClubPage() {
           const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
           setTemplates(t);
           setWodSignatures(t.map(tmpl => {
-            const label = tmpl.wodBlocks.map(wb => wb.wodType).join(', ') || tmpl.skillBlocks.map(sb => sb.exerciseName).join(', ') || 'WOD';
+            // Уникальный тип WOD + первые упражнения для читаемости
+            const wodTypes = [...new Set(tmpl.wodBlocks.map(wb => wb.wodType))];
+            const exNames = tmpl.wodBlocks.flatMap(wb => wb.exercises.map(e => e.exerciseName)).slice(0, 3);
+            const label = wodTypes.join('/') + (exNames.length ? ': ' + exNames.join(', ') : '') || tmpl.skillBlocks.map(sb => sb.exerciseName).join(', ') || 'WOD';
             return { signature: tmpl.signature, label };
           }));
         } catch { setTemplates([]); setWodSignatures([]); }
@@ -241,6 +244,7 @@ export default function ClubPage() {
                           <div key={`w${i}`} className="club-wod-block">
                             <div className="club-wod-block-top">
                               <div className="club-wod-block-badge wod">{wb.wodType}</div>
+                              <span className={`club-lb-level ${wb.level.toLowerCase()}`}>{wb.level === 'SCALED' ? 'SC' : wb.level}</span>
                               {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
                             </div>
                             <div className="club-wod-exercises">
