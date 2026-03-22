@@ -5,21 +5,17 @@ import { useRouter } from 'next/navigation';
 import { clubsApi, Club, ClubWorkoutTemplate, MonthlyLeaderboardEntry, WodLeaderboardEntry, SkillLeaderboardEntry } from '@/lib/api/client';
 import Link from 'next/link';
 
-type Tab = 'feed' | 'leaderboard' | 'members';
+type Tab = 'leaderboard' | 'members';
 type LbType = 'activity' | 'wod' | 'skill';
 
 export default function ClubPage() {
   const router = useRouter();
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>('feed');
-
-  // Feed
-  const [templates, setTemplates] = useState<ClubWorkoutTemplate[]>([]);
-  const [feedDate, setFeedDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [tab, setTab] = useState<Tab>('leaderboard');
 
   // Leaderboard
-  const [lbType, setLbType] = useState<LbType>('activity');
+  const [lbType, setLbType] = useState<LbType>('wod');
   const [activityPeriod, setActivityPeriod] = useState<'month' | 'all'>('month');
   const [monthlyEntries, setMonthlyEntries] = useState<MonthlyLeaderboardEntry[]>([]);
   const [wodEntries, setWodEntries] = useState<WodLeaderboardEntry[]>([]);
@@ -27,6 +23,9 @@ export default function ClubPage() {
   const [wodDate, setWodDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [wodSignatures, setWodSignatures] = useState<Array<{ signature: string; label: string }>>([]);
   const [selectedWodSignature, setSelectedWodSignature] = useState('');
+
+  // WOD дня — шаблоны тренировок (теперь внутри лидерборда)
+  const [templates, setTemplates] = useState<ClubWorkoutTemplate[]>([]);
 
   // Members
   const [members, setMembers] = useState<Array<{ userId: string; email: string; firstName: string | null; lastName: string | null; role: string; showInLeaderboard: boolean; joinedAt: string }>>([]);
@@ -47,12 +46,6 @@ export default function ClubPage() {
         return;
       }
       setClub(myClub);
-      // Загрузим текущую настройку видимости
-      try {
-        const { members: m } = await clubsApi.getMembers(myClub.id);
-        const me = m.find((mm: any) => mm.role); // Текущего юзера определим при загрузке members tab
-        // Пока просто загрузим
-      } catch {}
     } catch {
       router.push('/dashboard/club/join');
     } finally {
@@ -63,13 +56,6 @@ export default function ClubPage() {
   const loadTabData = useCallback(async () => {
     if (!club) return;
 
-    if (tab === 'feed') {
-      try {
-        const { templates: t } = await clubsApi.getTodayWorkouts(club.id, feedDate);
-        setTemplates(t);
-      } catch { setTemplates([]); }
-    }
-
     if (tab === 'leaderboard') {
       if (lbType === 'activity') {
         try {
@@ -79,17 +65,18 @@ export default function ClubPage() {
           setMonthlyEntries(entries);
         } catch { setMonthlyEntries([]); }
       } else if (lbType === 'wod') {
+        // Загружаем и шаблоны тренировок, и результаты лидерборда
+        try {
+          const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
+          setTemplates(t);
+          setWodSignatures(t.map(tmpl => {
+            const label = tmpl.wodBlocks.map(wb => wb.wodType).join(', ') || tmpl.skillBlocks.map(sb => sb.exerciseName).join(', ') || 'WOD';
+            return { signature: tmpl.signature, label };
+          }));
+        } catch { setTemplates([]); setWodSignatures([]); }
         try {
           const { entries } = await clubsApi.getWodLeaderboard(club.id, wodDate, selectedWodSignature || undefined);
           setWodEntries(entries);
-          // Also load available WOD templates for that date to offer signature filter
-          try {
-            const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
-            setWodSignatures(t.map(tmpl => {
-              const label = tmpl.wodBlocks.map(wb => wb.wodType).join(', ') || tmpl.skillBlocks.map(sb => sb.exerciseName).join(', ') || 'WOD';
-              return { signature: tmpl.signature, label };
-            }));
-          } catch { setWodSignatures([]); }
         } catch { setWodEntries([]); }
       } else if (lbType === 'skill') {
         try {
@@ -105,7 +92,7 @@ export default function ClubPage() {
         setMembers(m);
       } catch { setMembers([]); }
     }
-  }, [club, tab, feedDate, lbType, wodDate, activityPeriod, selectedWodSignature]);
+  }, [club, tab, lbType, wodDate, activityPeriod, selectedWodSignature]);
 
   useEffect(() => {
     loadTabData();
@@ -171,117 +158,149 @@ export default function ClubPage() {
 
       {/* Табы */}
       <div className="club-tabs">
-        {(['feed', 'leaderboard', 'members'] as Tab[]).map(t => (
+        {(['leaderboard', 'members'] as Tab[]).map(t => (
           <button
             key={t}
             className={`club-tab ${tab === t ? 'active' : ''}`}
             onClick={() => setTab(t)}
           >
-            {t === 'feed' ? 'WOD дня' : t === 'leaderboard' ? 'Лидерборд' : 'Участники'}
+            {t === 'leaderboard' ? 'Лидерборд' : 'Участники'}
           </button>
         ))}
       </div>
-
-      {/* === Тренировки дня === */}
-      {tab === 'feed' && (
-        <div className="club-section">
-          <div className="club-feed-header">
-            <input
-              type="date"
-              value={feedDate}
-              onChange={(e) => setFeedDate(e.target.value)}
-              className="club-date-input"
-            />
-            {isOwnerOrCoach && (
-              <Link href={`/dashboard/workouts/new?date=${feedDate}`} className="btn btn-primary btn-sm">
-                + Добавить WOD
-              </Link>
-            )}
-          </div>
-
-          {templates.length === 0 ? (
-            <div className="club-empty">
-              <p>На {feedDate === new Date().toISOString().split('T')[0] ? 'сегодня' : feedDate} пока нет тренировок</p>
-              {isOwnerOrCoach && (
-                <Link href={`/dashboard/workouts/new?date=${feedDate}`} className="btn btn-primary btn-sm" style={{ marginTop: '0.75rem' }}>
-                  Добавить тренировку
-                </Link>
-              )}
-            </div>
-          ) : (
-            <div className="club-feed-list">
-              {templates.map((tmpl) => (
-                <div key={tmpl.signature} className="club-wod-card">
-                  <div className="club-wod-header">
-                    <span className="club-wod-athletes-count">
-                      {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
-                    </span>
-                  </div>
-
-                  <div className="club-wod-content">
-                    {tmpl.skillBlocks.map((sb, i) => (
-                      <div key={`s${i}`} className="club-wod-block">
-                        <div className="club-wod-block-badge skill">SKILL</div>
-                        <div className="club-wod-block-name">{sb.exerciseName}</div>
-                        <div className="club-wod-block-detail">
-                          {sb.sets.length} подход(ов)
-                          {sb.sets[0]?.weight > 0 && ` · ${sb.sets[0].weight} кг`}
-                        </div>
-                      </div>
-                    ))}
-
-                    {tmpl.wodBlocks.map((wb, i) => (
-                      <div key={`w${i}`} className="club-wod-block">
-                        <div className="club-wod-block-top">
-                          <div className="club-wod-block-badge wod">{wb.wodType}</div>
-                          {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
-                        </div>
-                        <div className="club-wod-exercises">
-                          {wb.exercises.map((ex, j) => (
-                            <div key={j} className="club-wod-exercise">
-                              <span className="club-wod-reps">{ex.reps}</span>
-                              <span>{ex.exerciseName}</span>
-                              {ex.weight ? <span className="club-wod-weight">({ex.weight} кг)</span> : null}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="club-wod-footer">
-                    <div className="club-wod-athletes">
-                      {tmpl.athletes.slice(0, 5).map(a => (
-                        <span key={a.userId} className="club-wod-athlete">{a.name}</span>
-                      ))}
-                      {tmpl.athletes.length > 5 && <span className="club-wod-athlete more">+{tmpl.athletes.length - 5}</span>}
-                    </div>
-                    <Link href={buildTemplateQuery(tmpl)} className="btn btn-primary btn-sm club-wod-use-btn">
-                      Записать результат
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
 
       {/* === Лидерборд === */}
       {tab === 'leaderboard' && (
         <div className="club-section">
           {/* Подтабы лидерборда: 3 категории */}
           <div className="club-lb-tabs">
-            {(['activity', 'wod', 'skill'] as LbType[]).map(t => (
+            {(['wod', 'activity', 'skill'] as LbType[]).map(t => (
               <button
                 key={t}
                 className={`club-lb-tab ${lbType === t ? 'active' : ''}`}
                 onClick={() => setLbType(t)}
               >
-                {t === 'activity' ? 'Активность' : t === 'wod' ? 'WOD' : 'Рекорды'}
+                {t === 'wod' ? 'WOD дня' : t === 'activity' ? 'Активность' : 'Тяжелая атлетика'}
               </button>
             ))}
           </div>
+
+          {/* === WOD дня (объединённый: детали тренировки + результаты) === */}
+          {lbType === 'wod' && (
+            <div>
+              <div className="club-feed-header" style={{ marginBottom: '0.75rem' }}>
+                <input
+                  type="date"
+                  value={wodDate}
+                  onChange={(e) => { setWodDate(e.target.value); setSelectedWodSignature(''); }}
+                  className="club-date-input"
+                />
+                {isOwnerOrCoach && (
+                  <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="btn btn-primary btn-sm">
+                    + Добавить WOD
+                  </Link>
+                )}
+              </div>
+
+              {wodSignatures.length > 1 && (
+                <div style={{ marginBottom: '0.75rem' }}>
+                  <select
+                    className="club-date-input"
+                    value={selectedWodSignature}
+                    onChange={(e) => setSelectedWodSignature(e.target.value)}
+                    style={{ width: '100%' }}
+                  >
+                    <option value="">Все WOD</option>
+                    {wodSignatures.map(ws => (
+                      <option key={ws.signature} value={ws.signature}>{ws.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Детали тренировки WOD дня */}
+              {templates.length > 0 && (
+                <div className="club-wod-details">
+                  {templates
+                    .filter(tmpl => !selectedWodSignature || tmpl.signature === selectedWodSignature)
+                    .map((tmpl) => (
+                    <div key={tmpl.signature} className="club-wod-card">
+                      <div className="club-wod-content">
+                        {tmpl.skillBlocks.map((sb, i) => (
+                          <div key={`s${i}`} className="club-wod-block">
+                            <div className="club-wod-block-badge skill">SKILL</div>
+                            <div className="club-wod-block-name">{sb.exerciseName}</div>
+                            <div className="club-wod-block-detail">
+                              {sb.sets.length} подход(ов)
+                              {sb.sets[0]?.weight > 0 && ` · ${sb.sets[0].weight} кг`}
+                            </div>
+                          </div>
+                        ))}
+
+                        {tmpl.wodBlocks.map((wb, i) => (
+                          <div key={`w${i}`} className="club-wod-block">
+                            <div className="club-wod-block-top">
+                              <div className="club-wod-block-badge wod">{wb.wodType}</div>
+                              {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
+                            </div>
+                            <div className="club-wod-exercises">
+                              {wb.exercises.map((ex, j) => (
+                                <div key={j} className="club-wod-exercise">
+                                  <span className="club-wod-reps">{ex.reps}</span>
+                                  <span>{ex.exerciseName}</span>
+                                  {ex.weight ? <span className="club-wod-weight">({ex.weight} кг)</span> : null}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="club-wod-footer">
+                        <div className="club-wod-athletes">
+                          <span className="club-wod-athletes-count">
+                            {tmpl.athleteCount} {tmpl.athleteCount === 1 ? 'атлет' : tmpl.athleteCount < 5 ? 'атлета' : 'атлетов'}
+                          </span>
+                        </div>
+                        <Link href={buildTemplateQuery(tmpl)} className="btn btn-primary btn-sm club-wod-use-btn">
+                          Записать результат
+                        </Link>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Результаты (лидерборд) */}
+              {wodEntries.length === 0 && templates.length === 0 ? (
+                <div className="club-empty">
+                  <p>На {wodDate === new Date().toISOString().split('T')[0] ? 'сегодня' : wodDate} пока нет тренировок</p>
+                </div>
+              ) : wodEntries.length === 0 && templates.length > 0 ? (
+                <div className="club-empty"><p>Пока никто не записал результат</p></div>
+              ) : (
+                <div className="club-lb-list">
+                  {wodEntries.map((e, i) => (
+                    <div key={`${e.userId}-${e.workoutId}`} className={`club-lb-row ${i < 3 ? 'top' : ''}`}>
+                      <div className="club-lb-rank">
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (e.rank || i + 1)}
+                      </div>
+                      <div className="club-lb-info">
+                        <div className="club-lb-name">
+                          {e.name}
+                          <span className={`club-lb-level ${e.level.toLowerCase()}`}>{e.level}</span>
+                        </div>
+                        <div className="club-lb-result">
+                          {e.resultDisplay}
+                          {e.weightsUsed && <span className="club-lb-weights"> · {e.weightsUsed}</span>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* === Активность (general leaderboard) === */}
           {lbType === 'activity' && (
@@ -325,56 +344,7 @@ export default function ClubPage() {
             </div>
           )}
 
-          {/* === WOD leaderboard === */}
-          {lbType === 'wod' && (
-            <div>
-              <div className="club-feed-header" style={{ marginBottom: '0.75rem' }}>
-                <input
-                  type="date"
-                  value={wodDate}
-                  onChange={(e) => { setWodDate(e.target.value); setSelectedWodSignature(''); }}
-                  className="club-date-input"
-                />
-                {wodSignatures.length > 1 && (
-                  <select
-                    className="club-date-input"
-                    value={selectedWodSignature}
-                    onChange={(e) => setSelectedWodSignature(e.target.value)}
-                  >
-                    <option value="">Все WOD</option>
-                    {wodSignatures.map(ws => (
-                      <option key={ws.signature} value={ws.signature}>{ws.label}</option>
-                    ))}
-                  </select>
-                )}
-              </div>
-              {wodEntries.length === 0 ? (
-                <div className="club-empty"><p>Нет результатов WOD за эту дату</p></div>
-              ) : (
-                <div className="club-lb-list">
-                  {wodEntries.map((e, i) => (
-                    <div key={`${e.userId}-${e.workoutId}`} className={`club-lb-row ${i < 3 ? 'top' : ''}`}>
-                      <div className="club-lb-rank">
-                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (e.rank || i + 1)}
-                      </div>
-                      <div className="club-lb-info">
-                        <div className="club-lb-name">
-                          {e.name}
-                          <span className={`club-lb-level ${e.level.toLowerCase()}`}>{e.level}</span>
-                        </div>
-                        <div className="club-lb-result">
-                          {e.resultDisplay}
-                          {e.weightsUsed && <span className="club-lb-weights"> · {e.weightsUsed}</span>}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* === Рекорды (SKILL PR Board) === */}
+          {/* === Тяжелая атлетика (SKILL PR Board) === */}
           {lbType === 'skill' && (
             skillEntries.length === 0 ? (
               <div className="club-empty"><p>Пока нет данных по Skill упражнениям</p></div>

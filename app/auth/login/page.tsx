@@ -62,7 +62,7 @@ export default function AuthPage() {
     }
     setRegLoading(true);
     try {
-      await authApi.register(regEmail, regPassword);
+      await authApi.register(regEmail, regPassword, regFirstName.trim() || undefined, regLastName.trim() || undefined);
       setRegSuccess('Аккаунт создан! Проверьте почту для подтверждения email.');
     } catch (err) {
       if (err instanceof ApiError) {

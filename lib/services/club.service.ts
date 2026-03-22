@@ -325,7 +325,7 @@ export class ClubService {
 
     const userIds = memberIds.map(m => m.userId);
 
-    // Получаем тренировки участников за указанную дату
+    // Получаем тренировки участников за указанную дату (только клубные шаблоны + все тренировки для группировки)
     const workouts = await prisma.workout.findMany({
       where: {
         userId: { in: userIds },

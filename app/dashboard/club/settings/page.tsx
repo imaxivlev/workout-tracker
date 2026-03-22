@@ -132,41 +132,50 @@ export default function ClubSettingsPage() {
 
       {/* Управление участниками */}
       {club.myRole === 'OWNER' && (
-        <div className="card">
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
           <div className="card-body">
             <h2 className="section-title">Участники ({members.length})</h2>
-            <div className="members-list">
-              {members.map(m => (
-                <div key={m.userId} className="member-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div className="member-info">
-                    <span className="member-name">
-                      {[m.firstName, m.lastName].filter(Boolean).join(' ') || m.email}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <select
-                      value={m.role}
-                      onChange={(e) => handleRoleChange(m.userId, e.target.value)}
-                      className="form-input"
-                      style={{ width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.85rem' }}
-                      disabled={m.role === 'OWNER'}
-                    >
-                      <option value="OWNER">Владелец</option>
-                      <option value="COACH">Тренер</option>
-                      <option value="ATHLETE">Атлет</option>
-                    </select>
-                    {m.role !== 'OWNER' && (
-                      <button
-                        onClick={() => handleRemoveMember(m.userId, [m.firstName, m.lastName].filter(Boolean).join(' ') || m.email)}
-                        className="btn btn-danger btn-sm"
-                        style={{ padding: '0.25rem 0.5rem' }}
+            <div className="club-settings-members">
+              {members.map(m => {
+                const memberName = [m.firstName, m.lastName].filter(Boolean).join(' ') || m.email;
+                const initials = (m.firstName?.[0] || m.email[0]).toUpperCase();
+                return (
+                  <div key={m.userId} className="club-settings-member-row">
+                    <div className="club-settings-member-left">
+                      <div className="club-member-avatar">{initials}</div>
+                      <div className="club-settings-member-info">
+                        <span className="club-settings-member-name">{memberName}</span>
+                        {m.email !== memberName && (
+                          <span className="club-settings-member-email">{m.email}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="club-settings-member-actions">
+                      <select
+                        value={m.role}
+                        onChange={(e) => handleRoleChange(m.userId, e.target.value)}
+                        className="club-settings-role-select"
+                        disabled={m.role === 'OWNER'}
                       >
-                        &times;
-                      </button>
-                    )}
+                        <option value="OWNER">Владелец</option>
+                        <option value="COACH">Тренер</option>
+                        <option value="ATHLETE">Атлет</option>
+                      </select>
+                      {m.role !== 'OWNER' && (
+                        <button
+                          onClick={() => handleRemoveMember(m.userId, memberName)}
+                          className="club-settings-remove-btn"
+                          title="Удалить из клуба"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

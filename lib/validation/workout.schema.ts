@@ -94,8 +94,8 @@ const wodBlockSchema = z.object({
   isLadder: z.boolean(),
   resultType: resultTypeSchema,
   resultDisplay: z.string()
-    .min(1, 'Отображаемый результат не может быть пустым')
-    .max(50, 'Отображаемый результат не может быть длиннее 50 символов'),
+    .max(50, 'Отображаемый результат не может быть длиннее 50 символов')
+    .default(''),
   resultSeconds: z.number()
     .int('Результат в секундах должен быть целым числом')
     .nonnegative('Результат в секундах не может быть отрицательным')
@@ -107,30 +107,15 @@ const wodBlockSchema = z.object({
   exercises: z.array(wodExerciseSchema)
     .min(1, 'WOD блок должен содержать минимум 1 упражнение')
     .max(30, 'WOD блок не может содержать более 30 упражнений'),
-}).refine((data) => {
-  // Валидация: для FOR_TIME обязателен result_seconds
-  if (data.wodType === 'FOR_TIME' && data.resultSeconds === undefined) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Для типа FOR_TIME обязательно указать result_seconds',
-  path: ['resultSeconds'],
-}).refine((data) => {
-  // Валидация: для AMRAP обязателен result_total_reps
-  if (data.wodType === 'AMRAP' && data.resultTotalReps === undefined) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Для типа AMRAP обязательно указать result_total_reps',
-  path: ['resultTotalReps'],
 });
+// Примечание: валидация resultSeconds/resultTotalReps вынесена на уровень createWorkoutSchema,
+// чтобы учитывать isClubTemplate (шаблон клуба может не иметь результата)
 
 // Основная схема для создания тренировки
 export const createWorkoutSchema = z.object({
   date: dateSchema,
   comment: commentSchema,
+  isClubTemplate: z.boolean().optional(),
   skillBlocks: z.array(skillBlockSchema)
     .max(50, 'Тренировка не может содержать более 50 Skill блоков')
     .optional(),
@@ -145,6 +130,18 @@ export const createWorkoutSchema = z.object({
 }, {
   message: 'Тренировка должна содержать минимум 1 блок (Skill или WOD)',
   path: ['skillBlocks'],
+}).refine((data) => {
+  // Для не-шаблонов: FOR_TIME требует resultSeconds, AMRAP требует resultTotalReps
+  if (data.isClubTemplate) return true;
+  if (!data.wodBlocks) return true;
+  for (const wb of data.wodBlocks) {
+    if (wb.wodType === 'FOR_TIME' && wb.resultSeconds === undefined) return false;
+    if (wb.wodType === 'AMRAP' && wb.resultTotalReps === undefined) return false;
+  }
+  return true;
+}, {
+  message: 'Для обычной тренировки обязательно указать результат WOD',
+  path: ['wodBlocks'],
 });
 
 // Схема для обновления тренировки (все поля опциональны, без валидации минимум 1 блока)

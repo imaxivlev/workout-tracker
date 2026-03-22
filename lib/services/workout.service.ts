@@ -122,7 +122,8 @@ export class WorkoutService {
           data: {
             userId: userId,
             date: data.date,
-            comment: data.comment || null
+            comment: data.comment || null,
+            isClubTemplate: data.isClubTemplate ?? false
           }
         });
 
@@ -844,6 +845,7 @@ export class WorkoutService {
 interface CreateWorkoutRequest {
   date: string; // YYYY-MM-DD
   comment?: string;
+  isClubTemplate?: boolean;
   skillBlocks?: SkillBlockInput[];
   wodBlocks?: WodBlockInput[];
 }

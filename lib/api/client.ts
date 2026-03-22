@@ -87,10 +87,10 @@ async function apiFetch<T>(
 // --- Auth ---
 
 export const authApi = {
-  async register(email: string, password: string) {
+  async register(email: string, password: string, firstName?: string, lastName?: string) {
     return apiFetch<{ user: { id: string; email: string } }>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, firstName: firstName || undefined, lastName: lastName || undefined }),
     });
   },
 
@@ -181,6 +181,7 @@ export interface WorkoutsResponse {
 export interface WorkoutInput {
   date: string;
   comment?: string;
+  isClubTemplate?: boolean;
   skillBlocks?: Array<{
     exerciseName: string;
     sets: Array<{ reps: number; weight: number }>;

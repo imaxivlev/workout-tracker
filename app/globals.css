@@ -3382,6 +3382,100 @@ body.auth-page {
     color: var(--text-secondary);
 }
 
+/* Club Settings — Member List */
+.club-settings-members {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.club-settings-member-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    gap: 0.75rem;
+}
+
+.club-settings-member-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    min-width: 0;
+}
+
+.club-settings-member-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.club-settings-member-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.club-settings-member-email {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.club-settings-member-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.club-settings-role-select {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.club-settings-role-select:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+.club-settings-remove-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255, 59, 48, 0.1);
+    color: var(--color-primary);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.club-settings-remove-btn:hover {
+    background: rgba(255, 59, 48, 0.25);
+}
+
+/* WOD дня — детали тренировки перед лидербордом */
+.club-wod-details {
+    margin-bottom: 1rem;
+}
+
 /* Invite */
 .club-invite-section {
     margin-bottom: 1.25rem;

@@ -76,17 +76,18 @@ model ExerciseDict {
 }
 
 model Workout {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  userId    String   @map("user_id") @db.VarChar(36)
-  date      String   @db.VarChar(10) // YYYY-MM-DD format
-  comment   String?  @db.Text
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  userId          String   @map("user_id") @db.VarChar(36)
+  date            String   @db.VarChar(10) // YYYY-MM-DD format
+  comment         String?  @db.Text
+  isClubTemplate  Boolean  @default(false) @map("is_club_template")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   skillBlocks SkillBlock[]
   wodBlocks   WodBlock[]
-  
+
   @@map("workouts")
   @@index([userId, date])
   @@index([date])

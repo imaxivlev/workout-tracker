@@ -2,7 +2,7 @@
 
 import { useState, FormEvent, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { workoutsApi, exercisesApi, ApiError, WorkoutInput } from '@/lib/api/client';
+import { workoutsApi, exercisesApi, clubsApi, ApiError, WorkoutInput } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
 
 type WodType = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
@@ -30,6 +30,9 @@ interface WodBlockForm {
   resultSeconds: string;
   resultTotalReps: string;
   exercises: WodExerciseForm[];
+  // Раздельные планы Rx/Sc
+  hasSeparateScaled: boolean;
+  scaledExercises: WodExerciseForm[];
 }
 
 type BlockItem =
@@ -148,7 +151,27 @@ function NewWorkoutPage() {
   const [toast, setToast] = useState('');
   const [templateApplied, setTemplateApplied] = useState(false);
 
+  // Club template
+  const [hasClub, setHasClub] = useState(false);
+  const [clubRole, setClubRole] = useState<string | null>(null);
+  const [saveAsClubTemplate, setSaveAsClubTemplate] = useState(true);
+  const [showTemplateTooltip, setShowTemplateTooltip] = useState(false);
+
   const hideToast = useCallback(() => setToast(''), []);
+
+  // Тренер/владелец может не заполнять результат при создании шаблона для клуба
+  const canSkipResult = hasClub && saveAsClubTemplate && (clubRole === 'OWNER' || clubRole === 'COACH');
+
+  // Проверка членства в клубе
+  useEffect(() => {
+    clubsApi.getMy().then(({ club }) => {
+      if (club) {
+        setHasClub(true);
+        setClubRole(club.myRole);
+        setSaveAsClubTemplate(true);
+      }
+    }).catch(() => {});
+  }, []);
 
   // Предзаполнение из шаблона клуба
   useEffect(() => {
@@ -200,6 +223,8 @@ function NewWorkoutPage() {
                   weight: ex.weight ? String(ex.weight) : '',
                   ladderRepsPerRound: [],
                 })),
+                hasSeparateScaled: false,
+                scaledExercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
               },
             });
           }
@@ -235,6 +260,8 @@ function NewWorkoutPage() {
         resultSeconds: '',
         resultTotalReps: '',
         exercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
+        hasSeparateScaled: false,
+        scaledExercises: [{ exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
       },
     }]);
   }
@@ -327,6 +354,40 @@ function NewWorkoutPage() {
     }));
   }
 
+  // --- Scaled WOD helpers ---
+  function addScaledExercise(idx: number) {
+    updateWodData(idx, b => ({
+      ...b,
+      scaledExercises: [...b.scaledExercises, { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [] }],
+    }));
+  }
+
+  function updateScaledExercise(idx: number, exIdx: number, field: keyof WodExerciseForm, value: string) {
+    updateWodData(idx, b => ({
+      ...b,
+      scaledExercises: b.scaledExercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e),
+    }));
+  }
+
+  function removeScaledExercise(idx: number, exIdx: number) {
+    const block = blocks[idx];
+    if (block?.type === 'wod' && block.data.scaledExercises.length <= 1) {
+      setToast('Нельзя удалить единственное упражнение');
+      return;
+    }
+    updateWodData(idx, b => ({
+      ...b,
+      scaledExercises: b.scaledExercises.filter((_, j) => j !== exIdx),
+    }));
+  }
+
+  function copyRxToScaled(idx: number) {
+    updateWodData(idx, b => ({
+      ...b,
+      scaledExercises: b.exercises.map(ex => ({ ...ex })),
+    }));
+  }
+
   function removeWodExercise(idx: number, exIdx: number) {
     const block = blocks[idx];
     if (block?.type === 'wod' && block.data.exercises.length <= 1) {
@@ -352,8 +413,18 @@ function NewWorkoutPage() {
     // Валидация формата времени в WOD FOR_TIME
     const wodBlocks_ = blocks.filter((b): b is { type: 'wod'; data: WodBlockForm } => b.type === 'wod').map(b => b.data);
     for (const w of wodBlocks_) {
-      if (w.wodType === 'FOR_TIME' && !isValidMmSs(w.resultDisplay)) {
+      const hasResult = w.resultDisplay.trim() !== '';
+      if (w.wodType === 'FOR_TIME' && hasResult && !isValidMmSs(w.resultDisplay)) {
         setError('Время результата должно быть в формате ММ:СС (например, 04:20)');
+        return;
+      }
+      // Если не тренер/владелец — результат обязателен
+      if (!canSkipResult && w.wodType === 'FOR_TIME' && !hasResult) {
+        setError('Заполните результат WOD');
+        return;
+      }
+      if (!canSkipResult && w.wodType === 'AMRAP' && !w.resultTotalReps.trim()) {
+        setError('Заполните результат WOD');
         return;
       }
     }
@@ -366,6 +437,7 @@ function NewWorkoutPage() {
       const payload: WorkoutInput = {
         date,
         comment: comment.trim() || undefined,
+        isClubTemplate: hasClub && saveAsClubTemplate ? true : undefined,
         skillBlocks: skillBlocks.length > 0
           ? skillBlocks.map(b => ({
               exerciseName: b.exerciseName,
@@ -376,30 +448,45 @@ function NewWorkoutPage() {
             }))
           : undefined,
         wodBlocks: wodBlocks.length > 0
-          ? wodBlocks.map(b => ({
-              wodType: b.wodType,
-              level: b.level,
-              timeCapSeconds: b.timeCapSeconds ? parseInt(b.timeCapSeconds) * 60 : undefined,
-              isLadder: b.isLadder,
-              resultType: b.wodType === 'FOR_TIME' ? 'TIME' : b.wodType === 'AMRAP' ? 'REPS' : 'TIME',
-              resultDisplay: (b.wodType === 'EMOM' || b.wodType === 'TABATA')
-                ? (b.timeCapSeconds ? `${b.timeCapSeconds} мин` : b.wodType)
-                : b.resultDisplay,
-              resultSeconds: b.wodType === 'FOR_TIME' && b.resultSeconds ? parseMmSs(b.resultSeconds) : undefined,
-              resultTotalReps: b.wodType === 'AMRAP' && b.resultTotalReps ? parseInt(b.resultTotalReps) : undefined,
-              exercises: b.exercises.map(ex => {
-                let reps = parseInt(ex.reps) || 0;
-                if (b.isLadder && ex.ladderRepsPerRound.length > 0) {
-                  const vals = ex.ladderRepsPerRound.filter(v => v).map(v => parseInt(v) || 0);
-                  reps = vals.length > 0 ? vals[0] : reps;
-                }
+          ? wodBlocks.flatMap(b => {
+              const hasResultValue = b.resultDisplay.trim() !== '' || b.resultTotalReps.trim() !== '';
+
+              function buildWodPayload(exercises: WodExerciseForm[], level: 'RX' | 'SCALED') {
                 return {
-                  exerciseName: ex.exerciseName,
-                  reps,
-                  weight: ex.weight && !shouldHideWeight(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
+                  wodType: b.wodType,
+                  level,
+                  timeCapSeconds: b.timeCapSeconds ? parseInt(b.timeCapSeconds) * 60 : undefined,
+                  isLadder: b.isLadder,
+                  resultType: b.wodType === 'FOR_TIME' ? 'TIME' as const : b.wodType === 'AMRAP' ? 'REPS' as const : 'TIME' as const,
+                  resultDisplay: (b.wodType === 'EMOM' || b.wodType === 'TABATA')
+                    ? (b.timeCapSeconds ? `${b.timeCapSeconds} мин` : b.wodType)
+                    : (hasResultValue ? b.resultDisplay : (canSkipResult ? '' : b.resultDisplay)),
+                  resultSeconds: b.wodType === 'FOR_TIME' && b.resultSeconds ? parseMmSs(b.resultSeconds) : undefined,
+                  resultTotalReps: b.wodType === 'AMRAP' && b.resultTotalReps ? parseInt(b.resultTotalReps) : undefined,
+                  exercises: exercises.map(ex => {
+                    let reps = parseInt(ex.reps) || 0;
+                    if (b.isLadder && ex.ladderRepsPerRound.length > 0) {
+                      const vals = ex.ladderRepsPerRound.filter(v => v).map(v => parseInt(v) || 0);
+                      reps = vals.length > 0 ? vals[0] : reps;
+                    }
+                    return {
+                      exerciseName: ex.exerciseName,
+                      reps,
+                      weight: ex.weight && !shouldHideWeight(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
+                    };
+                  }),
                 };
-              }),
-            }))
+              }
+
+              if (b.hasSeparateScaled && canSkipResult) {
+                // Два блока: Rx + Scaled с разными упражнениями
+                return [
+                  buildWodPayload(b.exercises, 'RX'),
+                  buildWodPayload(b.scaledExercises, 'SCALED'),
+                ];
+              }
+              return [buildWodPayload(b.exercises, b.level)];
+            })
           : undefined,
       };
 
@@ -551,18 +638,39 @@ function NewWorkoutPage() {
                       <option value="TABATA">Tabata</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Уровень</label>
-                    <select
-                      value={wod.level}
-                      onChange={e => updateWodBlock(bi, { level: e.target.value as WodLevel })}
-                      className="form-select"
-                    >
-                      <option value="RX">Rx</option>
-                      <option value="SCALED">Sc</option>
-                    </select>
-                  </div>
+                  {!wod.hasSeparateScaled && (
+                    <div className="form-group">
+                      <label>Уровень</label>
+                      <select
+                        value={wod.level}
+                        onChange={e => updateWodBlock(bi, { level: e.target.value as WodLevel })}
+                        className="form-select"
+                      >
+                        <option value="RX">Rx</option>
+                        <option value="SCALED">Sc</option>
+                      </select>
+                    </div>
+                  )}
                 </div>
+
+                {/* Переключатель раздельных Rx/Sc планов — только для тренера/владельца */}
+                {canSkipResult && (
+                  <div style={{ marginBottom: '0.75rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                      <input
+                        type="checkbox"
+                        checked={wod.hasSeparateScaled}
+                        onChange={e => {
+                          const checked = e.target.checked;
+                          updateWodBlock(bi, { hasSeparateScaled: checked });
+                          if (checked) copyRxToScaled(bi);
+                        }}
+                        style={{ width: 16, height: 16, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                      />
+                      <span style={{ fontWeight: 500 }}>Разные планы Rx / Sc</span>
+                    </label>
+                  </div>
+                )}
 
                 <div className="form-row">
                   <div className="form-group">
@@ -614,7 +722,7 @@ function NewWorkoutPage() {
                 )}
 
                 <div className="form-group">
-                  <label>Упражнения</label>
+                  <label>{wod.hasSeparateScaled ? <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Rx план</span> : 'Упражнения'}</label>
                   <div className="wod-exercises-container">
                     {wod.exercises.map((ex, ei) => (
                       <div key={ei} className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${shouldHideWeight(ex.exerciseName) ? ' no-weight' : ''}`}>
@@ -689,9 +797,63 @@ function NewWorkoutPage() {
                   </button>
                 </div>
 
+                {/* Sc план — отдельный набор упражнений */}
+                {wod.hasSeparateScaled && (
+                  <div className="form-group" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '2px dashed var(--border-color)' }}>
+                    <label><span style={{ color: 'var(--color-secondary)', fontWeight: 600 }}>Sc план</span></label>
+                    <div className="wod-exercises-container">
+                      {wod.scaledExercises.map((ex, ei) => (
+                        <div key={ei} className={`wod-exercise-row${shouldHideWeight(ex.exerciseName) ? ' no-weight' : ''}`}>
+                          <div className="wod-row-scroller">
+                            <ExerciseAutocomplete
+                              value={ex.exerciseName}
+                              onChange={v => updateScaledExercise(bi, ei, 'exerciseName', v)}
+                              placeholder="Упражнение"
+                              inputClassName="form-input-sm"
+                              wrapperClassName="wod-exercise-name"
+                            />
+                            <div className="wod-fields-scroll">
+                              <div className="single-reps-container" style={{ display: 'flex' }}>
+                                <input
+                                  type="number"
+                                  value={ex.reps}
+                                  onChange={e => updateScaledExercise(bi, ei, 'reps', e.target.value)}
+                                  className="form-input-sm"
+                                  placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт'}
+                                  min="1"
+                                  required
+                                />
+                              </div>
+                              {!shouldHideWeight(ex.exerciseName) && (
+                                <input
+                                  type="number"
+                                  value={ex.weight}
+                                  onChange={e => updateScaledExercise(bi, ei, 'weight', e.target.value)}
+                                  className="form-input-sm wod-weight"
+                                  placeholder="Вес, кг"
+                                  min="0.5"
+                                  step="0.5"
+                                />
+                              )}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            className="btn-icon"
+                            onClick={() => removeScaledExercise(bi, ei)}
+                          >❌</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button type="button" onClick={() => addScaledExercise(bi)} className="btn-add">
+                      + Добавить упражнение
+                    </button>
+                  </div>
+                )}
+
                 {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && (
                 <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                  <label>Результат</label>
+                  <label>Результат {canSkipResult && <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>(необязательно для шаблона)</span>}</label>
                   <div className="form-row" style={{ gap: '0.5rem' }}>
                     <select
                       className="form-select"
@@ -714,7 +876,7 @@ function NewWorkoutPage() {
                       className="form-input result-input"
                       placeholder="420"
                       min="1"
-                      required
+                      required={!canSkipResult}
                     />
                     ) : (
                     <input
@@ -728,8 +890,8 @@ function NewWorkoutPage() {
                       className="form-input result-input"
                       placeholder="ММ:СС"
                       maxLength={5}
-                      pattern="\d{1,2}:\d{2}"
-                      required
+                      pattern={canSkipResult ? undefined : "\\d{1,2}:\\d{2}"}
+                      required={!canSkipResult}
                     />
                     )}
                   </div>
@@ -752,6 +914,33 @@ function NewWorkoutPage() {
             maxLength={500}
           />
         </div>
+
+        {/* Чекбокс "Сохранить как шаблон в клубе" */}
+        {hasClub && (
+          <div className="club-template-checkbox" style={{ marginTop: '1.5rem', padding: '0.75rem 1rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
+              <input
+                type="checkbox"
+                checked={saveAsClubTemplate}
+                onChange={e => setSaveAsClubTemplate(e.target.checked)}
+                style={{ width: 18, height: 18, accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+              />
+              <span>Сохранить как шаблон в моем клубе</span>
+              <span
+                className="template-info-icon"
+                style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: '50%', background: 'var(--bg-tertiary)', color: 'var(--text-secondary)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', position: 'relative' }}
+                onClick={(e) => { e.preventDefault(); setShowTemplateTooltip(!showTemplateTooltip); }}
+              >
+                i
+              </span>
+            </label>
+            {showTemplateTooltip && (
+              <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                Атлеты из вашего клуба смогут тоже записать результаты этой тренировки
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Кнопки добавления блоков */}
         <div className="builder-actions">

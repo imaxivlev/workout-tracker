@@ -15,7 +15,8 @@ export default function ProfilePage() {
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState<string | null>(null);
 
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [gender, setGender] = useState('male');
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -59,7 +60,8 @@ export default function ProfilePage() {
         setDisplayName(name || user.email);
         setEmail(user.email);
         setAvatar(user.avatar || null);
-        setFullName(name);
+        setFirstName(user.firstName || '');
+        setLastName(user.lastName || '');
       })
       .catch(err => {
         if (err instanceof ApiError) setError(err.message);
@@ -90,14 +92,12 @@ export default function ProfilePage() {
     setError('');
     setSuccess('');
     try {
-      const parts = fullName.trim().split(/\s+/);
-      const firstName = parts[0] || '';
-      const lastName = parts.slice(1).join(' ') || '';
-      const data = await userApi.updateProfile({ firstName, lastName });
+      const data = await userApi.updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
       const user = data.user;
       const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || '';
       setDisplayName(name || user.email);
-      setFullName(name);
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
 
       if (newPassword || confirmPassword) {
         if (!currentPassword) {
@@ -165,16 +165,29 @@ export default function ProfilePage() {
 
         <div className="profile-form">
           <form onSubmit={handleSave}>
-            <div className="form-group">
-              <label>Имя</label>
-              <input
-                type="text"
-                className="form-input"
-                value={fullName}
-                onChange={e => setFullName(e.target.value)}
-                placeholder="Иван Петрович"
-                maxLength={100}
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label>Имя</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={firstName}
+                  onChange={e => setFirstName(e.target.value)}
+                  placeholder="Иван"
+                  maxLength={50}
+                />
+              </div>
+              <div className="form-group">
+                <label>Фамилия</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={lastName}
+                  onChange={e => setLastName(e.target.value)}
+                  placeholder="Иванов"
+                  maxLength={50}
+                />
+              </div>
             </div>
 
             <div className="form-group">
