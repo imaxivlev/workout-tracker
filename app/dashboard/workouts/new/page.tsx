@@ -159,6 +159,7 @@ function NewWorkoutPage() {
   const [saveAsClubTemplate, setSaveAsClubTemplate] = useState(!hasClubTemplateParam);
   const [showTemplateTooltip, setShowTemplateTooltip] = useState(false);
   const [showInLeaderboard, setShowInLeaderboard] = useState(true);
+  const [showAthleteTemplateConfirm, setShowAthleteTemplateConfirm] = useState(false);
 
   const hideToast = useCallback(() => setToast(''), []);
 
@@ -171,7 +172,7 @@ function NewWorkoutPage() {
       if (club) {
         setHasClub(true);
         setClubRole(club.myRole);
-        setSaveAsClubTemplate(true);
+        setSaveAsClubTemplate(club.myRole === 'OWNER' || club.myRole === 'COACH');
       }
     }).catch(() => {});
   }, []);
@@ -503,6 +504,13 @@ function NewWorkoutPage() {
         return;
       }
     }
+
+    // Попап подтверждения для атлета, который хочет сохранить как шаблон клуба
+    if (hasClub && saveAsClubTemplate && !fromClubTemplate && clubRole === 'ATHLETE' && !showAthleteTemplateConfirm) {
+      setShowAthleteTemplateConfirm(true);
+      return;
+    }
+    setShowAthleteTemplateConfirm(false);
 
     setLoading(true);
     try {
@@ -1084,6 +1092,38 @@ function NewWorkoutPage() {
         </div>
 
         {error && <div className="form-error">{error}</div>}
+
+        {showAthleteTemplateConfirm && (
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            zIndex: 9999, padding: '1rem'
+          }}>
+            <div style={{
+              background: 'var(--bg-card, #fff)', borderRadius: '12px', padding: '1.5rem',
+              maxWidth: '400px', width: '100%', textAlign: 'center'
+            }}>
+              <p style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
+                Вы уверены, что хотите сохранить тренировку как шаблон клуба? Эта тренировка появится на странице «ВОД дня» для всех атлетов.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowAthleteTemplateConfirm(false)}
+                >
+                  Отмена
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                >
+                  Да, сохранить
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="form-actions">
           <button type="button" onClick={() => router.back()} className="btn-secondary">
