@@ -92,6 +92,11 @@ export async function POST(request: NextRequest) {
         console.error('Ошибка отправки email подтверждения:', err);
       });
 
+      // Уведомление администратора о новом пользователе
+      emailService.sendNewUserNotification(email, firstName, lastName).catch((err) => {
+        console.error('Ошибка отправки уведомления админу:', err);
+      });
+
       // Возвращаем данные пользователя (без токена верификации)
       return NextResponse.json(
         {

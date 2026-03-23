@@ -12,6 +12,7 @@ const transporter = nodemailer.createTransport({
 
 const FROM = `"CrossFit Tracker" <${process.env.SMTP_USER || 'noreply@crossfitapp.ru'}>`;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+const ADMIN_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || 'spbivlev@yandex.ru';
 
 export class EmailService {
   /**
@@ -77,6 +78,33 @@ export class EmailService {
   /**
    * Отправка письма подтверждения смены email
    */
+  /**
+   * Уведомление администратора о новом пользователе
+   */
+  async sendNewUserNotification(email: string, firstName?: string | null, lastName?: string | null): Promise<void> {
+    const name = [firstName, lastName].filter(Boolean).join(' ') || 'не указано';
+    const date = new Date().toLocaleString('ru-RU', { timeZone: 'Europe/Moscow' });
+
+    await transporter.sendMail({
+      from: FROM,
+      to: ADMIN_EMAIL,
+      subject: `Новый пользователь: ${email}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #DC2626;">CrossFit Tracker — Новая регистрация</h2>
+          <table style="border-collapse: collapse; width: 100%;">
+            <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">${email}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Имя:</td><td style="padding: 8px;">${name}</td></tr>
+            <tr><td style="padding: 8px; font-weight: bold;">Дата:</td><td style="padding: 8px;">${date}</td></tr>
+          </table>
+          <p style="color: #999; font-size: 12px; margin-top: 24px;">
+            <a href="${APP_URL}/dashboard/admin">Открыть админ-панель</a>
+          </p>
+        </div>
+      `,
+    });
+  }
+
   async sendEmailChangeConfirmation(newEmail: string, token: string): Promise<void> {
     const confirmUrl = `${APP_URL}/auth/verify?token=${token}`;
 
