@@ -417,6 +417,8 @@ export class WorkoutService {
       userId: workout.userId,
       date: workout.date,
       comment: workout.comment,
+      isClubTemplate: workout.isClubTemplate,
+      isTemplateOnly: workout.isTemplateOnly,
       skillBlocks: workout.skillBlocks.map(sb => ({
         id: sb.id,
         exercise: {
@@ -526,6 +528,8 @@ export class WorkoutService {
       userId: workout.userId,
       date: workout.date,
       comment: workout.comment,
+      isClubTemplate: workout.isClubTemplate,
+      isTemplateOnly: workout.isTemplateOnly,
       skillBlocks: workout.skillBlocks.map(sb => ({
         id: sb.id,
         exercise: {
@@ -806,6 +810,8 @@ export class WorkoutService {
       userId: workout.userId,
       date: workout.date,
       comment: workout.comment,
+      isClubTemplate: workout.isClubTemplate,
+      isTemplateOnly: workout.isTemplateOnly,
       skillBlocks: workout.skillBlocks.map(sb => ({
         id: sb.id,
         exercise: {
@@ -888,6 +894,8 @@ interface WorkoutResponse {
   userId: string;
   date: string;
   comment: string | null;
+  isClubTemplate: boolean;
+  isTemplateOnly: boolean;
   skillBlocks: {
     id: string;
     exercise: {

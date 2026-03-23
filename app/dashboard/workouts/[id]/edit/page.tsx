@@ -176,6 +176,7 @@ export default function EditWorkoutPage() {
   const [date, setDate] = useState('');
   const [comment, setComment] = useState('');
   const [blocks, setBlocks] = useState<BlockItem[]>([]);
+  const [isClubTemplate, setIsClubTemplate] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
@@ -188,6 +189,7 @@ export default function EditWorkoutPage() {
         const w = data.workout;
         setDate(w.date);
         setComment(w.comment || '');
+        setIsClubTemplate(w.isClubTemplate || false);
         setBlocks(workoutToBlocks(w));
       })
       .catch(err => {
@@ -332,10 +334,12 @@ export default function EditWorkoutPage() {
     }
 
     const wodBlocks_ = blocks.filter((b): b is { type: 'wod'; data: WodBlockForm } => b.type === 'wod').map(b => b.data);
-    for (const w of wodBlocks_) {
-      if (w.wodType === 'FOR_TIME' && !isValidMmSs(w.resultDisplay)) {
-        setError('Время результата должно быть в формате ММ:СС (например, 04:20)');
-        return;
+    if (!isClubTemplate) {
+      for (const w of wodBlocks_) {
+        if (w.wodType === 'FOR_TIME' && !isValidMmSs(w.resultDisplay)) {
+          setError('Время результата должно быть в формате ММ:СС (например, 04:20)');
+          return;
+        }
       }
     }
 
@@ -347,6 +351,7 @@ export default function EditWorkoutPage() {
       const payload: WorkoutInput = {
         date,
         comment: comment.trim() || undefined,
+        isClubTemplate: isClubTemplate || undefined,
         skillBlocks: skillBlocks.map(b => ({
           exerciseName: b.exerciseName,
           sets: b.sets.map(s => ({
@@ -712,7 +717,7 @@ export default function EditWorkoutPage() {
                       className="form-input result-input"
                       placeholder="420"
                       min="1"
-                      required
+                      required={!isClubTemplate}
                     />
                     ) : (
                     <input
@@ -726,8 +731,8 @@ export default function EditWorkoutPage() {
                       className="form-input result-input"
                       placeholder="ММ:СС"
                       maxLength={5}
-                      pattern="\d{1,2}:\d{2}"
-                      required
+                      pattern={isClubTemplate ? undefined : "\\d{1,2}:\\d{2}"}
+                      required={!isClubTemplate}
                     />
                     )}
                   </div>

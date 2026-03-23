@@ -163,6 +163,8 @@ export interface Workout {
   date: string;
   comment?: string;
   createdAt: string;
+  isClubTemplate?: boolean;
+  isTemplateOnly?: boolean;
   skillBlocks: SkillBlock[];
   wodBlocks: WodBlock[];
 }
