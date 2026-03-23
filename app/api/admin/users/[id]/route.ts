@@ -44,13 +44,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Укажите clubId и role (OWNER/COACH/ATHLETE)' }, { status: 400 });
     }
     // Проверяем, нет ли уже членства
-    const existing = await prisma.clubMembership.findUnique({
+    const existing = await prisma.clubMember.findUnique({
       where: { userId_clubId: { userId: id, clubId } },
     });
     if (existing) {
       return NextResponse.json({ error: 'Пользователь уже в этом клубе' }, { status: 409 });
     }
-    await prisma.clubMembership.create({
+    await prisma.clubMember.create({
       data: { userId: id, clubId, role },
     });
     return NextResponse.json({ message: 'Пользователь добавлен в клуб' });
@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // Отвязка от клуба
   if (body.removeFromClub) {
     const { clubId } = body.removeFromClub;
-    await prisma.clubMembership.deleteMany({
+    await prisma.clubMember.deleteMany({
       where: { userId: id, clubId },
     });
     return NextResponse.json({ message: 'Пользователь удалён из клуба' });
