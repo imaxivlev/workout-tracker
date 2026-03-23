@@ -60,7 +60,7 @@ export default function RootLayout({
         `}</Script>
         <ServiceWorkerRegistration />
         {children}
-        {/* TEMPORARILY HIDDEN: <CookieConsent /> */}
+        <CookieConsent />
         {/* Involveo widget */}
         <Script
           src="https://involveo.ru/widget.js"
