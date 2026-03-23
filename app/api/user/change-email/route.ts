@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest, isAuthSuccess } from '@/lib/auth/middleware';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
+import { EmailService } from '@/lib/services/email.service';
 
 /**
  * Схема валидации для изменения email
@@ -69,8 +70,9 @@ export async function POST(request: NextRequest) {
     try {
       const verificationToken = await userService.requestEmailChange(authUser.id, newEmail);
 
-      // TODO: Отправка письма с подтверждением на новый email
-      // await emailService.sendEmailChangeConfirmation(newEmail, verificationToken);
+      // Отправка письма с подтверждением на новый email
+      const emailService = new EmailService();
+      await emailService.sendEmailChangeConfirmation(newEmail, verificationToken);
 
       return NextResponse.json({
         message: 'Письмо с подтверждением отправлено на новый email адрес',

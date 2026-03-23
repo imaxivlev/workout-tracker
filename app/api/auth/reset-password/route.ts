@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
+import { EmailService } from '@/lib/services/email.service';
 import { rateLimit, RATE_LIMIT_CONFIGS } from '@/lib/auth/rate-limiter';
 
 /**
@@ -73,8 +74,9 @@ export async function POST(request: NextRequest) {
     try {
       const resetToken = await userService.requestPasswordReset(email);
 
-      // TODO: Отправить email с токеном сброса (задача 4)
-      // await emailService.sendPasswordResetEmail(email, resetToken);
+      // Отправка email с токеном сброса
+      const emailService = new EmailService();
+      await emailService.sendPasswordResetEmail(email, resetToken);
 
       // Возвращаем успешный ответ
       // Примечание: Мы всегда возвращаем 200 OK, даже если пользователь не найден,

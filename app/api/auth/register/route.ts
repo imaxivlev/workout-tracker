@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
+import { EmailService } from '@/lib/services/email.service';
 import { rateLimit, RATE_LIMIT_CONFIGS } from '@/lib/auth/rate-limiter';
 
 /**
@@ -85,8 +86,9 @@ export async function POST(request: NextRequest) {
         lastName
       });
 
-      // TODO: Отправить email с подтверждением (задача 4)
-      // await emailService.sendVerificationEmail(email, result.verificationToken);
+      // Отправка email с подтверждением
+      const emailService = new EmailService();
+      await emailService.sendVerificationEmail(email, result.verificationToken);
 
       // Возвращаем данные пользователя (без токена верификации)
       return NextResponse.json(

@@ -41,6 +41,13 @@ export default function RootLayout({
         <meta name="theme-color" content="#DC2626" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <noscript>
+          <div><img src="https://mc.yandex.ru/watch/108187486" style={{position:'absolute', left:'-9999px'}} alt="" /></div>
+        </noscript>
+      </head>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+      >
         {/* Yandex.Metrika counter */}
         <Script id="yandex-metrika" strategy="afterInteractive">{`
           (function(m,e,t,r,i,k,a){
@@ -51,13 +58,6 @@ export default function RootLayout({
           })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=108187486', 'ym');
           ym(108187486, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
         `}</Script>
-        <noscript>
-          <div><img src="https://mc.yandex.ru/watch/108187486" style={{position:'absolute', left:'-9999px'}} alt="" /></div>
-        </noscript>
-      </head>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
         <ServiceWorkerRegistration />
         {children}
         <CookieConsent />
