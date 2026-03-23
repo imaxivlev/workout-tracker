@@ -98,7 +98,7 @@ function ResetPasswordForm() {
           <div className="form-success">{success}</div>
         ) : token ? (
           // Шаг 2: Форма нового пароля
-          <form onSubmit={handleConfirmReset} className="auth-form">
+          <form onSubmit={handleConfirmReset} className="auth-form active">
             <div className="form-group">
               <label htmlFor="password" className="form-label">
                 Новый пароль <span className="form-hint">(мин. 8 символов, 1 буква, 1 цифра)</span>
@@ -137,7 +137,7 @@ function ResetPasswordForm() {
           </form>
         ) : (
           // Шаг 1: Форма email
-          <form onSubmit={handleRequestReset} className="auth-form">
+          <form onSubmit={handleRequestReset} className="auth-form active">
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email</label>
               <input
