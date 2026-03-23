@@ -1,11 +1,25 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { authApi, ApiError } from '@/lib/api/client';
 
 export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="loading-state"><div className="spinner" /></div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
+  );
+}
+
+function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const token = searchParams.get('token');

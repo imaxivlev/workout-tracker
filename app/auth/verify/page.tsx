@@ -1,11 +1,25 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { authApi, ApiError } from '@/lib/api/client';
 
 export default function VerifyPage() {
+  return (
+    <Suspense fallback={
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="loading-state"><div className="spinner" /></div>
+        </div>
+      </div>
+    }>
+      <VerifyForm />
+    </Suspense>
+  );
+}
+
+function VerifyForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
