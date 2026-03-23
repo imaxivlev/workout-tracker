@@ -228,21 +228,39 @@ export class UserService {
     const user = await prisma.user.findUnique({
       where: { email }
     });
-    
+
     if (!user) {
       throw new Error('Неверный email или пароль');
     }
-    
+
     // Проверка пароля
     const isPasswordValid = await this.verifyPassword(password, user.passwordHash);
-    
+
     if (!isPasswordValid) {
       throw new Error('Неверный email или пароль');
     }
-    
+
+    // Проверка подтверждения email
+    if (!user.verified) {
+      // Создаём новый токен верификации и отправляем повторно
+      const verificationToken = this.generateVerificationToken();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1);
+
+      // Удаляем старые токены и создаём новый
+      await prisma.$transaction(async (tx) => {
+        await tx.verificationToken.deleteMany({ where: { userId: user.id } });
+        await tx.verificationToken.create({
+          data: { userId: user.id, token: verificationToken, expiresAt }
+        });
+      });
+
+      throw new Error(`EMAIL_NOT_VERIFIED:${verificationToken}`);
+    }
+
     // Генерация JWT токена
     const token = this.generateJWT(user.id, user.email);
-    
+
     return {
       user: {
         id: user.id,

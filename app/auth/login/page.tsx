@@ -45,7 +45,8 @@ export default function AuthPage() {
       router.refresh();
     } catch (err) {
       if (err instanceof ApiError) {
-        if (err.status === 401) setLoginError('Неверный email или пароль');
+        if (err.status === 403) setLoginError('Email не подтверждён. Мы отправили письмо с ссылкой для подтверждения на вашу почту. Проверьте входящие и папку «Спам».');
+        else if (err.status === 401) setLoginError('Неверный email или пароль');
         else if (err.status === 429) setLoginError('Слишком много попыток. Подождите 15 минут.');
         else setLoginError(err.message);
       } else {

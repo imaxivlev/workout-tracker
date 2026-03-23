@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
+import { EmailService } from '@/lib/services/email.service';
 import { rateLimit, RATE_LIMIT_CONFIGS } from '@/lib/auth/rate-limiter';
 
 /**
@@ -97,6 +98,23 @@ export async function POST(request: NextRequest) {
     } catch (error) {
       // Обработка ошибок от UserService
       if (error instanceof Error) {
+        // Email не подтверждён — отправляем повторное письмо
+        if (error.message.startsWith('EMAIL_NOT_VERIFIED:')) {
+          const token = error.message.split(':')[1];
+          const emailService = new EmailService();
+          emailService.sendVerificationEmail(email, token).catch((err) => {
+            console.error('Ошибка отправки email подтверждения:', err);
+          });
+
+          return NextResponse.json(
+            {
+              error: 'Email не подтверждён. Мы отправили письмо с ссылкой для подтверждения на вашу почту. Проверьте входящие и папку «Спам».',
+              code: 'EMAIL_NOT_VERIFIED'
+            },
+            { status: 403 }
+          );
+        }
+
         // Проверяем, является ли это ошибкой неверных учетных данных
         if (error.message.includes('Неверный email или пароль')) {
           return NextResponse.json(
