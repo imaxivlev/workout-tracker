@@ -70,9 +70,11 @@ export async function POST(request: NextRequest) {
     try {
       const verificationToken = await userService.requestEmailChange(authUser.id, newEmail);
 
-      // Отправка письма с подтверждением на новый email
+      // Отправка письма с подтверждением на новый email (не блокирует ответ)
       const emailService = new EmailService();
-      await emailService.sendEmailChangeConfirmation(newEmail, verificationToken);
+      emailService.sendEmailChangeConfirmation(newEmail, verificationToken).catch((err) => {
+        console.error('Ошибка отправки email подтверждения:', err);
+      });
 
       return NextResponse.json({
         message: 'Письмо с подтверждением отправлено на новый email адрес',

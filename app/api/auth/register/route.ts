@@ -86,9 +86,11 @@ export async function POST(request: NextRequest) {
         lastName
       });
 
-      // Отправка email с подтверждением
+      // Отправка email с подтверждением (не блокирует ответ)
       const emailService = new EmailService();
-      await emailService.sendVerificationEmail(email, result.verificationToken);
+      emailService.sendVerificationEmail(email, result.verificationToken).catch((err) => {
+        console.error('Ошибка отправки email подтверждения:', err);
+      });
 
       // Возвращаем данные пользователя (без токена верификации)
       return NextResponse.json(

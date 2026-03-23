@@ -74,9 +74,11 @@ export async function POST(request: NextRequest) {
     try {
       const resetToken = await userService.requestPasswordReset(email);
 
-      // Отправка email с токеном сброса
+      // Отправка email с токеном сброса (не блокирует ответ)
       const emailService = new EmailService();
-      await emailService.sendPasswordResetEmail(email, resetToken);
+      emailService.sendPasswordResetEmail(email, resetToken).catch((err) => {
+        console.error('Ошибка отправки email сброса пароля:', err);
+      });
 
       // Возвращаем успешный ответ
       // Примечание: Мы всегда возвращаем 200 OK, даже если пользователь не найден,
