@@ -119,7 +119,7 @@ export const authApi = {
   async confirmPasswordReset(token: string, password: string) {
     return apiFetch<{ message: string }>('/api/auth/reset-password/confirm', {
       method: 'POST',
-      body: JSON.stringify({ token, password }),
+      body: JSON.stringify({ token, newPassword: password }),
     });
   },
 };
