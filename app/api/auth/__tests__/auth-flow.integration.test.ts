@@ -19,6 +19,15 @@ import * as RateLimiter from '@/lib/auth/rate-limiter';
 // Мокаем rate limiter чтобы не мешал тестам
 vi.mock('@/lib/auth/rate-limiter');
 
+// Мокаем EmailService чтобы не отправлять реальные письма
+vi.mock('@/lib/services/email.service', () => ({
+  EmailService: class MockEmailService {
+    async sendVerificationEmail() {}
+    async sendPasswordResetEmail() {}
+    async sendEmailChangeConfirmation() {}
+  }
+}));
+
 // Мокаем UserService для изоляции от БД
 vi.mock('@/lib/services/user.service', () => {
   // Хранилище пользователей в памяти

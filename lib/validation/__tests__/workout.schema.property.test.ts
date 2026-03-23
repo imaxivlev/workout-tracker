@@ -351,7 +351,7 @@ describe('Workout Schema Validation - Property-Based Tests', () => {
             // Без result_seconds должно быть невалидным
             expect(result.success).toBe(false);
             if (!result.success) {
-              expect(result.error.issues[0].message).toContain('FOR_TIME');
+              expect(result.error.issues[0].message).toContain('результат WOD');
             }
           }
         ),
@@ -419,7 +419,7 @@ describe('Workout Schema Validation - Property-Based Tests', () => {
             // Без result_total_reps должно быть невалидным
             expect(result.success).toBe(false);
             if (!result.success) {
-              expect(result.error.issues[0].message).toContain('AMRAP');
+              expect(result.error.issues[0].message).toContain('результат WOD');
             }
           }
         ),

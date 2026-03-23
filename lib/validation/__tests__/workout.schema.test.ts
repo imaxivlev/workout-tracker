@@ -225,7 +225,7 @@ describe('Workout Schema Validation', () => {
       const result = createWorkoutSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('FOR_TIME');
+        expect(result.error.issues[0].message).toContain('результат WOD');
       }
     });
 
@@ -248,7 +248,7 @@ describe('Workout Schema Validation', () => {
       const result = createWorkoutSchema.safeParse(data);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.issues[0].message).toContain('AMRAP');
+        expect(result.error.issues[0].message).toContain('результат WOD');
       }
     });
 
