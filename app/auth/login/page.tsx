@@ -60,12 +60,10 @@ export default function AuthPage() {
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setRegError('');
-    /* TEMPORARILY HIDDEN: legal consent validation
     if (!agreeTerms || !agreePrivacy) {
       setRegError('Необходимо принять пользовательское соглашение и политику конфиденциальности');
       return;
     }
-    */
     if (regPassword !== regConfirm) {
       setRegError('Пароли не совпадают');
       return;
@@ -269,7 +267,6 @@ export default function AuthPage() {
                 />
               </div>
 
-              {/* TEMPORARILY HIDDEN: legal consent checkboxes
               <div className="consent-checkboxes" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
                   <input
@@ -290,7 +287,6 @@ export default function AuthPage() {
                   <span>Я согласен с <Link href="/legal/privacy" target="_blank" style={{ color: 'var(--color-primary)' }}>политикой конфиденциальности</Link></span>
                 </label>
               </div>
-              */}
 
               {regError && <div className="form-error-msg">{regError}</div>}
 
