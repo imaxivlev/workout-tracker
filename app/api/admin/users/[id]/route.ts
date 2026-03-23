@@ -37,6 +37,34 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params;
   const body = await request.json();
 
+  // Привязка к клубу
+  if (body.addToClub) {
+    const { clubId, role } = body.addToClub;
+    if (!clubId || !['OWNER', 'COACH', 'ATHLETE'].includes(role)) {
+      return NextResponse.json({ error: 'Укажите clubId и role (OWNER/COACH/ATHLETE)' }, { status: 400 });
+    }
+    // Проверяем, нет ли уже членства
+    const existing = await prisma.clubMembership.findUnique({
+      where: { userId_clubId: { userId: id, clubId } },
+    });
+    if (existing) {
+      return NextResponse.json({ error: 'Пользователь уже в этом клубе' }, { status: 409 });
+    }
+    await prisma.clubMembership.create({
+      data: { userId: id, clubId, role },
+    });
+    return NextResponse.json({ message: 'Пользователь добавлен в клуб' });
+  }
+
+  // Отвязка от клуба
+  if (body.removeFromClub) {
+    const { clubId } = body.removeFromClub;
+    await prisma.clubMembership.deleteMany({
+      where: { userId: id, clubId },
+    });
+    return NextResponse.json({ message: 'Пользователь удалён из клуба' });
+  }
+
   const allowedFields: Record<string, boolean> = {
     firstName: true, lastName: true, email: true, verified: true, isAdmin: true,
   };

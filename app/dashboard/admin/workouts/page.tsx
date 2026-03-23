@@ -8,7 +8,8 @@ export default function AdminWorkoutsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [filterUserId, setFilterUserId] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState('');
   const [filterDate, setFilterDate] = useState('');
 
   const load = useCallback(async () => {
@@ -16,16 +17,22 @@ export default function AdminWorkoutsPage() {
     try {
       const { workouts: w, pagination } = await adminApi.getWorkouts({
         page,
-        userId: filterUserId || undefined,
+        search: search || undefined,
         date: filterDate || undefined,
       });
       setWorkouts(w);
       setTotalPages(pagination.totalPages);
     } catch { /* ignore */ }
     setLoading(false);
-  }, [page, filterUserId, filterDate]);
+  }, [page, search, filterDate]);
 
   useEffect(() => { load(); }, [load]);
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    setSearch(searchInput);
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Удалить эту тренировку?')) return;
@@ -35,12 +42,13 @@ export default function AdminWorkoutsPage() {
 
   return (
     <div>
-      <div className="admin-search-bar">
-        <input type="text" value={filterUserId} onChange={e => { setFilterUserId(e.target.value); setPage(1); }}
-          placeholder="User ID" className="admin-search-input" style={{ maxWidth: '280px' }} />
+      <form onSubmit={handleSearch} className="admin-search-bar">
+        <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)}
+          placeholder="Поиск по email, имени..." className="admin-search-input" style={{ maxWidth: '280px' }} />
         <input type="date" value={filterDate} onChange={e => { setFilterDate(e.target.value); setPage(1); }}
           className="admin-search-input" style={{ maxWidth: '180px', colorScheme: 'dark' }} />
-      </div>
+        <button type="submit" className="btn btn-primary btn-sm">Найти</button>
+      </form>
 
       {loading ? (
         <div className="loading-container"><div className="loading-spinner" /></div>
@@ -55,7 +63,12 @@ export default function AdminWorkoutsPage() {
                 {workouts.map(w => (
                   <tr key={w.id}>
                     <td>{w.date}</td>
-                    <td>{w.user.email}</td>
+                    <td>
+                      <div>{w.user.email}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                        {[w.user.firstName, w.user.lastName].filter(Boolean).join(' ')}
+                      </div>
+                    </td>
                     <td>{w.skillBlocksCount}</td>
                     <td>{w.wodBlocksCount}</td>
                     <td>{w.isClubTemplate ? <span className="admin-badge blue">Да</span> : '—'}</td>

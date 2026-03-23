@@ -14,10 +14,20 @@ export async function GET(request: NextRequest) {
   const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '20')));
   const userId = searchParams.get('userId') || undefined;
   const date = searchParams.get('date') || undefined;
+  const search = searchParams.get('search') || undefined;
 
   const where: Record<string, unknown> = {};
   if (userId) where.userId = userId;
   if (date) where.date = date;
+  if (search) {
+    where.user = {
+      OR: [
+        { email: { contains: search } },
+        { firstName: { contains: search } },
+        { lastName: { contains: search } },
+      ],
+    };
+  }
 
   const [workouts, total] = await Promise.all([
     prisma.workout.findMany({

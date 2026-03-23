@@ -679,6 +679,20 @@ export const adminApi = {
     return apiFetch<{ message: string }>(`/api/admin/users/${id}`, { method: 'DELETE' });
   },
 
+  async addUserToClub(userId: string, clubId: string, role: string) {
+    return apiFetch<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ addToClub: { clubId, role } }),
+    });
+  },
+
+  async removeUserFromClub(userId: string, clubId: string) {
+    return apiFetch<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ removeFromClub: { clubId } }),
+    });
+  },
+
   // Clubs
   async getClubs(params?: { page?: number; limit?: number; search?: string }) {
     const q = new URLSearchParams();
@@ -705,12 +719,13 @@ export const adminApi = {
   },
 
   // Workouts
-  async getWorkouts(params?: { page?: number; limit?: number; userId?: string; date?: string }) {
+  async getWorkouts(params?: { page?: number; limit?: number; userId?: string; date?: string; search?: string }) {
     const q = new URLSearchParams();
     if (params?.page) q.set('page', String(params.page));
     if (params?.limit) q.set('limit', String(params.limit));
     if (params?.userId) q.set('userId', params.userId);
     if (params?.date) q.set('date', params.date);
+    if (params?.search) q.set('search', params.search);
     const qs = q.toString();
     return apiFetch<{ workouts: AdminWorkout[]; pagination: Pagination }>(`/api/admin/workouts${qs ? `?${qs}` : ''}`);
   },
