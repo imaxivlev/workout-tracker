@@ -1103,7 +1103,7 @@ function NewWorkoutPage() {
               background: 'var(--bg-card, #fff)', borderRadius: '12px', padding: '1.5rem',
               maxWidth: '400px', width: '100%', textAlign: 'center'
             }}>
-              <p style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: 1.5 }}>
+              <p style={{ marginBottom: '1.5rem', fontSize: '0.95rem', lineHeight: 1.5, color: '#000' }}>
                 Вы уверены, что хотите сохранить тренировку как шаблон клуба? Эта тренировка появится на странице «ВОД дня» для всех атлетов.
               </p>
               <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center' }}>
