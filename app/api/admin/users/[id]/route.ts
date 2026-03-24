@@ -44,8 +44,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return NextResponse.json({ error: 'Укажите clubId и role (OWNER/COACH/ATHLETE)' }, { status: 400 });
     }
     // Проверяем, нет ли уже членства
-    const existing = await prisma.clubMember.findUnique({
-      where: { userId_clubId: { userId: id, clubId } },
+    const existing = await prisma.clubMember.findFirst({
+      where: { userId: id, clubId },
     });
     if (existing) {
       return NextResponse.json({ error: 'Пользователь уже в этом клубе' }, { status: 409 });
