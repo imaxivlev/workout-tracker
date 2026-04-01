@@ -17,6 +17,7 @@ model User {
   lastName      String?   @map("last_name") @db.VarChar(100)
   avatar        String?   @db.VarChar(500)
   verified      Boolean   @default(false)
+  gender        Gender?   @map("gender")
   isAdmin       Boolean   @default(false) @map("is_admin")
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
@@ -119,8 +120,10 @@ model SkillSet {
   reps         Int
   weight       Decimal @db.Decimal(6, 2) // Max 9999.99 kg
   
+  weightIsPercent Boolean @default(false) @map("weight_is_percent")
+
   skillBlock SkillBlock @relation(fields: [skillBlockId], references: [id], onDelete: Cascade)
-  
+
   @@map("skill_sets")
   @@index([skillBlockId])
 }
@@ -161,6 +164,7 @@ model WodBlock {
   resultDisplay    String     @map("result_display") @db.VarChar(50) // "15:30" or "5+12"
   resultSeconds    Int?       @map("result_seconds") // For TIME type
   resultTotalReps  Int?       @map("result_total_reps") // For AMRAP type
+  hasGenderSplit   Boolean    @default(false) @map("has_gender_split")
   createdAt        DateTime   @default(now()) @map("created_at")
   
   workout   Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
@@ -176,6 +180,8 @@ model WodExercise {
   exerciseDictId String  @map("exercise_dict_id") @db.VarChar(36)
   reps           Int
   weight         Decimal? @db.Decimal(6, 2)
+  repsFemale     Int?     @map("reps_female")
+  weightFemale   Decimal? @map("weight_female") @db.Decimal(6, 2)
   orderIndex     Int     @map("order_index") // For maintaining exercise order
   
   wodBlock WodBlock     @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
@@ -189,6 +195,13 @@ model WodExercise {
 // =====================
 // Club system
 // =====================
+
+enum Gender {
+  MALE
+  FEMALE
+
+  @@map("gender")
+}
 
 enum ClubRole {
   OWNER

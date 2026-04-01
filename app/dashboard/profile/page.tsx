@@ -3,6 +3,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { userApi, ApiError, authApi, clubsApi } from '@/lib/api/client';
+import CustomSelect from '@/app/components/CustomSelect';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -66,6 +67,7 @@ export default function ProfilePage() {
         setAvatar(user.avatar || null);
         setFirstName(user.firstName || '');
         setLastName(user.lastName || '');
+        setGender(user.gender || '');
       })
       .catch(err => {
         if (err instanceof ApiError) setError(err.message);
@@ -96,7 +98,7 @@ export default function ProfilePage() {
     setError('');
     setSuccess('');
     try {
-      const data = await userApi.updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() });
+      const data = await userApi.updateProfile({ firstName: firstName.trim(), lastName: lastName.trim(), gender: gender || undefined });
       const user = data.user;
       const name = [user.firstName, user.lastName].filter(Boolean).join(' ') || '';
       setDisplayName(name || user.email);
@@ -201,14 +203,14 @@ export default function ProfilePage() {
 
             <div className="form-group">
               <label>Пол</label>
-              <select
-                className="form-select"
+              <CustomSelect
+                options={[
+                  { value: 'MALE', label: 'Мужской' },
+                  { value: 'FEMALE', label: 'Женский' },
+                ]}
                 value={gender}
-                onChange={e => setGender(e.target.value)}
-              >
-                <option value="male">Мужской</option>
-                <option value="female">Женский</option>
-              </select>
+                onChange={setGender}
+              />
             </div>
 
             {clubId && (

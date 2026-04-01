@@ -389,7 +389,7 @@ export class ClubService {
         }],
         skillBlocks: w.skillBlocks.map(sb => ({
           exerciseName: sb.exercise.name,
-          sets: sb.sets.map(s => ({ reps: s.reps, weight: Number(s.weight) }))
+          sets: sb.sets.map(s => ({ reps: s.reps, weight: Number(s.weight), weightIsPercent: s.weightIsPercent }))
         })),
         wodBlocks: w.wodBlocks.map(wb => ({
           wodType: wb.wodType,
@@ -397,10 +397,13 @@ export class ClubService {
           timeCapSeconds: wb.timeCapSeconds,
           isLadder: wb.isLadder,
           ladderRounds: wb.ladderRounds ?? null,
+          hasGenderSplit: wb.hasGenderSplit,
           exercises: wb.exercises.map(e => ({
             exerciseName: e.exercise.name,
             reps: e.reps,
             weight: e.weight ? Number(e.weight) : null,
+            repsFemale: e.repsFemale,
+            weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           }))
         })),
       });
@@ -906,17 +909,21 @@ export interface ClubWorkoutTemplate {
   athletes: Array<{ userId: string; name: string; workoutId: string }>;
   skillBlocks: Array<{
     exerciseName: string;
-    sets: Array<{ reps: number; weight: number }>;
+    sets: Array<{ reps: number; weight: number; weightIsPercent?: boolean }>;
   }>;
   wodBlocks: Array<{
     wodType: string;
     level: string;
     timeCapSeconds: number | null;
     isLadder: boolean;
+    ladderRounds?: number | null;
+    hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;
       reps: number;
       weight: number | null;
+      repsFemale?: number | null;
+      weightFemale?: number | null;
     }>;
   }>;
 }

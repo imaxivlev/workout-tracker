@@ -4,6 +4,7 @@ import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { authApi, ApiError } from '@/lib/api/client';
+import CustomSelect from '@/app/components/CustomSelect';
 
 type Tab = 'login' | 'register' | 'reset';
 
@@ -23,6 +24,7 @@ export default function AuthPage() {
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
   const [regConfirm, setRegConfirm] = useState('');
+  const [regGender, setRegGender] = useState('');
   const [regError, setRegError] = useState('');
   const [regSuccess, setRegSuccess] = useState('');
   const [regLoading, setRegLoading] = useState(false);
@@ -60,6 +62,10 @@ export default function AuthPage() {
   async function handleRegister(e: FormEvent) {
     e.preventDefault();
     setRegError('');
+    if (!regGender) {
+      setRegError('Выберите пол');
+      return;
+    }
     if (!agreeTerms || !agreePrivacy) {
       setRegError('Необходимо принять пользовательское соглашение и политику конфиденциальности');
       return;
@@ -70,7 +76,7 @@ export default function AuthPage() {
     }
     setRegLoading(true);
     try {
-      const result = await authApi.register(regEmail, regPassword, regFirstName.trim() || undefined, regLastName.trim() || undefined);
+      const result = await authApi.register(regEmail, regPassword, regFirstName.trim() || undefined, regLastName.trim() || undefined, regGender);
       // Save consents (fire-and-forget, userId from response if available)
       const userId = (result as any)?.user?.id;
       if (userId) {
@@ -226,6 +232,18 @@ export default function AuthPage() {
                     autoComplete="family-name"
                   />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Пол</label>
+                <CustomSelect
+                  options={[
+                    { value: 'MALE', label: 'Мужской' },
+                    { value: 'FEMALE', label: 'Женский' },
+                  ]}
+                  value={regGender}
+                  onChange={setRegGender}
+                />
               </div>
 
               <div className="form-group">

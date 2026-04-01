@@ -12,7 +12,8 @@ const prisma = new PrismaClient();
 const updateProfileSchema = z.object({
   firstName: z.string().max(100, 'Имя не должно превышать 100 символов').optional(),
   lastName: z.string().max(100, 'Фамилия не должна превышать 100 символов').optional(),
-  avatar: z.string().max(500, 'URL аватара не должен превышать 500 символов').optional()
+  avatar: z.string().max(500, 'URL аватара не должен превышать 500 символов').optional(),
+  gender: z.enum(['MALE', 'FEMALE']).optional(),
 });
 
 /**
@@ -48,6 +49,7 @@ export async function GET(request: NextRequest) {
         firstName: true,
         lastName: true,
         avatar: true,
+        gender: true,
         verified: true,
         createdAt: true,
         updatedAt: true
@@ -68,6 +70,7 @@ export async function GET(request: NextRequest) {
         firstName: user.firstName,
         lastName: user.lastName,
         avatar: user.avatar,
+        gender: user.gender,
         verified: user.verified,
         createdAt: user.createdAt.toISOString(),
         updatedAt: user.updatedAt.toISOString()
@@ -127,14 +130,15 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    const { firstName, lastName, avatar } = validationResult.data;
+    const { firstName, lastName, avatar, gender } = validationResult.data;
 
     // Обновление профиля через UserService
     const userService = new UserService();
     const updatedUser = await userService.updateProfile(authUser.id, {
       firstName,
       lastName,
-      avatar
+      avatar,
+      gender,
     });
 
     return NextResponse.json({

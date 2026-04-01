@@ -12,6 +12,7 @@ interface RegisterData {
   password: string;
   firstName?: string;
   lastName?: string;
+  gender?: 'MALE' | 'FEMALE';
 }
 
 /**
@@ -182,6 +183,7 @@ export class UserService {
           passwordHash,
           firstName: data.firstName || null,
           lastName: data.lastName || null,
+          gender: data.gender || null,
           verified: false
         }
       });
@@ -445,6 +447,7 @@ export class UserService {
       firstName?: string;
       lastName?: string;
       avatar?: string;
+      gender?: 'MALE' | 'FEMALE';
     }
   ) {
     const user = await prisma.user.update({
@@ -452,16 +455,18 @@ export class UserService {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        avatar: data.avatar
+        avatar: data.avatar,
+        gender: data.gender,
       }
     });
-    
+
     return {
       id: user.id,
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
-      avatar: user.avatar
+      avatar: user.avatar,
+      gender: user.gender,
     };
   }
   

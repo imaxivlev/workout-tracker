@@ -47,6 +47,7 @@ const commentSchema = z.string()
 const skillSetSchema = z.object({
   reps: repsSchema,
   weight: weightSchema,
+  weightIsPercent: z.boolean().optional(),
 });
 
 // Схема для Skill блока
@@ -81,6 +82,8 @@ const wodExerciseSchema = z.object({
     .max(100, 'Название упражнения не может быть длиннее 100 символов'),
   reps: repsSchema,
   weight: weightSchema.optional(),
+  repsFemale: z.number().int().min(1).optional(),
+  weightFemale: weightSchema.optional(),
 });
 
 // Схема для WOD блока
@@ -105,6 +108,7 @@ const wodBlockSchema = z.object({
     .int('Общее количество повторений должно быть целым числом')
     .nonnegative('Общее количество повторений не может быть отрицательным')
     .optional(),
+  hasGenderSplit: z.boolean().optional(),
   exercises: z.array(wodExerciseSchema)
     .min(1, 'WOD блок должен содержать минимум 1 упражнение')
     .max(30, 'WOD блок не может содержать более 30 упражнений'),

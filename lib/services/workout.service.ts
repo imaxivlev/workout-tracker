@@ -155,7 +155,8 @@ export class WorkoutService {
                   skillBlockId: createdSkillBlock.id,
                   setNumber: setNumber,
                   reps: set.reps,
-                  weight: set.weight
+                  weight: set.weight,
+                  weightIsPercent: (set as any).weightIsPercent ?? false,
                 }
               });
               setNumber++;
@@ -178,7 +179,8 @@ export class WorkoutService {
                 resultType: this.determineResultType(wodBlock.wodType),
                 resultDisplay: wodBlock.resultDisplay,
                 resultSeconds: wodBlock.resultSeconds || null,
-                resultTotalReps: wodBlock.resultTotalReps || null
+                resultTotalReps: wodBlock.resultTotalReps || null,
+                hasGenderSplit: (wodBlock as any).hasGenderSplit ?? false,
               }
             });
 
@@ -197,6 +199,8 @@ export class WorkoutService {
                   exerciseDictId: exerciseId,
                   reps: exercise.reps,
                   weight: exercise.weight || null,
+                  repsFemale: (exercise as any).repsFemale || null,
+                  weightFemale: (exercise as any).weightFemale || null,
                   orderIndex: orderIndex
                 }
               });
@@ -429,7 +433,8 @@ export class WorkoutService {
           id: s.id,
           setNumber: s.setNumber,
           reps: s.reps,
-          weight: Number(s.weight)
+          weight: Number(s.weight),
+          weightIsPercent: s.weightIsPercent,
         }))
       })),
       wodBlocks: workout.wodBlocks.map(wb => ({
@@ -443,6 +448,7 @@ export class WorkoutService {
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
         resultTotalReps: wb.resultTotalReps,
+        hasGenderSplit: wb.hasGenderSplit,
         exercises: wb.exercises.map(e => ({
           id: e.id,
           exercise: {
@@ -451,6 +457,8 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          repsFemale: e.repsFemale,
+          weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
         }))
       })),
@@ -540,7 +548,8 @@ export class WorkoutService {
           id: s.id,
           setNumber: s.setNumber,
           reps: s.reps,
-          weight: Number(s.weight)
+          weight: Number(s.weight),
+          weightIsPercent: s.weightIsPercent,
         }))
       })),
       wodBlocks: workout.wodBlocks.map(wb => ({
@@ -554,6 +563,7 @@ export class WorkoutService {
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
         resultTotalReps: wb.resultTotalReps,
+        hasGenderSplit: wb.hasGenderSplit,
         exercises: wb.exercises.map(e => ({
           id: e.id,
           exercise: {
@@ -562,6 +572,8 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          repsFemale: e.repsFemale,
+          weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
         }))
       })),
@@ -822,7 +834,8 @@ export class WorkoutService {
           id: s.id,
           setNumber: s.setNumber,
           reps: s.reps,
-          weight: Number(s.weight)
+          weight: Number(s.weight),
+          weightIsPercent: s.weightIsPercent,
         }))
       })),
       wodBlocks: workout.wodBlocks.map(wb => ({
@@ -836,6 +849,7 @@ export class WorkoutService {
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
         resultTotalReps: wb.resultTotalReps,
+        hasGenderSplit: wb.hasGenderSplit,
         exercises: wb.exercises.map(e => ({
           id: e.id,
           exercise: {
@@ -844,6 +858,8 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          repsFemale: e.repsFemale,
+          weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
         }))
       })),
@@ -870,6 +886,7 @@ interface SkillBlockInput {
   sets: {
     reps: number;
     weight: number;
+    weightIsPercent?: boolean;
   }[];
 }
 
@@ -882,10 +899,13 @@ interface WodBlockInput {
   resultDisplay: string;
   resultSeconds?: number;
   resultTotalReps?: number;
+  hasGenderSplit?: boolean;
   exercises: {
     exerciseName: string;
     reps: number;
     weight?: number;
+    repsFemale?: number;
+    weightFemale?: number;
   }[];
 }
 
@@ -907,6 +927,7 @@ interface WorkoutResponse {
       setNumber: number;
       reps: number;
       weight: number;
+      weightIsPercent: boolean;
     }[];
   }[];
   wodBlocks: {
@@ -920,6 +941,7 @@ interface WorkoutResponse {
     resultDisplay: string;
     resultSeconds: number | null;
     resultTotalReps: number | null;
+    hasGenderSplit: boolean;
     exercises: {
       id: string;
       exercise: {
@@ -928,6 +950,8 @@ interface WorkoutResponse {
       };
       reps: number;
       weight: number | null;
+      repsFemale: number | null;
+      weightFemale: number | null;
       orderIndex: number;
     }[];
   }[];

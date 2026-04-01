@@ -15,6 +15,7 @@ const registerSchema = z.object({
     .regex(/[a-zA-Z]/, 'Пароль должен содержать хотя бы 1 букву'),
   firstName: z.string().max(50).optional(),
   lastName: z.string().max(50).optional(),
+  gender: z.enum(['MALE', 'FEMALE']),
 });
 
 /**
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, password, firstName, lastName } = validationResult.data;
+    const { email, password, firstName, lastName, gender } = validationResult.data;
 
     // Создаем пользователя через UserService
     const userService = new UserService();
@@ -83,7 +84,8 @@ export async function POST(request: NextRequest) {
         email,
         password,
         firstName,
-        lastName
+        lastName,
+        gender,
       });
 
       // Отправка email с подтверждением (не блокирует ответ)

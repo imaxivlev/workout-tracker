@@ -87,10 +87,10 @@ async function apiFetch<T>(
 // --- Auth ---
 
 export const authApi = {
-  async register(email: string, password: string, firstName?: string, lastName?: string) {
+  async register(email: string, password: string, firstName?: string, lastName?: string, gender?: string) {
     return apiFetch<{ user: { id: string; email: string } }>('/api/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password, firstName: firstName || undefined, lastName: lastName || undefined }),
+      body: JSON.stringify({ email, password, firstName: firstName || undefined, lastName: lastName || undefined, gender }),
     });
   },
 
@@ -188,7 +188,7 @@ export interface WorkoutInput {
   showInLeaderboard?: boolean;
   skillBlocks?: Array<{
     exerciseName: string;
-    sets: Array<{ reps: number; weight: number }>;
+    sets: Array<{ reps: number; weight: number; weightIsPercent?: boolean }>;
   }>;
   wodBlocks?: Array<{
     wodType: 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
@@ -200,10 +200,13 @@ export interface WorkoutInput {
     resultDisplay: string;
     resultSeconds?: number;
     resultTotalReps?: number;
+    hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;
       reps: number;
       weight?: number;
+      repsFemale?: number;
+      weightFemale?: number;
     }>;
   }>;
 }
@@ -336,6 +339,7 @@ export interface UserProfile {
   firstName?: string;
   lastName?: string;
   avatar?: string;
+  gender?: 'MALE' | 'FEMALE' | null;
   createdAt: string;
 }
 
@@ -344,7 +348,7 @@ export const userApi = {
     return apiFetch<{ user: UserProfile }>('/api/user/profile');
   },
 
-  async updateProfile(data: { firstName?: string; lastName?: string; avatar?: string }) {
+  async updateProfile(data: { firstName?: string; lastName?: string; avatar?: string; gender?: string }) {
     return apiFetch<{ user: UserProfile }>('/api/user/profile', {
       method: 'PATCH',
       body: JSON.stringify(data),
