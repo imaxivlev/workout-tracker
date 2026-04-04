@@ -84,6 +84,7 @@ const wodExerciseSchema = z.object({
   weight: weightSchema.optional(),
   repsFemale: z.number().int().min(1).optional(),
   weightFemale: weightSchema.optional(),
+  exerciseNameFemale: z.string().max(100).optional(),
 });
 
 // Схема для WOD блока

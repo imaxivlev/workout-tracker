@@ -11,10 +11,11 @@ interface CustomSelectProps {
   options: CustomSelectOption[];
   value: string;
   onChange: (value: string) => void;
+  placeholder?: string;
   style?: React.CSSProperties;
 }
 
-export default function CustomSelect({ options, value, onChange, style }: CustomSelectProps) {
+export default function CustomSelect({ options, value, onChange, placeholder, style }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -40,7 +41,9 @@ export default function CustomSelect({ options, value, onChange, style }: Custom
           setOpen(prev => !prev);
         }}
       >
-        <span className="custom-select-text">{selectedLabel}</span>
+        <span className="custom-select-text" style={!selectedLabel && placeholder ? { color: 'var(--text-secondary)' } : undefined}>
+          {selectedLabel || placeholder || ''}
+        </span>
         <span className="custom-select-arrow" style={{ fontSize: '0.8rem' }}>▼</span>
       </div>
       <div

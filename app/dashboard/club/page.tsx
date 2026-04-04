@@ -33,6 +33,7 @@ export default function ClubPage() {
 
   // WOD дня — шаблоны тренировок (теперь внутри лидерборда)
   const [templates, setTemplates] = useState<ClubWorkoutTemplate[]>([]);
+  const [wodGenderView, setWodGenderView] = useState<'M' | 'F'>('M');
 
   // Members
   const [members, setMembers] = useState<Array<{ userId: string; email: string; firstName: string | null; lastName: string | null; role: string; showInLeaderboard: boolean; joinedAt: string }>>([]);
@@ -286,6 +287,20 @@ export default function ClubPage() {
               {/* Детали тренировки WOD дня */}
               {templates.length > 0 && (
                 <div className="club-wod-details">
+                  {templates.some(t => t.wodBlocks.some(wb => wb.hasGenderSplit)) && (
+                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setWodGenderView('M')}
+                        className={`btn btn-sm${wodGenderView === 'M' ? ' btn-primary' : ' btn-secondary'}`}
+                      >Мужской</button>
+                      <button
+                        type="button"
+                        onClick={() => setWodGenderView('F')}
+                        className={`btn btn-sm${wodGenderView === 'F' ? ' btn-primary' : ' btn-secondary'}`}
+                      >Женский</button>
+                    </div>
+                  )}
                   {templates
                     .filter(tmpl => !selectedWodSignature || tmpl.wodBlocks.some(wb => wb.wodType === selectedWodSignature))
                     .map((tmpl) => (
@@ -311,13 +326,19 @@ export default function ClubPage() {
                               {wb.timeCapSeconds && <span className="club-wod-time">{Math.floor(wb.timeCapSeconds / 60)} мин</span>}
                             </div>
                             <div className="club-wod-exercises">
-                              {wb.exercises.map((ex, j) => (
-                                <div key={j} className="club-wod-exercise">
-                                  {ex.reps > 0 && <span className="club-wod-reps">{ex.reps}</span>}
-                                  <span>{ex.exerciseName}</span>
-                                  {ex.weight ? <span className="club-wod-weight">({ex.weight} кг)</span> : null}
-                                </div>
-                              ))}
+                              {wb.exercises.map((ex, j) => {
+                                const showFemale = wb.hasGenderSplit && wodGenderView === 'F';
+                                const name = showFemale ? (ex.exerciseNameFemale || ex.exerciseName) : ex.exerciseName;
+                                const reps = showFemale ? (ex.repsFemale ?? ex.reps) : ex.reps;
+                                const weight = showFemale ? (ex.weightFemale ?? ex.weight) : ex.weight;
+                                return (
+                                  <div key={j} className="club-wod-exercise">
+                                    {reps > 0 && <span className="club-wod-reps">{reps}</span>}
+                                    <span>{name}</span>
+                                    {weight ? <span className="club-wod-weight">({weight} кг)</span> : null}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         ))}
@@ -376,6 +397,9 @@ export default function ClubPage() {
                       <div className="club-lb-rank">
                         {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (e.rank || i + 1)}
                       </div>
+                      <div className="club-member-avatar" style={{ width: 38, height: 38, fontSize: '0.85rem' }}>
+                        {e.name[0]?.toUpperCase()}
+                      </div>
                       <div className="club-lb-info">
                         <div className="club-lb-name">
                           {e.name}
@@ -421,6 +445,9 @@ export default function ClubPage() {
                       <div className="club-lb-rank">
                         {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
                       </div>
+                      <div className="club-member-avatar" style={{ width: 38, height: 38, fontSize: '0.85rem' }}>
+                        {e.name[0]?.toUpperCase()}
+                      </div>
                       <div className="club-lb-info">
                         <div className="club-lb-name">{e.name}</div>
                         <div className="club-lb-stats">
@@ -450,6 +477,9 @@ export default function ClubPage() {
                         <div key={a.userId} className={`club-lb-row ${a.rank <= 3 ? 'top' : ''}`}>
                           <div className="club-lb-rank">
                             {a.rank === 1 ? '🥇' : a.rank === 2 ? '🥈' : a.rank === 3 ? '🥉' : a.rank}
+                          </div>
+                          <div className="club-member-avatar" style={{ width: 38, height: 38, fontSize: '0.85rem' }}>
+                            {a.name[0]?.toUpperCase()}
                           </div>
                           <div className="club-lb-info">
                             <div className="club-lb-name">{a.name}</div>

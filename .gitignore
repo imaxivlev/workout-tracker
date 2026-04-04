@@ -47,3 +47,6 @@ next-env.d.ts
 # prisma
 /prisma/migrations/
 node_modules/.prisma/
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -258,12 +258,12 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     // Требование 25.3: Логирование полного стек-трейса
     console.error('Ошибка при создании тренировки:', error);
-    
-    // Требование 25.4: Возврат 500 без деталей БД
+
     return NextResponse.json(
       {
         error: 'Внутренняя ошибка сервера',
-        code: 'INTERNAL_SERVER_ERROR'
+        code: 'INTERNAL_SERVER_ERROR',
+        ...(process.env.NODE_ENV === 'development' && { detail: String(error) }),
       },
       { status: 500 }
     );

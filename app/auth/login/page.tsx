@@ -243,6 +243,7 @@ export default function AuthPage() {
                   ]}
                   value={regGender}
                   onChange={setRegGender}
+                  placeholder="Мужской / Женский"
                 />
               </div>
 

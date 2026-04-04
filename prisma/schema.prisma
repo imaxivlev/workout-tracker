@@ -67,10 +67,11 @@ model ExerciseDict {
   isGlobal  Boolean  @default(false) @map("is_global")
   userId    String?  @map("user_id") @db.VarChar(36)
   createdAt DateTime @default(now()) @map("created_at")
-  
-  user          User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skillBlocks   SkillBlock[]
-  wodExercises  WodExercise[]
+
+  user               User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillBlocks        SkillBlock[]
+  wodExercises       WodExercise[] @relation("WodExerciseMale")
+  wodExercisesFemale WodExercise[] @relation("WodExerciseFemale")
   
   @@unique([name, userId])
   @@map("exercises_dict")
@@ -178,14 +179,16 @@ model WodExercise {
   id             String  @id @default(uuid()) @db.VarChar(36)
   wodBlockId     String  @map("wod_block_id") @db.VarChar(36)
   exerciseDictId String  @map("exercise_dict_id") @db.VarChar(36)
-  reps           Int
-  weight         Decimal? @db.Decimal(6, 2)
-  repsFemale     Int?     @map("reps_female")
-  weightFemale   Decimal? @map("weight_female") @db.Decimal(6, 2)
-  orderIndex     Int     @map("order_index") // For maintaining exercise order
-  
-  wodBlock WodBlock     @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
-  exercise ExerciseDict @relation(fields: [exerciseDictId], references: [id])
+  reps                 Int
+  weight               Decimal? @db.Decimal(6, 2)
+  repsFemale           Int?     @map("reps_female")
+  weightFemale         Decimal? @map("weight_female") @db.Decimal(6, 2)
+  exerciseDictIdFemale String?  @map("exercise_dict_id_female") @db.VarChar(36)
+  orderIndex           Int      @map("order_index")
+
+  wodBlock       WodBlock      @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
+  exercise       ExerciseDict  @relation("WodExerciseMale", fields: [exerciseDictId], references: [id])
+  exerciseFemale ExerciseDict? @relation("WodExerciseFemale", fields: [exerciseDictIdFemale], references: [id])
   
   @@map("wod_exercises")
   @@index([wodBlockId])

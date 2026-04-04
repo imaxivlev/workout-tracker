@@ -336,7 +336,7 @@ export class ClubService {
       wodBlocks: {
         include: {
           exercises: {
-            include: { exercise: true },
+            include: { exercise: true, exerciseFemale: true },
             orderBy: { orderIndex: 'asc' as const }
           }
         }
@@ -400,6 +400,7 @@ export class ClubService {
           hasGenderSplit: wb.hasGenderSplit,
           exercises: wb.exercises.map(e => ({
             exerciseName: e.exercise.name,
+            exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
             reps: e.reps,
             weight: e.weight ? Number(e.weight) : null,
             repsFemale: e.repsFemale,
@@ -920,6 +921,7 @@ export interface ClubWorkoutTemplate {
     hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;
+      exerciseNameFemale?: string | null;
       reps: number;
       weight: number | null;
       repsFemale?: number | null;

@@ -192,6 +192,9 @@ export class WorkoutService {
                 exercise.exerciseName,
                 userId
               );
+              const exerciseIdFemale = exercise.exerciseNameFemale
+                ? await this.resolveExerciseIdInTransaction(tx, exercise.exerciseNameFemale, userId)
+                : null;
 
               await tx.wodExercise.create({
                 data: {
@@ -201,6 +204,7 @@ export class WorkoutService {
                   weight: exercise.weight || null,
                   repsFemale: (exercise as any).repsFemale || null,
                   weightFemale: (exercise as any).weightFemale || null,
+                  exerciseDictIdFemale: exerciseIdFemale,
                   orderIndex: orderIndex
                 }
               });
@@ -407,7 +411,7 @@ export class WorkoutService {
         wodBlocks: {
           include: {
             exercises: {
-              include: { exercise: true },
+              include: { exercise: true, exerciseFemale: true },
               orderBy: { orderIndex: 'asc' }
             }
           }
@@ -457,6 +461,7 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
@@ -511,7 +516,7 @@ export class WorkoutService {
         wodBlocks: {
           include: {
             exercises: {
-              include: { exercise: true },
+              include: { exercise: true, exerciseFemale: true },
               orderBy: { orderIndex: 'asc' }
             }
           }
@@ -572,6 +577,7 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
@@ -705,6 +711,9 @@ export class WorkoutService {
                   exercise.exerciseName,
                   userId
                 );
+                const exerciseIdFemale = exercise.exerciseNameFemale
+                  ? await this.resolveExerciseIdInTransaction(tx, exercise.exerciseNameFemale, userId)
+                  : null;
 
                 await tx.wodExercise.create({
                   data: {
@@ -712,6 +721,9 @@ export class WorkoutService {
                     exerciseDictId: exerciseId,
                     reps: exercise.reps,
                     weight: exercise.weight || null,
+                    repsFemale: exercise.repsFemale || null,
+                    weightFemale: exercise.weightFemale || null,
+                    exerciseDictIdFemale: exerciseIdFemale,
                     orderIndex: orderIndex
                   }
                 });
@@ -804,7 +816,7 @@ export class WorkoutService {
         wodBlocks: {
           include: {
             exercises: {
-              include: { exercise: true },
+              include: { exercise: true, exerciseFemale: true },
               orderBy: { orderIndex: 'asc' }
             }
           }
@@ -858,6 +870,7 @@ export class WorkoutService {
           },
           reps: e.reps,
           weight: e.weight ? Number(e.weight) : null,
+          exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
           orderIndex: e.orderIndex
@@ -906,6 +919,7 @@ interface WodBlockInput {
     weight?: number;
     repsFemale?: number;
     weightFemale?: number;
+    exerciseNameFemale?: string;
   }[];
 }
 
@@ -948,6 +962,7 @@ interface WorkoutResponse {
         id: string;
         name: string;
       };
+      exerciseNameFemale: string | null;
       reps: number;
       weight: number | null;
       repsFemale: number | null;

@@ -207,6 +207,7 @@ export interface WorkoutInput {
       weight?: number;
       repsFemale?: number;
       weightFemale?: number;
+      exerciseNameFemale?: string;
     }>;
   }>;
 }
@@ -429,7 +430,15 @@ export interface ClubWorkoutTemplate {
     timeCapSeconds: number | null;
     isLadder: boolean;
     ladderRounds: number | null;
-    exercises: Array<{ exerciseName: string; reps: number; weight: number | null }>;
+    hasGenderSplit?: boolean;
+    exercises: Array<{
+      exerciseName: string;
+      exerciseNameFemale?: string | null;
+      reps: number;
+      weight: number | null;
+      repsFemale?: number | null;
+      weightFemale?: number | null;
+    }>;
   }>;
 }
 
