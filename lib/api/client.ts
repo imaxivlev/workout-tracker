@@ -130,6 +130,7 @@ export interface SkillSet {
   id: string;
   reps: number;
   weight: number;
+  weightIsPercent?: boolean;
 }
 
 export interface SkillBlock {
@@ -143,6 +144,9 @@ export interface WodExercise {
   exercise: { id: string; name: string };
   reps: number;
   weight?: number;
+  repsFemale?: number | null;
+  weightFemale?: number | null;
+  exerciseNameFemale?: string | null;
 }
 
 export interface WodBlock {
@@ -155,6 +159,7 @@ export interface WodBlock {
   resultDisplay: string;
   resultSeconds?: number;
   resultTotalReps?: number;
+  hasGenderSplit?: boolean;
   exercises: WodExercise[];
 }
 
@@ -422,7 +427,7 @@ export interface ClubWorkoutTemplate {
   athletes: Array<{ userId: string; name: string; workoutId: string }>;
   skillBlocks: Array<{
     exerciseName: string;
-    sets: Array<{ reps: number; weight: number }>;
+    sets: Array<{ reps: number; weight: number; weightIsPercent?: boolean }>;
   }>;
   wodBlocks: Array<{
     wodType: string;
