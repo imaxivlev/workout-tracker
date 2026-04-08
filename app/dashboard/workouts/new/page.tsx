@@ -4,6 +4,7 @@ import React, { useState, FormEvent, useEffect, useCallback, Suspense, useRef } 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { workoutsApi, exercisesApi, clubsApi, userApi, ApiError, WorkoutInput } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
+import { SingleDatePicker } from '@/app/components/SingleDatePicker';
 
 type WodType = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
 type WodLevel = 'RX' | 'SCALED';
@@ -222,6 +223,7 @@ function NewWorkoutPage() {
                     percentHint: s.weightIsPercent ? Number(s.weight) : undefined,
                   }))
                 : Array.from({ length: 5 }, () => ({ reps: '', weight: '' }));
+              // Атлет всегда вводит кг; проценты показываются как подсказка
               newBlocks.push({
                 type: 'skill',
                 data: { exerciseName: sb.exerciseName || '', weightIsPercent: false, sets },
@@ -821,15 +823,7 @@ function NewWorkoutPage() {
         {/* Дата */}
         <div className="form-group" style={{ marginBottom: '1.5rem' }}>
           <label>Дата тренировки</label>
-          <input
-            type="date"
-            value={date}
-            onChange={e => setDate(e.target.value)}
-            className="form-input"
-            style={{ maxWidth: '220px' }}
-            max={new Date().toISOString().split('T')[0]}
-            required
-          />
+          <SingleDatePicker value={date} onChange={setDate} />
         </div>
 
         {/* Блоки тренировки — в порядке добавления */}
@@ -1336,6 +1330,18 @@ function NewWorkoutPage() {
           })}
         </div>
 
+        {/* Кнопки добавления блоков */}
+        <div className="builder-actions">
+          <button type="button" className="btn-add-block" onClick={addSkillBlock}>
+            <span style={{ fontSize: '2rem' }}>🏋️</span>
+            Добавить Скилл
+          </button>
+          <button type="button" className="btn-add-block" onClick={addWodBlock}>
+            <span style={{ fontSize: '2rem' }}>⚡</span>
+            Добавить ВОД
+          </button>
+        </div>
+
         {/* Комментарий */}
         <div className="form-group" style={{ marginTop: '2rem' }}>
           <label>Комментарий к тренировке (необязательно)</label>
@@ -1344,7 +1350,7 @@ function NewWorkoutPage() {
             onChange={e => setComment(e.target.value)}
             className="form-input"
             rows={3}
-            placeholder="Как прошло? Самочувствие, нюансы..."
+            placeholder="пример: чудесная тренировка, пульс 198"
             maxLength={500}
           />
         </div>
@@ -1390,18 +1396,6 @@ function NewWorkoutPage() {
             </label>
           </div>
         )}
-
-        {/* Кнопки добавления блоков */}
-        <div className="builder-actions">
-          <button type="button" className="btn-add-block" onClick={addSkillBlock}>
-            <span style={{ fontSize: '2rem' }}>🏋️</span>
-            Добавить Скилл
-          </button>
-          <button type="button" className="btn-add-block" onClick={addWodBlock}>
-            <span style={{ fontSize: '2rem' }}>⚡</span>
-            Добавить ВОД
-          </button>
-        </div>
 
         {error && <div className="form-error">{error}</div>}
 
