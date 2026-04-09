@@ -38,35 +38,20 @@ export class StatisticsService {
     startDate: string,
     endDate: string
   ): Promise<number> {
-    const workouts = await prisma.workout.findMany({
+    const sets = await prisma.skillSet.findMany({
       where: {
-        userId,
-        isTemplateOnly: false,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      include: {
-        skillBlocks: {
-          include: {
-            sets: true,
+        skillBlock: {
+          workout: {
+            userId,
+            isTemplateOnly: false,
+            date: { gte: startDate, lte: endDate },
           },
         },
       },
+      select: { weight: true, reps: true },
     });
 
-    let totalTonnage = 0;
-
-    for (const workout of workouts) {
-      for (const skillBlock of workout.skillBlocks) {
-        for (const set of skillBlock.sets) {
-          totalTonnage += Number(set.weight) * set.reps;
-        }
-      }
-    }
-
-    return totalTonnage;
+    return sets.reduce((sum, set) => sum + Number(set.weight) * set.reps, 0);
   }
 
   /**
@@ -288,34 +273,31 @@ export class StatisticsService {
    * @returns Объект с именем упражнения, весом и датой или null
    */
   async getBestWeight(userId: string): Promise<{ exerciseName: string; weight: number; date: string } | null> {
-    const skillBlocks = await prisma.skillBlock.findMany({
+    const set = await prisma.skillSet.findFirst({
       where: {
-        workout: { userId, isTemplateOnly: false },
-        sets: { some: {} },
+        skillBlock: {
+          workout: { userId, isTemplateOnly: false },
+        },
       },
-      include: {
-        exercise: true,
-        sets: true,
-        workout: { select: { date: true } },
+      orderBy: { weight: 'desc' },
+      select: {
+        weight: true,
+        skillBlock: {
+          select: {
+            exercise: { select: { name: true } },
+            workout: { select: { date: true } },
+          },
+        },
       },
     });
 
-    let best: { exerciseName: string; weight: number; date: string } | null = null;
+    if (!set) return null;
 
-    for (const block of skillBlocks) {
-      for (const set of block.sets) {
-        const w = Number(set.weight);
-        if (best === null || w > best.weight) {
-          best = {
-            exerciseName: block.exercise.name,
-            weight: w,
-            date: block.workout.date,
-          };
-        }
-      }
-    }
-
-    return best;
+    return {
+      exerciseName: set.skillBlock.exercise.name,
+      weight: Number(set.weight),
+      date: set.skillBlock.workout.date,
+    };
   }
 
   /**
@@ -338,54 +320,49 @@ export class StatisticsService {
     const startOfMonthStr = startOfMonth.toISOString().split('T')[0];
     const endOfMonthStr = endOfMonth.toISOString().split('T')[0];
 
-    // Количество тренировок за текущий месяц
-    const workoutsThisMonth = await prisma.workout.count({
-      where: {
-        userId,
-        isTemplateOnly: false,
-        date: {
-          gte: startOfMonthStr,
-          lte: endOfMonthStr,
+    const [workoutsThisMonth, tonnageThisMonth, bestWeight, streak, recentWorkouts] = await Promise.all([
+      // Количество тренировок за текущий месяц
+      prisma.workout.count({
+        where: {
+          userId,
+          isTemplateOnly: false,
+          date: { gte: startOfMonthStr, lte: endOfMonthStr },
         },
-      },
-    });
+      }),
 
-    // Тоннаж за текущий месяц
-    const tonnageThisMonth = await this.calculateTonnage(
-      userId,
-      startOfMonthStr,
-      endOfMonthStr
-    );
+      // Тоннаж за текущий месяц
+      this.calculateTonnage(userId, startOfMonthStr, endOfMonthStr),
 
-    // Лучший вес за всё время
-    const bestWeight = await this.getBestWeight(userId);
+      // Лучший вес за всё время
+      this.getBestWeight(userId),
 
-    // Текущий стрик
-    const streak = await this.calculateStreak(userId);
+      // Текущий стрик
+      this.calculateStreak(userId),
 
-    // Последние 5-10 тренировок
-    const recentWorkouts = await prisma.workout.findMany({
-      where: { userId, isTemplateOnly: false },
-      include: {
-        skillBlocks: {
-          include: {
-            exercise: true,
-            sets: true,
+      // Последние 10 тренировок
+      prisma.workout.findMany({
+        where: { userId, isTemplateOnly: false },
+        include: {
+          skillBlocks: {
+            include: {
+              exercise: true,
+              sets: true,
+            },
           },
-        },
-        wodBlocks: {
-          include: {
-            exercises: {
-              include: {
-                exercise: true,
+          wodBlocks: {
+            include: {
+              exercises: {
+                include: {
+                  exercise: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: { date: 'desc' },
-      take: 10,
-    });
+        orderBy: { date: 'desc' },
+        take: 10,
+      }),
+    ]);
 
     return {
       workoutsThisMonth,

@@ -401,6 +401,7 @@ export class WorkoutService {
       },
       include: {
         skillBlocks: {
+          orderBy: { createdAt: 'asc' },
           include: {
             exercise: true,
             sets: {
@@ -506,6 +507,7 @@ export class WorkoutService {
       where: { id: workoutId },
       include: {
         skillBlocks: {
+          orderBy: { createdAt: 'asc' },
           include: {
             exercise: true,
             sets: {
@@ -808,6 +810,7 @@ export class WorkoutService {
       where: { id: workoutId },
       include: {
         skillBlocks: {
+          orderBy: { createdAt: 'asc' },
           include: {
             exercise: true,
             sets: {

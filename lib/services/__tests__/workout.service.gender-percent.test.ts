@@ -21,13 +21,29 @@ async function createUser() {
 }
 
 afterEach(async () => {
-  await prisma.wodExercise.deleteMany({});
-  await prisma.wodBlock.deleteMany({});
-  await prisma.skillSet.deleteMany({});
-  await prisma.skillBlock.deleteMany({});
-  await prisma.workout.deleteMany({});
-  await prisma.exerciseDict.deleteMany({ where: { isGlobal: false } });
-  await prisma.user.deleteMany({ where: { email: { contains: 'test-gp-' } } });
+  const users = await prisma.user.findMany({ where: { email: { contains: 'test-gp-' } } });
+  const userIds = users.map(u => u.id);
+  if (userIds.length > 0) {
+    const workouts = await prisma.workout.findMany({ where: { userId: { in: userIds } }, select: { id: true } });
+    const workoutIds = workouts.map(w => w.id);
+    if (workoutIds.length > 0) {
+      const skillBlocks = await prisma.skillBlock.findMany({ where: { workoutId: { in: workoutIds } }, select: { id: true } });
+      const skillBlockIds = skillBlocks.map(sb => sb.id);
+      if (skillBlockIds.length > 0) {
+        await prisma.skillSet.deleteMany({ where: { skillBlockId: { in: skillBlockIds } } });
+      }
+      const wodBlocks = await prisma.wodBlock.findMany({ where: { workoutId: { in: workoutIds } }, select: { id: true } });
+      const wodBlockIds = wodBlocks.map(wb => wb.id);
+      if (wodBlockIds.length > 0) {
+        await prisma.wodExercise.deleteMany({ where: { wodBlockId: { in: wodBlockIds } } });
+      }
+      await prisma.skillBlock.deleteMany({ where: { workoutId: { in: workoutIds } } });
+      await prisma.wodBlock.deleteMany({ where: { workoutId: { in: workoutIds } } });
+      await prisma.workout.deleteMany({ where: { id: { in: workoutIds } } });
+    }
+    await prisma.exerciseDict.deleteMany({ where: { userId: { in: userIds }, isGlobal: false } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
 });
 
 describe('WeightIsPercent в скилл-блоках', () => {

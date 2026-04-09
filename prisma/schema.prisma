@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,27 +8,26 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(uuid()) @db.VarChar(36)
-  email         String    @unique @db.VarChar(255)
-  passwordHash  String    @map("password_hash") @db.VarChar(255)
-  firstName     String?   @map("first_name") @db.VarChar(100)
-  lastName      String?   @map("last_name") @db.VarChar(100)
-  avatar        String?   @db.VarChar(500)
-  verified      Boolean   @default(false)
-  gender        Gender?   @map("gender")
-  isAdmin       Boolean   @default(false) @map("is_admin")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-
-  workouts            Workout[]
-  exercises           ExerciseDict[]
-  verificationTokens  VerificationToken[]
-  passwordResetTokens PasswordResetToken[]
+  id                  String               @id @default(uuid()) @db.VarChar(36)
+  email               String               @unique @db.VarChar(255)
+  passwordHash        String               @map("password_hash") @db.VarChar(255)
+  firstName           String?              @map("first_name") @db.VarChar(100)
+  lastName            String?              @map("last_name") @db.VarChar(100)
+  avatar              String?              @db.VarChar(500)
+  verified            Boolean              @default(false)
+  createdAt           DateTime             @default(now()) @map("created_at")
+  updatedAt           DateTime             @updatedAt @map("updated_at")
+  gender              Gender?              @map("gender")
+  isAdmin             Boolean              @default(false) @map("is_admin")
   clubMemberships     ClubMember[]
+  exercises           ExerciseDict[]
+  passwordResetTokens PasswordResetToken[]
   consents            UserConsent[]
+  verificationTokens  VerificationToken[]
+  workouts            Workout[]
 
-  @@map("users")
   @@index([email])
+  @@map("users")
 }
 
 model VerificationToken {
@@ -39,12 +36,11 @@ model VerificationToken {
   token     String   @unique @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("verification_tokens")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
+  @@map("verification_tokens")
 }
 
 model PasswordResetToken {
@@ -53,80 +49,178 @@ model PasswordResetToken {
   token     String   @unique @db.VarChar(255)
   expiresAt DateTime @map("expires_at")
   createdAt DateTime @default(now()) @map("created_at")
-  
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("password_reset_tokens")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([token])
   @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model ExerciseDict {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  name      String   @db.VarChar(255)
-  isGlobal  Boolean  @default(false) @map("is_global")
-  userId    String?  @map("user_id") @db.VarChar(36)
-  createdAt DateTime @default(now()) @map("created_at")
-
+  id                 String        @id @default(uuid()) @db.VarChar(36)
+  name               String        @db.VarChar(255)
+  isGlobal           Boolean       @default(false) @map("is_global")
+  userId             String?       @map("user_id") @db.VarChar(36)
+  createdAt          DateTime      @default(now()) @map("created_at")
   user               User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   skillBlocks        SkillBlock[]
-  wodExercises       WodExercise[] @relation("WodExerciseMale")
   wodExercisesFemale WodExercise[] @relation("WodExerciseFemale")
-  
+  wodExercises       WodExercise[] @relation("WodExerciseMale")
+
   @@unique([name, userId])
-  @@map("exercises_dict")
   @@index([name])
   @@index([userId])
+  @@map("exercises_dict")
 }
 
 model Workout {
-  id              String   @id @default(uuid()) @db.VarChar(36)
-  userId          String   @map("user_id") @db.VarChar(36)
-  date            String   @db.VarChar(10) // YYYY-MM-DD format
-  comment         String?  @db.Text
-  isClubTemplate    Boolean  @default(false) @map("is_club_template")
-  isTemplateOnly    Boolean  @default(false) @map("is_template_only")
-  showInLeaderboard Boolean  @default(true) @map("show_in_leaderboard")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                String       @id @default(uuid()) @db.VarChar(36)
+  userId            String       @map("user_id") @db.VarChar(36)
+  date              String       @db.VarChar(10)
+  comment           String?      @db.Text
+  createdAt         DateTime     @default(now()) @map("created_at")
+  updatedAt         DateTime     @updatedAt @map("updated_at")
+  isClubTemplate    Boolean      @default(false) @map("is_club_template")
+  isTemplateOnly    Boolean      @default(false) @map("is_template_only")
+  showInLeaderboard Boolean      @default(true) @map("show_in_leaderboard")
+  skillBlocks       SkillBlock[]
+  wodBlocks         WodBlock[]
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  skillBlocks SkillBlock[]
-  wodBlocks   WodBlock[]
-
-  @@map("workouts")
   @@index([userId, date])
   @@index([date])
+  @@map("workouts")
 }
 
 model SkillBlock {
-  id             String   @id @default(uuid()) @db.VarChar(36)
-  workoutId      String   @map("workout_id") @db.VarChar(36)
-  exerciseDictId String   @map("exercise_dict_id") @db.VarChar(36)
-  createdAt      DateTime @default(now()) @map("created_at")
-  
-  workout      Workout        @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exercise     ExerciseDict   @relation(fields: [exerciseDictId], references: [id])
-  sets         SkillSet[]
-  
-  @@map("skill_blocks")
+  id             String       @id @default(uuid()) @db.VarChar(36)
+  workoutId      String       @map("workout_id") @db.VarChar(36)
+  exerciseDictId String       @map("exercise_dict_id") @db.VarChar(36)
+  createdAt      DateTime     @default(now()) @map("created_at")
+  exercise       ExerciseDict @relation(fields: [exerciseDictId], references: [id])
+  workout        Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  sets           SkillSet[]
+
   @@index([workoutId])
   @@index([exerciseDictId])
+  @@map("skill_blocks")
 }
 
 model SkillSet {
-  id           String  @id @default(uuid()) @db.VarChar(36)
-  skillBlockId String  @map("skill_block_id") @db.VarChar(36)
-  setNumber    Int     @map("set_number")
-  reps         Int
-  weight       Decimal @db.Decimal(6, 2) // Max 9999.99 kg
-  
-  weightIsPercent Boolean @default(false) @map("weight_is_percent")
+  id              String     @id @default(uuid()) @db.VarChar(36)
+  skillBlockId    String     @map("skill_block_id") @db.VarChar(36)
+  setNumber       Int        @map("set_number")
+  reps            Int
+  weight          Decimal    @db.Decimal(6, 2)
+  weightIsPercent Boolean    @default(false) @map("weight_is_percent")
+  skillBlock      SkillBlock @relation(fields: [skillBlockId], references: [id], onDelete: Cascade)
 
-  skillBlock SkillBlock @relation(fields: [skillBlockId], references: [id], onDelete: Cascade)
-
-  @@map("skill_sets")
   @@index([skillBlockId])
+  @@map("skill_sets")
+}
+
+model WodBlock {
+  id              String        @id @default(uuid()) @db.VarChar(36)
+  workoutId       String        @map("workout_id") @db.VarChar(36)
+  wodType         WodType       @map("wod_type")
+  level           WodLevel
+  timeCapSeconds  Int?          @map("time_cap_seconds")
+  isLadder        Boolean       @default(false) @map("is_ladder")
+  resultType      ResultType    @map("result_type")
+  resultDisplay   String        @map("result_display") @db.VarChar(50)
+  resultSeconds   Int?          @map("result_seconds")
+  resultTotalReps Int?          @map("result_total_reps")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  hasGenderSplit  Boolean       @default(false) @map("has_gender_split")
+  ladderRounds    Int?          @map("ladder_rounds")
+  workout         Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercises       WodExercise[]
+
+  @@index([workoutId])
+  @@map("wod_blocks")
+}
+
+model WodExercise {
+  id                   String        @id @default(uuid()) @db.VarChar(36)
+  wodBlockId           String        @map("wod_block_id") @db.VarChar(36)
+  exerciseDictId       String        @map("exercise_dict_id") @db.VarChar(36)
+  reps                 Int
+  weight               Decimal?      @db.Decimal(6, 2)
+  orderIndex           Int           @map("order_index")
+  repsFemale           Int?          @map("reps_female")
+  weightFemale         Decimal?      @map("weight_female") @db.Decimal(6, 2)
+  exerciseDictIdFemale String?       @map("exercise_dict_id_female") @db.VarChar(36)
+  exerciseFemale       ExerciseDict? @relation("WodExerciseFemale", fields: [exerciseDictIdFemale], references: [id])
+  exercise             ExerciseDict  @relation("WodExerciseMale", fields: [exerciseDictId], references: [id])
+  wodBlock             WodBlock      @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
+
+  @@index([wodBlockId])
+  @@index([exerciseDictId])
+  @@index([exerciseDictIdFemale], map: "wod_exercises_exercise_dict_id_female_fkey")
+  @@map("wod_exercises")
+}
+
+model Club {
+  id          String       @id @default(uuid()) @db.VarChar(36)
+  name        String       @db.VarChar(200)
+  slug        String       @unique @db.VarChar(100)
+  description String?      @db.Text
+  city        String?      @db.VarChar(100)
+  logo        String?      @db.VarChar(500)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  invites     ClubInvite[]
+  members     ClubMember[]
+
+  @@index([slug])
+  @@map("clubs")
+}
+
+model ClubMember {
+  id                String   @id @default(uuid()) @db.VarChar(36)
+  clubId            String   @map("club_id") @db.VarChar(36)
+  userId            String   @map("user_id") @db.VarChar(36)
+  role              ClubRole @default(ATHLETE)
+  joinedAt          DateTime @default(now()) @map("joined_at")
+  showInLeaderboard Boolean  @default(true) @map("show_in_leaderboard")
+  club              Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([clubId])
+  @@index([userId])
+  @@map("club_members")
+}
+
+model ClubInvite {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  clubId    String    @map("club_id") @db.VarChar(36)
+  code      String    @unique @db.VarChar(20)
+  createdBy String    @map("created_by") @db.VarChar(36)
+  maxUses   Int?      @map("max_uses")
+  usedCount Int       @default(0) @map("used_count")
+  expiresAt DateTime? @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  club      Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+
+  @@index([code])
+  @@index([clubId])
+  @@map("club_invites")
+}
+
+model UserConsent {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  userId      String   @map("user_id") @db.VarChar(36)
+  consentType String   @map("consent_type") @db.VarChar(50)
+  accepted    Boolean  @default(true)
+  ipAddress   String?  @map("ip_address") @db.VarChar(45)
+  userAgent   String?  @map("user_agent") @db.VarChar(500)
+  createdAt   DateTime @default(now()) @map("created_at")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([consentType])
+  @@map("user_consents")
 }
 
 enum WodType {
@@ -134,14 +228,14 @@ enum WodType {
   AMRAP
   EMOM
   TABATA
-  
+
   @@map("wod_type")
 }
 
 enum WodLevel {
   RX
   SCALED
-  
+
   @@map("wod_level")
 }
 
@@ -149,55 +243,9 @@ enum ResultType {
   TIME
   REPS
   WEIGHT
-  
+
   @@map("result_type")
 }
-
-model WodBlock {
-  id               String     @id @default(uuid()) @db.VarChar(36)
-  workoutId        String     @map("workout_id") @db.VarChar(36)
-  wodType          WodType    @map("wod_type")
-  level            WodLevel
-  timeCapSeconds   Int?       @map("time_cap_seconds")
-  isLadder         Boolean    @default(false) @map("is_ladder")
-  ladderRounds     Int?       @map("ladder_rounds")
-  resultType       ResultType @map("result_type")
-  resultDisplay    String     @map("result_display") @db.VarChar(50) // "15:30" or "5+12"
-  resultSeconds    Int?       @map("result_seconds") // For TIME type
-  resultTotalReps  Int?       @map("result_total_reps") // For AMRAP type
-  hasGenderSplit   Boolean    @default(false) @map("has_gender_split")
-  createdAt        DateTime   @default(now()) @map("created_at")
-  
-  workout   Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
-  exercises WodExercise[]
-  
-  @@map("wod_blocks")
-  @@index([workoutId])
-}
-
-model WodExercise {
-  id             String  @id @default(uuid()) @db.VarChar(36)
-  wodBlockId     String  @map("wod_block_id") @db.VarChar(36)
-  exerciseDictId String  @map("exercise_dict_id") @db.VarChar(36)
-  reps                 Int
-  weight               Decimal? @db.Decimal(6, 2)
-  repsFemale           Int?     @map("reps_female")
-  weightFemale         Decimal? @map("weight_female") @db.Decimal(6, 2)
-  exerciseDictIdFemale String?  @map("exercise_dict_id_female") @db.VarChar(36)
-  orderIndex           Int      @map("order_index")
-
-  wodBlock       WodBlock      @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)
-  exercise       ExerciseDict  @relation("WodExerciseMale", fields: [exerciseDictId], references: [id])
-  exerciseFemale ExerciseDict? @relation("WodExerciseFemale", fields: [exerciseDictIdFemale], references: [id])
-  
-  @@map("wod_exercises")
-  @@index([wodBlockId])
-  @@index([exerciseDictId])
-}
-
-// =====================
-// Club system
-// =====================
 
 enum Gender {
   MALE
@@ -212,75 +260,4 @@ enum ClubRole {
   ATHLETE
 
   @@map("club_role")
-}
-
-model Club {
-  id          String   @id @default(uuid()) @db.VarChar(36)
-  name        String   @db.VarChar(200)
-  slug        String   @unique @db.VarChar(100)
-  description String?  @db.Text
-  city        String?  @db.VarChar(100)
-  logo        String?  @db.VarChar(500)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  members ClubMember[]
-  invites ClubInvite[]
-
-  @@map("clubs")
-  @@index([slug])
-}
-
-model ClubMember {
-  id               String   @id @default(uuid()) @db.VarChar(36)
-  clubId           String   @map("club_id") @db.VarChar(36)
-  userId           String   @map("user_id") @db.VarChar(36)
-  role             ClubRole @default(ATHLETE)
-  showInLeaderboard Boolean @default(true) @map("show_in_leaderboard")
-  joinedAt         DateTime @default(now()) @map("joined_at")
-
-  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([clubId, userId])
-  @@map("club_members")
-  @@index([clubId])
-  @@index([userId])
-}
-
-model ClubInvite {
-  id        String   @id @default(uuid()) @db.VarChar(36)
-  clubId    String   @map("club_id") @db.VarChar(36)
-  code      String   @unique @db.VarChar(20)
-  createdBy String   @map("created_by") @db.VarChar(36)
-  maxUses   Int?     @map("max_uses")
-  usedCount Int      @default(0) @map("used_count")
-  expiresAt DateTime? @map("expires_at")
-  createdAt DateTime @default(now()) @map("created_at")
-
-  club Club @relation(fields: [clubId], references: [id], onDelete: Cascade)
-
-  @@map("club_invites")
-  @@index([code])
-  @@index([clubId])
-}
-
-// =====================
-// User consents
-// =====================
-
-model UserConsent {
-  id          String   @id @default(uuid()) @db.VarChar(36)
-  userId      String   @map("user_id") @db.VarChar(36)
-  consentType String   @map("consent_type") @db.VarChar(50) // cookies, privacy_policy, terms
-  accepted    Boolean  @default(true)
-  ipAddress   String?  @map("ip_address") @db.VarChar(45)
-  userAgent   String?  @map("user_agent") @db.VarChar(500)
-  createdAt   DateTime @default(now()) @map("created_at")
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_consents")
-  @@index([userId])
-  @@index([consentType])
 }
