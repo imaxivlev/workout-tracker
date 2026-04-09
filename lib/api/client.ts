@@ -748,6 +748,24 @@ export const adminApi = {
     return apiFetch<{ workouts: AdminWorkout[]; pagination: Pagination }>(`/api/admin/workouts${qs ? `?${qs}` : ''}`);
   },
 
+  async getWorkoutFull(id: string) {
+    return apiFetch<{ workout: Workout }>(`/api/admin/workouts/${id}`);
+  },
+
+  async updateWorkout(id: string, data: Partial<{ date: string; comment: string; isClubTemplate: boolean }>) {
+    return apiFetch<{ workout: unknown }>(`/api/admin/workouts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
+  async updateWorkoutFull(id: string, data: WorkoutInput) {
+    return apiFetch<{ workout: unknown }>(`/api/admin/workouts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    });
+  },
+
   async deleteWorkout(id: string) {
     return apiFetch<{ message: string }>(`/api/admin/workouts/${id}`, { method: 'DELETE' });
   },

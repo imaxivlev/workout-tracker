@@ -1,9 +1,11 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { adminApi, AdminWorkout } from '@/lib/api/client';
 
 export default function AdminWorkoutsPage() {
+  const router = useRouter();
   const [workouts, setWorkouts] = useState<AdminWorkout[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -74,6 +76,7 @@ export default function AdminWorkoutsPage() {
                     <td>{w.isClubTemplate ? <span className="admin-badge blue">Да</span> : '—'}</td>
                     <td>{new Date(w.createdAt).toLocaleDateString('ru')}</td>
                     <td className="admin-actions">
+                      <button onClick={() => router.push(`/dashboard/admin/workouts/${w.id}/edit`)} className="admin-btn edit">Ред.</button>
                       <button onClick={() => handleDelete(w.id)} className="admin-btn delete">Уд.</button>
                     </td>
                   </tr>
