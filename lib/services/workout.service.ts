@@ -671,7 +671,8 @@ export class WorkoutService {
                     skillBlockId: createdSkillBlock.id,
                     setNumber: setNumber,
                     reps: set.reps,
-                    weight: set.weight
+                    weight: set.weight,
+                    weightIsPercent: set.weightIsPercent ?? false,
                   }
                 });
                 setNumber++;
@@ -700,7 +701,8 @@ export class WorkoutService {
                   resultType: this.determineResultType(wodBlock.wodType),
                   resultDisplay: wodBlock.resultDisplay,
                   resultSeconds: wodBlock.resultSeconds || null,
-                  resultTotalReps: wodBlock.resultTotalReps || null
+                  resultTotalReps: wodBlock.resultTotalReps || null,
+                  hasGenderSplit: (wodBlock as any).hasGenderSplit ?? false,
                 }
               });
 

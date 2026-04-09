@@ -273,7 +273,7 @@ describe('Verification Tokens - Property-Based Tests', () => {
     it('токен сброса пароля нельзя использовать повторно', async () => {
       await fc.assert(
         fc.asyncProperty(
-          fc.emailAddress(),
+          fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.string({ minLength: 8, maxLength: 20 })
             .filter(s => /\d/.test(s) && /[a-zA-Z]/.test(s)),
           fc.string({ minLength: 8, maxLength: 20 })
@@ -281,26 +281,30 @@ describe('Verification Tokens - Property-Based Tests', () => {
           fc.string({ minLength: 8, maxLength: 20 })
             .filter(s => /\d/.test(s) && /[a-zA-Z]/.test(s)),
           async (email, password, newPassword1, newPassword2) => {
-            // Регистрируем пользователя
-            await userService.register({
-              email,
-              password
-            });
-            
-            // Запрашиваем сброс пароля
-            const resetToken = await userService.requestPasswordReset(email);
-            
-            // Первое использование токена успешно
-            const isReset1 = await userService.resetPassword(resetToken, newPassword1);
-            expect(isReset1).toBe(true);
-            
-            // Попытка повторного использования того же токена должна вернуть false
-            const isReset2 = await userService.resetPassword(resetToken, newPassword2);
-            expect(isReset2).toBe(false);
-            
-            // Проверяем, что пароль не изменился на newPassword2
-            const loginResult = await userService.login(email, newPassword1);
-            expect(loginResult.user.email).toBe(email);
+            try {
+              // Регистрируем пользователя и верифицируем email
+              const regResult = await userService.register({ email, password });
+              await userService.verifyEmail(regResult.verificationToken);
+
+              // Запрашиваем сброс пароля
+              const resetToken = await userService.requestPasswordReset(email);
+
+              // Первое использование токена успешно
+              const isReset1 = await userService.resetPassword(resetToken, newPassword1);
+              expect(isReset1).toBe(true);
+
+              // Попытка повторного использования того же токена должна вернуть false
+              const isReset2 = await userService.resetPassword(resetToken, newPassword2);
+              expect(isReset2).toBe(false);
+
+              // Проверяем, что пароль не изменился на newPassword2
+              const loginResult = await userService.login(email, newPassword1);
+              expect(loginResult.user.email).toBe(email);
+            } finally {
+              // Очистка между запусками property (в т.ч. при shrinking)
+              await prisma.passwordResetToken.deleteMany({ where: { user: { email } } });
+              await prisma.user.deleteMany({ where: { email } });
+            }
           }
         ),
         { numRuns: 20 }

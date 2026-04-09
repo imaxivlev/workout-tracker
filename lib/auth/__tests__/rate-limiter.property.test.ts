@@ -172,20 +172,20 @@ describe('Rate Limiter - Property-Based Tests', () => {
    * Тесты для предустановленных конфигураций
    */
   describe('Предустановленные конфигурации', () => {
-    it('auth endpoints: 5 запросов за 15 минут', async () => {
+    it('auth endpoints: 20 запросов за 15 минут', async () => {
       const identifier = 'test-user-auth';
       const config = RATE_LIMIT_CONFIGS.auth;
-      
-      // Первые 5 запросов разрешены
-      for (let i = 0; i < 5; i++) {
+
+      // Первые 20 запросов разрешены
+      for (let i = 0; i < 20; i++) {
         const isBlocked = await rateLimit(identifier, config);
         expect(isBlocked).toBe(false);
       }
-      
-      // 6-й запрос заблокирован
+
+      // 21-й запрос заблокирован
       const isBlocked = await rateLimit(identifier, config);
       expect(isBlocked).toBe(true);
-      
+
       clearRateLimit(identifier);
     });
     

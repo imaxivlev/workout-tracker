@@ -138,7 +138,7 @@ describe('Rate Limiter', () => {
     it('должен иметь правильную конфигурацию для auth endpoints', () => {
       expect(RATE_LIMIT_CONFIGS.auth).toEqual({
         windowMs: 15 * 60 * 1000, // 15 минут
-        maxRequests: 5
+        maxRequests: 20
       })
     })
 
@@ -158,27 +158,27 @@ describe('Rate Limiter', () => {
   })
 
   describe('Требование 17.1: Auth endpoints rate limiting', () => {
-    it('должен разрешить 5 попыток входа за 15 минут', async () => {
+    it('должен разрешить 20 попыток входа за 15 минут', async () => {
       const identifier = 'auth-user-1'
       const config = RATE_LIMIT_CONFIGS.auth
 
-      // 5 попыток должны быть разрешены
-      for (let i = 0; i < 5; i++) {
+      // 20 попыток должны быть разрешены
+      for (let i = 0; i < 20; i++) {
         const isLimited = await rateLimit(identifier, config)
         expect(isLimited).toBe(false)
       }
     })
 
-    it('должен заблокировать 6-ю попытку входа', async () => {
+    it('должен заблокировать 21-ю попытку входа', async () => {
       const identifier = 'auth-user-2'
       const config = RATE_LIMIT_CONFIGS.auth
 
-      // 5 попыток разрешены
-      for (let i = 0; i < 5; i++) {
+      // 20 попыток разрешены
+      for (let i = 0; i < 20; i++) {
         await rateLimit(identifier, config)
       }
 
-      // 6-я попытка заблокирована
+      // 21-я попытка заблокирована
       const isLimited = await rateLimit(identifier, config)
       expect(isLimited).toBe(true)
     })

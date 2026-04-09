@@ -340,23 +340,23 @@ describe('WorkoutService - Property-Based Tests', () => {
     });
     
     it('глобальные упражнения используются вместо создания новых', async () => {
-      // Список глобальных упражнений из seed
+      // Список глобальных упражнений из seed (русские названия)
       const globalExercises = [
-        'Snatch',
-        'Clean & Jerk',
-        'Back Squat',
-        'Front Squat',
-        'Deadlift',
-        'Bench Press',
-        'Overhead Press',
-        'Pull-ups',
-        'Push-ups',
-        'Burpees',
-        'Box Jumps',
-        'Kettlebell Swing',
-        'Thruster',
-        'Wall Balls',
-        'Rope Climbs'
+        'Рывок',
+        'Толчок',
+        'Приседания со штангой на спине',
+        'Фронтальные приседания',
+        'Становая тяга',
+        'Жим лежа',
+        'Жим стоя',
+        'Подтягивания',
+        'Отжимания',
+        'Берпи',
+        'Запрыгивания на коробку',
+        'Махи гирей',
+        'Трастеры',
+        'Броски мяча',
+        'Лазание по канату'
       ];
       
       await fc.assert(
@@ -411,11 +411,11 @@ describe('WorkoutService - Property-Based Tests', () => {
     
     it('глобальные упражнения находятся независимо от регистра', async () => {
       const globalExercises = [
-        'Snatch',
-        'Clean & Jerk',
-        'Back Squat',
-        'Front Squat',
-        'Deadlift'
+        'Рывок',
+        'Толчок',
+        'Приседания со штангой на спине',
+        'Фронтальные приседания',
+        'Становая тяга'
       ];
       
       await fc.assert(
@@ -479,7 +479,7 @@ describe('WorkoutService - Property-Based Tests', () => {
             });
             
             // Используем название глобального упражнения
-            const exerciseName = 'Back Squat';
+            const exerciseName = 'Приседания со штангой на спине';
             
             // Первый резолв должен вернуть глобальное упражнение
             const globalId = await workoutService.resolveExerciseId(
@@ -533,7 +533,7 @@ describe('WorkoutService - Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
             skillBlocks: fc.array(
@@ -745,7 +745,7 @@ describe('WorkoutService - Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
             skillBlocks: fc.array(
@@ -1227,7 +1227,7 @@ describe('WorkoutService - Property-Based Tests', () => {
             fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
             skillBlocks: fc.array(
@@ -1614,7 +1614,7 @@ describe('WorkoutService - Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             comment: fc.option(fc.string({ maxLength: 100 }), { nil: undefined }),
             skillBlocks: fc.array(
@@ -1725,7 +1725,7 @@ describe('WorkoutService - Property-Based Tests', () => {
         fc.asyncProperty(
           fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             skillBlocks: fc.option(
               fc.array(
@@ -1822,7 +1822,7 @@ describe('WorkoutService - Property-Based Tests', () => {
             fc.constant(null).map(() => `${crypto.randomUUID()}@test.com`)
           ).filter(([email1, email2]) => email1 !== email2),
           fc.record({
-            date: fc.date({ min: new Date('2020-01-01'), max: new Date() })
+            date: fc.date({ min: new Date('2020-01-01'), max: new Date('2026-12-31') })
               .map(d => d.toISOString().split('T')[0]),
             skillBlocks: fc.array(
               fc.record({

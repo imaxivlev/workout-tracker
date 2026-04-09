@@ -25,6 +25,7 @@ vi.mock('@/lib/services/email.service', () => ({
     async sendVerificationEmail() {}
     async sendPasswordResetEmail() {}
     async sendEmailChangeConfirmation() {}
+    async sendNewUserNotification() {}
   }
 }));
 
@@ -164,6 +165,7 @@ describe('Auth Flow Integration Tests', () => {
           password: 'SecurePass1',
           firstName: 'Иван',
           lastName: 'Петров',
+          gender: 'MALE',
         }),
       });
 
@@ -239,6 +241,7 @@ describe('Auth Flow Integration Tests', () => {
         body: JSON.stringify({
           email: 'user@example.com',
           password: 'CorrectPass1',
+          gender: 'MALE',
         }),
       });
       await registerPOST(registerRequest);
@@ -329,6 +332,7 @@ describe('Auth Flow Integration Tests', () => {
         body: JSON.stringify({
           email: 'duplicate@example.com',
           password: 'SecurePass1',
+          gender: 'MALE',
         }),
       });
       const response1 = await registerPOST(request1);
@@ -340,6 +344,7 @@ describe('Auth Flow Integration Tests', () => {
         body: JSON.stringify({
           email: 'duplicate@example.com',
           password: 'AnotherPass1',
+          gender: 'MALE',
         }),
       });
       const response2 = await registerPOST(request2);
@@ -439,6 +444,7 @@ describe('Auth Flow Integration Tests', () => {
         body: JSON.stringify({
           email: 'reset@example.com',
           password: 'OldPass123',
+          gender: 'MALE',
         }),
       });
       await registerPOST(registerRequest);
@@ -484,6 +490,7 @@ describe('Auth Flow Integration Tests', () => {
         body: JSON.stringify({
           email: 'reset@example.com',
           password: 'OldPass123',
+          gender: 'MALE',
         }),
       });
 
