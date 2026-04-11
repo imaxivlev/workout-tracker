@@ -656,6 +656,8 @@ export default function ClubPage() {
                                 }}
                                 onTouchEnd={(e) => {
                                   e.preventDefault();
+                                  e.stopPropagation();
+                                  if (rmHideTimer.current) clearTimeout(rmHideTimer.current);
                                   if (rmTooltip) {
                                     setRmTooltip(null);
                                   } else {
