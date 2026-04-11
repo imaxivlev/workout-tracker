@@ -67,8 +67,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Мобильная лого-полоса */}
       <div className="mobile-logo-bar">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/workout-tracker/images/logo.png" alt="CrossFit Tracker" className="mobile-logo-img" />
+        <Link href="/dashboard">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/workout-tracker/images/logo.png" alt="CrossFit Tracker" className="mobile-logo-img" />
+        </Link>
       </div>
 
       {/* Контент */}
@@ -78,16 +80,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Нижняя мобильная навигация */}
       <nav className="mobile-nav">
-        <Link
-          href="/dashboard"
-          className={`mobile-nav-item ${pathname === '/dashboard' ? 'active' : ''}`}
-        >
-          <svg className="mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            <polyline points="9 22 9 12 15 12 15 22" />
-          </svg>
-          <span className="mobile-nav-label">Главная</span>
-        </Link>
         <Link
           href="/dashboard/workouts"
           className={`mobile-nav-item ${pathname.startsWith('/dashboard/workouts') && pathname !== '/dashboard/workouts/new' ? 'active' : ''}`}

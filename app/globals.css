@@ -4694,12 +4694,12 @@ body.auth-page {
 .cp-chip {
     display: inline-flex;
     align-items: center;
-    padding: 0.45rem 0.9rem;
-    border-radius: 20px;
-    border: 1px solid var(--border-color);
-    background: transparent;
-    color: var(--text-secondary);
-    font-size: 0.82rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.85rem;
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
@@ -4714,27 +4714,28 @@ body.auth-page {
     font-weight: 600;
 }
 
+.cp-chip:hover:not(.active) {
+    border-color: var(--color-primary);
+}
+
 .cp-chip-sm {
-    padding: 0.3rem 0.65rem;
-    font-size: 0.75rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
 }
 
 /* ── Gender Toggle ── */
 .cp-gender-toggle {
     display: inline-flex;
-    background: var(--bg-secondary);
-    border-radius: 8px;
-    padding: 3px;
-    gap: 2px;
-    margin: 0.5rem 0;
+    gap: 0.4rem;
+    margin: 0;
 }
 
 .cp-gender-btn {
     padding: 0.35rem 0.85rem;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    color: var(--text-secondary);
+    border-radius: 8px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
     font-size: 0.82rem;
     font-weight: 500;
     cursor: pointer;
@@ -4742,9 +4743,14 @@ body.auth-page {
 }
 
 .cp-gender-btn.active {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: #fff;
     font-weight: 600;
+}
+
+.cp-gender-btn:hover:not(.active) {
+    border-color: var(--color-primary);
 }
 
 /* ── Date Row ── */
@@ -5535,22 +5541,69 @@ body.auth-page {
 }
 
 /* ── Members link (meta button) ── */
+.cp-meta-dot {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    margin: 0 0.3rem;
+    user-select: none;
+}
+
 .cp-members-link {
     background: none;
     border: none;
     padding: 0;
     cursor: pointer;
     color: var(--text-secondary);
-    font-size: inherit;
+    font-size: 0.82rem;
+    font-family: inherit;
     text-decoration: underline;
     text-underline-offset: 2px;
-    text-decoration-color: transparent;
-    transition: color 0.15s, text-decoration-color 0.15s;
+    text-decoration-color: currentColor;
+    transition: color 0.15s;
 }
 
 .cp-members-link:hover {
+    color: var(--color-primary);
+}
+
+/* ── Tooltip-значок для заголовков таблиц ── */
+.th-hint {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--text-secondary);
+    color: var(--bg-primary);
+    font-size: 9px;
+    font-weight: 700;
+    cursor: help;
+    margin-left: 4px;
+    vertical-align: middle;
+    opacity: 0.55;
+    position: relative;
+    transition: opacity 0.15s;
+}
+
+.th-hint:hover {
+    opacity: 1;
+}
+
+.th-hint-popup {
+    transform: translateX(-50%);
+    background: var(--bg-tertiary);
     color: var(--text-primary);
-    text-decoration-color: currentColor;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 0.75rem;
+    font-weight: 400;
+    max-width: 220px;
+    text-align: left;
+    pointer-events: none;
+    z-index: 1000;
+    line-height: 1.5;
 }
 
 /* ── Members Modal ── */

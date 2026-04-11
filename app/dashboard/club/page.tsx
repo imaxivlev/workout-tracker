@@ -148,6 +148,8 @@ export default function ClubPage() {
 
   const [collapsedTemplates, setCollapsedTemplates] = useState<Set<string>>(new Set());
 
+  const [rmTooltip, setRmTooltip] = useState<{ x: number; y: number } | null>(null);
+
   useEffect(() => { loadClub(); }, []);
 
   async function loadClub() {
@@ -313,8 +315,9 @@ export default function ClubPage() {
             <h1 className="cp-club-name">{club.name}</h1>
             <div className="cp-club-meta">
               {club.city && <span className="cp-meta-item">{club.city}</span>}
+              {club.city && <span className="cp-meta-dot" aria-hidden="true">·</span>}
               <button
-                className="cp-meta-item cp-members-link"
+                className="cp-members-link"
                 onClick={() => setShowMembers(true)}
               >
                 {memberLabel}
@@ -638,7 +641,26 @@ export default function ClubPage() {
                           <tr>
                             <th className="cp-th-rank">#</th>
                             <th>Атлет</th>
-                            <th className="cp-th-num">1RM</th>
+                            <th className="cp-th-num">
+                              1RM
+                              <span
+                                className="th-hint"
+                                onMouseEnter={(e) => {
+                                  const r = e.currentTarget.getBoundingClientRect();
+                                  setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 7 });
+                                }}
+                                onMouseLeave={() => setRmTooltip(null)}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  if (rmTooltip) {
+                                    setRmTooltip(null);
+                                  } else {
+                                    const r = e.currentTarget.getBoundingClientRect();
+                                    setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 7 });
+                                  }
+                                }}
+                              >?</span>
+                            </th>
                             <th className="cp-th-num">Макс.</th>
                             <th className="cp-th-num">Лучший</th>
                           </tr>
@@ -725,6 +747,23 @@ export default function ClubPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {rmTooltip && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+            onTouchEnd={() => setRmTooltip(null)}
+            onClick={() => setRmTooltip(null)}
+          />
+          <div
+            className="th-hint-popup"
+            style={{ position: 'fixed', top: rmTooltip.y, left: rmTooltip.x }}
+          >
+            Расчётный максимум для одного повторения.<br />
+            Формула Эпли: 1RM = вес × (1 + повт / 30)
+          </div>
+        </>
       )}
     </div>
   );

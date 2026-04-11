@@ -476,6 +476,25 @@ export class ClubService {
   async getWodLeaderboard(clubId: string, date: string, wodType?: string): Promise<WodLeaderboardEntry[]> {
     const userIds = await this.getVisibleUserIds(clubId);
 
+    // Только активные шаблоны определяют, что попадает в лидерборд
+    const allMemberIds = await prisma.clubMember.findMany({
+      where: { clubId },
+      select: { userId: true }
+    });
+    const allUserIds = allMemberIds.map(m => m.userId);
+
+    const activeTemplates = await prisma.workout.findMany({
+      where: { userId: { in: allUserIds }, date, isClubTemplate: true },
+      include: {
+        skillBlocks: { include: { exercise: true } },
+        wodBlocks: { include: { exercises: { include: { exercise: true }, orderBy: { orderIndex: 'asc' } } } }
+      }
+    });
+
+    if (activeTemplates.length === 0) return [];
+
+    const templateSignatures = new Set(activeTemplates.map(t => this.workoutSignature(t)));
+
     const workouts = await prisma.workout.findMany({
       where: {
         userId: { in: userIds },
@@ -502,9 +521,12 @@ export class ClubService {
       }
     });
 
+    // Оставляем только тренировки, соответствующие активному шаблону
+    const matchingWorkouts = workouts.filter(w => templateSignatures.has(this.workoutSignature(w)));
+
     const entries: WodLeaderboardEntry[] = [];
 
-    for (const w of workouts) {
+    for (const w of matchingWorkouts) {
       for (const wb of w.wodBlocks) {
         // Фильтрация по типу WOD (FOR_TIME, AMRAP и т.д.)
         if (wodType && wb.wodType !== wodType) continue;
