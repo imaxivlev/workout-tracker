@@ -151,6 +151,20 @@ export default function ClubPage() {
   const [rmTooltip, setRmTooltip] = useState<{ x: number; y: number } | null>(null);
   const rmHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  useEffect(() => {
+    if (!rmTooltip) return;
+    const close = () => setRmTooltip(null);
+    const timer = setTimeout(() => {
+      document.addEventListener('click', close, { once: true });
+      document.addEventListener('touchstart', close, { once: true });
+    }, 50);
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', close);
+      document.removeEventListener('touchstart', close);
+    };
+  }, [rmTooltip]);
+
   useEffect(() => { loadClub(); }, []);
 
   async function loadClub() {
@@ -756,24 +770,15 @@ export default function ClubPage() {
       )}
 
       {rmTooltip && (
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-            onTouchEnd={() => setRmTooltip(null)}
-            onClick={() => setRmTooltip(null)}
-          />
-          <div
-            className="th-hint-popup"
-            style={{ position: 'fixed', top: rmTooltip.y, left: rmTooltip.x, zIndex: 1000 }}
-            onMouseEnter={() => {
-              if (rmHideTimer.current) clearTimeout(rmHideTimer.current);
-            }}
-            onMouseLeave={() => setRmTooltip(null)}
-          >
-            Расчётный максимум для одного повторения.<br />
-            Формула Эпли: 1RM = вес × (1 + повт / 30)
-          </div>
-        </>
+        <div
+          className="th-hint-popup"
+          style={{ position: 'fixed', top: rmTooltip.y, left: rmTooltip.x, zIndex: 1000 }}
+          onMouseEnter={() => { if (rmHideTimer.current) clearTimeout(rmHideTimer.current); }}
+          onMouseLeave={() => setRmTooltip(null)}
+        >
+          Расчётный максимум для одного повторения.<br />
+          Формула Эпли: 1RM = вес × (1 + повт / 30)
+        </div>
       )}
 
     </div>
