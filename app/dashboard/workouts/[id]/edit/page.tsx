@@ -195,6 +195,7 @@ function workoutToBlocks(workout: Workout): BlockItem[] {
     }
     used.add(i);
 
+    const rounds = rxBlock.ladderRounds || 5;
     blocks.push({
       type: 'wod',
       data: {
@@ -202,14 +203,26 @@ function workoutToBlocks(workout: Workout): BlockItem[] {
         level: rxBlock.level,
         timeCapSeconds: rxBlock.timeCapSeconds ? String(Math.floor(rxBlock.timeCapSeconds / 60)) : '',
         isLadder: rxBlock.isLadder,
-        ladderRounds: 5,
+        ladderRounds: rounds,
         resultDisplay: rxBlock.resultDisplay || '',
         resultSeconds: rxBlock.resultDisplay || '',
         resultTotalReps: rxBlock.resultTotalReps ? String(rxBlock.resultTotalReps) : '',
         hasGenderSplit: rxBlock.hasGenderSplit || false,
         hasSeparateScaled,
-        exercises: mapWodExercises(rxBlock.exercises),
-        scaledExercises: scBlock ? mapWodExercises(scBlock.exercises) : [emptyWodExercise()],
+        exercises: mapWodExercises(rxBlock.exercises).map(ex => ({
+          ...ex,
+          ladderRepsPerRound: rxBlock.isLadder
+            ? Array.from({ length: rounds }, () => ex.reps)
+            : [],
+        })),
+        scaledExercises: scBlock
+          ? mapWodExercises(scBlock.exercises).map(ex => ({
+              ...ex,
+              ladderRepsPerRound: scBlock.isLadder
+                ? Array.from({ length: rounds }, () => ex.reps)
+                : [],
+            }))
+          : [emptyWodExercise()],
       },
     });
   }

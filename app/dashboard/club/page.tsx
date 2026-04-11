@@ -6,7 +6,6 @@ import { clubsApi, Club, ClubWorkoutTemplate, MonthlyLeaderboardEntry, WodLeader
 import Link from 'next/link';
 import { SingleDatePicker } from '@/app/components/SingleDatePicker';
 
-type Tab = 'leaderboard' | 'members';
 type LbType = 'activity' | 'wod' | 'skill';
 
 const wodTypeLabels: Record<string, string> = {
@@ -116,11 +115,16 @@ const IconDelete = () => (
   </svg>
 );
 
+const IconChevron = ({ down }: { down: boolean }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    {down ? <polyline points="6 9 12 15 18 9" /> : <polyline points="6 15 12 9 18 15" />}
+  </svg>
+);
+
 export default function ClubPage() {
   const router = useRouter();
   const [club, setClub] = useState<Club | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<Tab>('leaderboard');
 
   const [lbType, setLbType] = useState<LbType>('wod');
   const [activityPeriod, setActivityPeriod] = useState<'month' | 'all'>('month');
@@ -136,9 +140,13 @@ export default function ClubPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ tmpl: ClubWorkoutTemplate; msg: string } | null>(null);
 
   const [members, setMembers] = useState<Array<{ userId: string; email: string; firstName: string | null; lastName: string | null; role: string; showInLeaderboard: boolean; joinedAt: string }>>([]);
+  const [showMembers, setShowMembers] = useState(false);
+  const [membersLoaded, setMembersLoaded] = useState(false);
 
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+
+  const [collapsedTemplates, setCollapsedTemplates] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadClub(); }, []);
 
@@ -157,48 +165,54 @@ export default function ClubPage() {
   const loadTabData = useCallback(async () => {
     if (!club) return;
 
-    if (tab === 'leaderboard') {
-      if (lbType === 'activity') {
-        try {
-          const { entries } = activityPeriod === 'month'
-            ? await clubsApi.getMonthlyLeaderboard(club.id)
-            : await clubsApi.getAllTimeLeaderboard(club.id);
-          setMonthlyEntries(entries);
-        } catch { setMonthlyEntries([]); }
-      } else if (lbType === 'wod') {
-        try {
-          const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
-          setTemplates(t);
-          const allWodTypes = new Set<string>();
-          for (const tmpl of t) {
-            for (const wb of tmpl.wodBlocks) allWodTypes.add(wb.wodType);
-          }
-          setWodSignatures([...allWodTypes].map(wt => ({
-            signature: wt,
-            label: wodTypeLabels[wt] || wt,
-          })));
-        } catch { setTemplates([]); setWodSignatures([]); }
-        try {
-          const { entries } = await clubsApi.getWodLeaderboard(club.id, wodDate, selectedWodSignature || undefined);
-          setWodEntries(entries);
-        } catch { setWodEntries([]); }
-      } else if (lbType === 'skill') {
-        try {
-          const { entries } = await clubsApi.getSkillLeaderboard(club.id);
-          setSkillEntries(entries);
-        } catch { setSkillEntries([]); }
-      }
-    }
-
-    if (tab === 'members') {
+    if (lbType === 'activity') {
       try {
-        const { members: m } = await clubsApi.getMembers(club.id);
-        setMembers(m);
-      } catch { setMembers([]); }
+        const { entries } = activityPeriod === 'month'
+          ? await clubsApi.getMonthlyLeaderboard(club.id)
+          : await clubsApi.getAllTimeLeaderboard(club.id);
+        setMonthlyEntries(entries);
+      } catch { setMonthlyEntries([]); }
+    } else if (lbType === 'wod') {
+      try {
+        const { templates: t } = await clubsApi.getTodayWorkouts(club.id, wodDate);
+        setTemplates(t);
+        const allWodTypes = new Set<string>();
+        for (const tmpl of t) {
+          for (const wb of tmpl.wodBlocks) allWodTypes.add(wb.wodType);
+        }
+        setWodSignatures([...allWodTypes].map(wt => ({
+          signature: wt,
+          label: wodTypeLabels[wt] || wt,
+        })));
+      } catch { setTemplates([]); setWodSignatures([]); }
+      try {
+        const { entries } = await clubsApi.getWodLeaderboard(club.id, wodDate, selectedWodSignature || undefined);
+        setWodEntries(entries);
+      } catch { setWodEntries([]); }
+    } else if (lbType === 'skill') {
+      try {
+        const { entries } = await clubsApi.getSkillLeaderboard(club.id);
+        setSkillEntries(entries);
+      } catch { setSkillEntries([]); }
     }
-  }, [club, tab, lbType, wodDate, activityPeriod, selectedWodSignature]);
+  }, [club, lbType, wodDate, activityPeriod, selectedWodSignature]);
 
   useEffect(() => { loadTabData(); }, [loadTabData]);
+
+  useEffect(() => {
+    if (showMembers && club && !membersLoaded) {
+      loadMembers();
+    }
+  }, [showMembers, club]);
+
+  async function loadMembers() {
+    if (!club) return;
+    try {
+      const { members: m } = await clubsApi.getMembers(club.id);
+      setMembers(m);
+      setMembersLoaded(true);
+    } catch { setMembers([]); }
+  }
 
   async function handleCreateInvite() {
     if (!club) return;
@@ -216,6 +230,14 @@ export default function ClubPage() {
     navigator.clipboard.writeText(inviteCode);
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 2000);
+  }
+
+  function toggleCollapse(sig: string) {
+    setCollapsedTemplates(prev => {
+      const next = new Set(prev);
+      if (next.has(sig)) next.delete(sig); else next.add(sig);
+      return next;
+    });
   }
 
   function buildTemplateQuery(tmpl: ClubWorkoutTemplate): string {
@@ -274,6 +296,13 @@ export default function ClubPage() {
   const isOwnerOrCoach = club.myRole === 'OWNER' || club.myRole === 'COACH';
   const visibleTemplates = templates.filter(tmpl => !selectedWodSignature || tmpl.wodBlocks.some(wb => wb.wodType === selectedWodSignature));
 
+  const memberLabel = (() => {
+    const n = club.memberCount;
+    if (n === 1) return '1 участник';
+    if (n < 5) return `${n} участника`;
+    return `${n} участников`;
+  })();
+
   return (
     <div className="cp-page">
 
@@ -284,7 +313,12 @@ export default function ClubPage() {
             <h1 className="cp-club-name">{club.name}</h1>
             <div className="cp-club-meta">
               {club.city && <span className="cp-meta-item">{club.city}</span>}
-              <span className="cp-meta-item">{club.memberCount} участник{club.memberCount === 1 ? '' : club.memberCount < 5 ? 'а' : 'ов'}</span>
+              <button
+                className="cp-meta-item cp-members-link"
+                onClick={() => setShowMembers(true)}
+              >
+                {memberLabel}
+              </button>
             </div>
           </div>
           {isOwnerOrCoach && (
@@ -298,321 +332,348 @@ export default function ClubPage() {
       {/* ── Главные табы ── */}
       <div className="cp-tabs-wrap">
         <div className="cp-tabs">
-          <button className={`cp-tab ${tab === 'leaderboard' ? 'active' : ''}`} onClick={() => setTab('leaderboard')}>
-            Лидерборд
-          </button>
-          <button className={`cp-tab ${tab === 'members' ? 'active' : ''}`} onClick={() => setTab('members')}>
-            Участники
-          </button>
+          {(['wod', 'activity', 'skill'] as LbType[]).map(t => (
+            <button key={t} className={`cp-tab ${lbType === t ? 'active' : ''}`} onClick={() => setLbType(t)}>
+              {t === 'wod' ? 'Тренировка дня' : t === 'activity' ? 'Активность' : 'Сила'}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="cp-body">
+        <div className="cp-section">
 
-        {/* ══════════════ ЛИДЕРБОРД ══════════════ */}
-        {tab === 'leaderboard' && (
-          <div className="cp-section">
+          {/* ── Тренировка дня ── */}
+          {lbType === 'wod' && (
+            <div className="cp-wod-section">
 
-            {/* Под-табы лидерборда */}
-            <div className="cp-chips-row">
-              {(['wod', 'activity', 'skill'] as LbType[]).map(t => (
-                <button key={t} className={`cp-chip ${lbType === t ? 'active' : ''}`} onClick={() => setLbType(t)}>
-                  {t === 'wod' ? 'Тренировка дня' : t === 'activity' ? 'Активность' : 'Сила'}
-                </button>
-              ))}
-            </div>
+              {/* Строка с датой и кнопкой */}
+              <div className="cp-date-row">
+                <SingleDatePicker
+                  value={wodDate}
+                  onChange={(d) => { setWodDate(d); setSelectedWodSignature(''); }}
+                />
+                {isOwnerOrCoach && (
+                  <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="cp-add-btn">
+                    + Добавить
+                  </Link>
+                )}
+              </div>
 
-            {/* ── Тренировка дня ── */}
-            {lbType === 'wod' && (
-              <div className="cp-wod-section">
+              {/* Фильтр по типу ВОД */}
+              {wodSignatures.length > 1 && (
+                <div className="cp-chips-row cp-chips-sm">
+                  <button className={`cp-chip cp-chip-sm ${!selectedWodSignature ? 'active' : ''}`} onClick={() => setSelectedWodSignature('')}>Все</button>
+                  {wodSignatures.map(ws => (
+                    <button key={ws.signature} className={`cp-chip cp-chip-sm ${selectedWodSignature === ws.signature ? 'active' : ''}`} onClick={() => setSelectedWodSignature(ws.signature)}>
+                      {ws.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                {/* Строка с датой и кнопкой */}
-                <div className="cp-date-row">
-                  <SingleDatePicker
-                    value={wodDate}
-                    onChange={(d) => { setWodDate(d); setSelectedWodSignature(''); }}
-                  />
+              {/* Карточки шаблонов */}
+              {visibleTemplates.map(tmpl => {
+                const wodGroups = groupWodBlocks(tmpl.wodBlocks);
+                const isCollapsed = collapsedTemplates.has(tmpl.signature);
+                return (
+                <div key={tmpl.signature} className="cp-wod-card">
+
+                  {isCollapsed ? (
+                    /* ── Свёрнутый вид ── */
+                    <div className="cp-wod-summary">
+                      <div className="cp-wod-summary-rows">
+                        {tmpl.skillBlocks.map((sb, i) => (
+                          <div key={`cs${i}`} className="cp-wod-summary-row">
+                            <span className="cp-section-label skill">СКИЛЛ</span>
+                            <span className="cp-summary-text">{sb.exerciseName}</span>
+                          </div>
+                        ))}
+                        {wodGroups.map((group, gi) => (
+                          <div key={`cg${gi}`} className="cp-wod-summary-row">
+                            <span className="cp-section-label wod">ВОД</span>
+                            <span className="cp-summary-text">
+                              {wodTypeLabels[group.wodType] || group.wodType}
+                              {group.timeCapSeconds ? ` · ${Math.floor(group.timeCapSeconds / 60)} мин` : ''}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                      <button className="cp-collapse-toggle" onClick={() => toggleCollapse(tmpl.signature)} aria-label="Развернуть">
+                        <IconChevron down={true} />
+                      </button>
+                    </div>
+                  ) : (
+                    /* ── Развёрнутый вид ── */
+                    <>
+                      {/* Кнопка свернуть */}
+                      <button className="cp-collapse-toggle-abs" onClick={() => toggleCollapse(tmpl.signature)} aria-label="Свернуть">
+                        <IconChevron down={false} />
+                      </button>
+
+                      {/* Скилл-блоки */}
+                      {tmpl.skillBlocks.map((sb, i) => (
+                        <div key={`s${i}`} className="cp-wod-block">
+                          <div className="cp-block-section-header">
+                            <span className="cp-section-label skill">СКИЛЛ</span>
+                          </div>
+                          <div className="cp-wod-exname">{sb.exerciseName}</div>
+                          <div className="cp-wod-detail">
+                            {sb.sets.length} подх.
+                            {(() => {
+                              const r = formatSkillReps(sb.sets);
+                              return r ? ` × ${r} повт.` : null;
+                            })()}
+                            {(() => {
+                              const w = formatSkillWeights(sb.sets);
+                              return w ? ` · ${w}` : null;
+                            })()}
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* ВОД-блоки (RX и SC друг за другом) */}
+                      {wodGroups.map((group, gi) => {
+                        const hasBoth = group.rx !== null && group.sc !== null;
+                        const cardHasGenderSplit = group.rx?.hasGenderSplit || group.sc?.hasGenderSplit;
+                        const singleBlock = group.rx || group.sc;
+                        if (!singleBlock) return null;
+
+                        const renderExercises = (block: typeof singleBlock) => {
+                          if (!block) return null;
+                          return block.exercises.map((ex, j) => {
+                            const showFemale = block.hasGenderSplit && wodGenderView === 'F';
+                            const name = showFemale ? (ex.exerciseNameFemale || ex.exerciseName) : ex.exerciseName;
+                            const reps = showFemale ? (ex.repsFemale ?? ex.reps) : ex.reps;
+                            const weight = showFemale ? (ex.weightFemale ?? ex.weight) : ex.weight;
+                            return (
+                              <div key={j} className="cp-exercise-row">
+                                {reps > 0 && <span className="cp-ex-reps">{reps}</span>}
+                                <span className="cp-ex-name">{name}</span>
+                                {weight ? <span className="cp-ex-weight">{weight} кг</span> : null}
+                              </div>
+                            );
+                          });
+                        };
+
+                        return (
+                          <div key={`g${gi}`} className="cp-wod-block">
+                            <div className="cp-block-section-header">
+                              <span className="cp-section-label wod">ВОД</span>
+                              <span className="cp-wod-type-text">{wodTypeLabels[group.wodType] || group.wodType}</span>
+                              {group.timeCapSeconds && (
+                                <span className="cp-timecap">{Math.floor(group.timeCapSeconds / 60)} мин</span>
+                              )}
+                              {cardHasGenderSplit && (
+                                <div className="cp-gender-toggle" style={{ marginTop: 0, marginBottom: 0 }}>
+                                  <button className={`cp-gender-btn ${wodGenderView === 'M' ? 'active' : ''}`} onClick={() => setWodGenderView('M')}>Муж.</button>
+                                  <button className={`cp-gender-btn ${wodGenderView === 'F' ? 'active' : ''}`} onClick={() => setWodGenderView('F')}>Жен.</button>
+                                </div>
+                              )}
+                            </div>
+                            {hasBoth ? (
+                              <div className="cp-level-sections-wrap">
+                                <div className="cp-level-section">
+                                  <span className="cp-level-badge rx">RX</span>
+                                  <div className="cp-exercises">{renderExercises(group.rx!)}</div>
+                                </div>
+                                <div className="cp-level-section cp-level-section-sc">
+                                  <span className="cp-level-badge scaled">SC</span>
+                                  <div className="cp-exercises">{renderExercises(group.sc!)}</div>
+                                </div>
+                              </div>
+                            ) : (
+                              <>
+                                <div style={{ marginBottom: '0.4rem' }}>
+                                  <span className={`cp-level-badge ${singleBlock.level === 'SCALED' ? 'scaled' : 'rx'}`}>
+                                    {singleBlock.level === 'SCALED' ? 'SC' : 'RX'}
+                                  </span>
+                                </div>
+                                <div className="cp-exercises">{renderExercises(singleBlock)}</div>
+                              </>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </>
+                  )}
+
+                  {/* Футер карточки */}
+                  <div className="cp-wod-footer">
+                    <div className="cp-wod-actions">
+                      {isOwnerOrCoach && (
+                        <>
+                          <Link href={`/dashboard/workouts/${tmpl.firstWorkoutId}/edit`} className="cp-icon-btn" title="Редактировать">
+                            <IconEdit />
+                          </Link>
+                          <button type="button" onClick={() => handleDeleteTemplate(tmpl)} className="cp-icon-btn danger" title="Удалить">
+                            <IconDelete />
+                          </button>
+                        </>
+                      )}
+                      <Link href={buildTemplateQuery(tmpl)} className="cp-cta-btn">
+                        Записать →
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                );
+              })}
+
+              {/* Пустой стейт */}
+              {templates.length === 0 && (
+                <div className="cp-empty">
+                  <div className="cp-empty-icon">🏋️</div>
+                  <p>На {wodDate === new Date().toISOString().split('T')[0] ? 'сегодня' : wodDate} пока нет тренировок</p>
                   {isOwnerOrCoach && (
-                    <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="cp-add-btn">
-                      + Добавить
+                    <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="cp-cta-btn" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
+                      + Добавить тренировку
                     </Link>
                   )}
                 </div>
+              )}
 
-                {/* Фильтр по типу ВОД */}
-                {wodSignatures.length > 1 && (
-                  <div className="cp-chips-row cp-chips-sm">
-                    <button className={`cp-chip cp-chip-sm ${!selectedWodSignature ? 'active' : ''}`} onClick={() => setSelectedWodSignature('')}>Все</button>
-                    {wodSignatures.map(ws => (
-                      <button key={ws.signature} className={`cp-chip cp-chip-sm ${selectedWodSignature === ws.signature ? 'active' : ''}`} onClick={() => setSelectedWodSignature(ws.signature)}>
-                        {ws.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Карточки шаблонов */}
-                {visibleTemplates.map(tmpl => {
-                  const wodGroups = groupWodBlocks(tmpl.wodBlocks);
-                  return (
-                  <div key={tmpl.signature} className="cp-wod-card">
-
-                    {/* Скилл-блоки */}
-                    {tmpl.skillBlocks.map((sb, i) => (
-                      <div key={`s${i}`} className="cp-wod-block">
-                        <div className="cp-block-section-header">
-                          <span className="cp-section-label skill">СКИЛЛ</span>
-                        </div>
-                        <div className="cp-wod-exname">{sb.exerciseName}</div>
-                        <div className="cp-wod-detail">
-                          {sb.sets.length} подх.
-                          {(() => {
-                            const r = formatSkillReps(sb.sets);
-                            return r ? ` × ${r} повт.` : null;
-                          })()}
-                          {(() => {
-                            const w = formatSkillWeights(sb.sets);
-                            return w ? ` · ${w}` : null;
-                          })()}
-                        </div>
-                      </div>
-                    ))}
-
-                    {/* ВОД-блоки (RX и SC друг за другом) */}
-                    {wodGroups.map((group, gi) => {
-                      const hasBoth = group.rx !== null && group.sc !== null;
-                      const cardHasGenderSplit = group.rx?.hasGenderSplit || group.sc?.hasGenderSplit;
-                      const singleBlock = group.rx || group.sc;
-                      if (!singleBlock) return null;
-
-                      const renderExercises = (block: typeof singleBlock) => {
-                        if (!block) return null;
-                        return block.exercises.map((ex, j) => {
-                          const showFemale = block.hasGenderSplit && wodGenderView === 'F';
-                          const name = showFemale ? (ex.exerciseNameFemale || ex.exerciseName) : ex.exerciseName;
-                          const reps = showFemale ? (ex.repsFemale ?? ex.reps) : ex.reps;
-                          const weight = showFemale ? (ex.weightFemale ?? ex.weight) : ex.weight;
-                          return (
-                            <div key={j} className="cp-exercise-row">
-                              {reps > 0 && <span className="cp-ex-reps">{reps}</span>}
-                              <span className="cp-ex-name">{name}</span>
-                              {weight ? <span className="cp-ex-weight">{weight} кг</span> : null}
-                            </div>
-                          );
-                        });
-                      };
-
-                      return (
-                        <div key={`g${gi}`} className="cp-wod-block">
-                          <div className="cp-block-section-header">
-                            <span className="cp-section-label wod">ВОД</span>
-                            <span className="cp-wod-type-text">{wodTypeLabels[group.wodType] || group.wodType}</span>
-                            {group.timeCapSeconds && (
-                              <span className="cp-timecap">{Math.floor(group.timeCapSeconds / 60)} мин</span>
-                            )}
-                            {cardHasGenderSplit && (
-                              <div className="cp-gender-toggle" style={{ marginTop: 0, marginBottom: 0 }}>
-                                <button className={`cp-gender-btn ${wodGenderView === 'M' ? 'active' : ''}`} onClick={() => setWodGenderView('M')}>Муж.</button>
-                                <button className={`cp-gender-btn ${wodGenderView === 'F' ? 'active' : ''}`} onClick={() => setWodGenderView('F')}>Жен.</button>
-                              </div>
-                            )}
-                          </div>
-                          {hasBoth ? (
-                            <div className="cp-level-sections-wrap">
-                              <div className="cp-level-section">
-                                <span className="cp-level-badge rx">RX</span>
-                                <div className="cp-exercises">{renderExercises(group.rx!)}</div>
-                              </div>
-                              <div className="cp-level-section cp-level-section-sc">
-                                <span className="cp-level-badge scaled">SC</span>
-                                <div className="cp-exercises">{renderExercises(group.sc!)}</div>
-                              </div>
-                            </div>
-                          ) : (
-                            <>
-                              <div style={{ marginBottom: '0.4rem' }}>
-                                <span className={`cp-level-badge ${singleBlock.level === 'SCALED' ? 'scaled' : 'rx'}`}>
-                                  {singleBlock.level === 'SCALED' ? 'SC' : 'RX'}
-                                </span>
-                              </div>
-                              <div className="cp-exercises">{renderExercises(singleBlock)}</div>
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-
-                    {/* Футер карточки */}
-                    <div className="cp-wod-footer">
-                      <div className="cp-wod-actions">
-                        {isOwnerOrCoach && (
-                          <>
-                            <Link href={`/dashboard/workouts/${tmpl.firstWorkoutId}/edit`} className="cp-icon-btn" title="Редактировать">
-                              <IconEdit />
-                            </Link>
-                            <button type="button" onClick={() => handleDeleteTemplate(tmpl)} className="cp-icon-btn danger" title="Удалить">
-                              <IconDelete />
-                            </button>
-                          </>
-                        )}
-                        <Link href={buildTemplateQuery(tmpl)} className="cp-cta-btn">
-                          Записать →
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                  );
-                })}
-
-                {/* Пустой стейт */}
-                {templates.length === 0 && (
-                  <div className="cp-empty">
-                    <div className="cp-empty-icon">🏋️</div>
-                    <p>На {wodDate === new Date().toISOString().split('T')[0] ? 'сегодня' : wodDate} пока нет тренировок</p>
-                    {isOwnerOrCoach && (
-                      <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="cp-cta-btn" style={{ marginTop: '0.75rem', display: 'inline-block' }}>
-                        + Добавить тренировку
-                      </Link>
-                    )}
-                  </div>
-                )}
-
-                {/* Результаты */}
-                {wodEntries.length > 0 && (
-                  <div className="cp-lb-block">
-                    <div className="cp-block-title">Результаты</div>
-                    <div className="cp-table-wrap">
-                      <table className="cp-table">
-                        <thead>
-                          <tr>
-                            <th className="cp-th-rank">#</th>
-                            <th>Атлет</th>
-                            <th>Ур.</th>
-                            <th className="cp-th-result">Результат</th>
-                            <th className="cp-th-num">Вес</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {wodEntries.map((e, i) => (
-                            <tr key={`${e.userId}-${e.workoutId}`} className={i < 3 ? 'top3' : ''}>
-                              <td><RankBadge rank={e.rank || i + 1} /></td>
-                              <td><span className="cp-lb-name">{safeDisplayName(e.name)}</span></td>
-                              <td>
-                                <span className={`cp-level-badge ${e.level === 'SCALED' ? 'scaled' : 'rx'}`}>
-                                  {e.level === 'SCALED' ? 'SC' : 'RX'}
-                                </span>
-                              </td>
-                              <td className="cp-td-result">{e.resultDisplay}</td>
-                              <td className="cp-td-num">{e.weightsUsed || '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {templates.length > 0 && wodEntries.length === 0 && (
-                  <div className="cp-empty-sm">Пока никто не записал результат</div>
-                )}
-              </div>
-            )}
-
-            {/* ── Активность ── */}
-            {lbType === 'activity' && (
-              <div>
-                <div className="cp-chips-row">
-                  <button className={`cp-chip ${activityPeriod === 'month' ? 'active' : ''}`} onClick={() => setActivityPeriod('month')}>
-                    Этот месяц
-                  </button>
-                  <button className={`cp-chip ${activityPeriod === 'all' ? 'active' : ''}`} onClick={() => setActivityPeriod('all')}>
-                    Всё время
-                  </button>
-                </div>
-
-                {monthlyEntries.length === 0 ? (
-                  <div className="cp-empty">
-                    <div className="cp-empty-icon">📊</div>
-                    <p>Нет данных за {activityPeriod === 'month' ? 'этот месяц' : 'всё время'}</p>
-                  </div>
-                ) : (
+              {/* Результаты */}
+              {wodEntries.length > 0 && (
+                <div className="cp-lb-block">
+                  <div className="cp-block-title">Результаты</div>
                   <div className="cp-table-wrap">
                     <table className="cp-table">
                       <thead>
                         <tr>
                           <th className="cp-th-rank">#</th>
                           <th>Атлет</th>
-                          <th className="cp-th-num">Трен.</th>
-                          <th className="cp-th-num">Тоннаж</th>
-                          <th className="cp-th-num">Дней</th>
+                          <th>Ур.</th>
+                          <th className="cp-th-result">Результат</th>
+                          <th className="cp-th-num">Вес</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {monthlyEntries.map((e, i) => (
-                          <tr key={e.userId} className={i < 3 ? 'top3' : ''}>
-                            <td><RankBadge rank={i + 1} /></td>
+                        {wodEntries.map((e, i) => (
+                          <tr key={`${e.userId}-${e.workoutId}`} className={i < 3 ? 'top3' : ''}>
+                            <td><RankBadge rank={e.rank || i + 1} /></td>
                             <td><span className="cp-lb-name">{safeDisplayName(e.name)}</span></td>
-                            <td className="cp-td-num">{e.workoutCount}</td>
-                            <td className="cp-td-num">{e.tonnage > 1000 ? `${(e.tonnage / 1000).toFixed(1)}т` : `${Math.round(e.tonnage)}кг`}</td>
-                            <td className="cp-td-num">{e.activeDays}</td>
+                            <td>
+                              <span className={`cp-level-badge ${e.level === 'SCALED' ? 'scaled' : 'rx'}`}>
+                                {e.level === 'SCALED' ? 'SC' : 'RX'}
+                              </span>
+                            </td>
+                            <td className="cp-td-result">{e.resultDisplay}</td>
+                            <td className="cp-td-num">{e.weightsUsed || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              )}
 
-            {/* ── Сила (Skill PR Board) ── */}
-            {lbType === 'skill' && (
-              skillEntries.length === 0 ? (
+              {templates.length > 0 && wodEntries.length === 0 && (
+                <div className="cp-empty-sm">Пока никто не записал результат</div>
+              )}
+            </div>
+          )}
+
+          {/* ── Активность ── */}
+          {lbType === 'activity' && (
+            <div>
+              <div className="cp-chips-row">
+                <button className={`cp-chip ${activityPeriod === 'month' ? 'active' : ''}`} onClick={() => setActivityPeriod('month')}>
+                  Этот месяц
+                </button>
+                <button className={`cp-chip ${activityPeriod === 'all' ? 'active' : ''}`} onClick={() => setActivityPeriod('all')}>
+                  Всё время
+                </button>
+              </div>
+
+              {monthlyEntries.length === 0 ? (
                 <div className="cp-empty">
-                  <div className="cp-empty-icon">🏋️</div>
-                  <p>Пока нет данных по скилл-упражнениям</p>
+                  <div className="cp-empty-icon">📊</div>
+                  <p>Нет данных за {activityPeriod === 'month' ? 'этот месяц' : 'всё время'}</p>
                 </div>
               ) : (
-                <div className="cp-skill-list">
-                  {skillEntries.map(entry => (
-                    <div key={entry.exerciseName} className="cp-skill-block">
-                      <div className="cp-skill-exname">{entry.exerciseName}</div>
-                      <div className="cp-table-wrap">
-                        <table className="cp-table">
-                          <thead>
-                            <tr>
-                              <th className="cp-th-rank">#</th>
-                              <th>Атлет</th>
-                              <th className="cp-th-num">1RM</th>
-                              <th className="cp-th-num">Макс.</th>
-                              <th className="cp-th-num">Лучший</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {entry.athletes.slice(0, 5).map((a) => (
-                              <tr key={a.userId} className={a.rank <= 3 ? 'top3' : ''}>
-                                <td><RankBadge rank={a.rank} /></td>
-                                <td><span className="cp-lb-name">{safeDisplayName(a.name)}</span></td>
-                                <td className="cp-td-num">{a.best1RM ? `${a.best1RM} кг` : '—'}</td>
-                                <td className="cp-td-num">{a.maxWeight} кг</td>
-                                <td className="cp-td-num">{a.bestWeightForReps}кг×{a.bestReps}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  ))}
+                <div className="cp-table-wrap">
+                  <table className="cp-table">
+                    <thead>
+                      <tr>
+                        <th className="cp-th-rank">#</th>
+                        <th>Атлет</th>
+                        <th className="cp-th-num">Трен.</th>
+                        <th className="cp-th-num">Тоннаж</th>
+                        <th className="cp-th-num">Дней</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {monthlyEntries.map((e, i) => (
+                        <tr key={e.userId} className={i < 3 ? 'top3' : ''}>
+                          <td><RankBadge rank={i + 1} /></td>
+                          <td><span className="cp-lb-name">{safeDisplayName(e.name)}</span></td>
+                          <td className="cp-td-num">{e.workoutCount}</td>
+                          <td className="cp-td-num">{e.tonnage > 1000 ? `${(e.tonnage / 1000).toFixed(1)}т` : `${Math.round(e.tonnage)}кг`}</td>
+                          <td className="cp-td-num">{e.activeDays}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              )
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
 
-        {/* ══════════════ УЧАСТНИКИ ══════════════ */}
-        {tab === 'members' && (
-          <div className="cp-section">
+          {/* ── Сила (Skill PR Board) ── */}
+          {lbType === 'skill' && (
+            skillEntries.length === 0 ? (
+              <div className="cp-empty">
+                <div className="cp-empty-icon">🏋️</div>
+                <p>Пока нет данных по скилл-упражнениям</p>
+              </div>
+            ) : (
+              <div className="cp-skill-list">
+                {skillEntries.map(entry => (
+                  <div key={entry.exerciseName} className="cp-skill-block">
+                    <div className="cp-skill-exname">{entry.exerciseName}</div>
+                    <div className="cp-table-wrap">
+                      <table className="cp-table">
+                        <thead>
+                          <tr>
+                            <th className="cp-th-rank">#</th>
+                            <th>Атлет</th>
+                            <th className="cp-th-num">1RM</th>
+                            <th className="cp-th-num">Макс.</th>
+                            <th className="cp-th-num">Лучший</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {entry.athletes.slice(0, 5).map((a) => (
+                            <tr key={a.userId} className={a.rank <= 3 ? 'top3' : ''}>
+                              <td><RankBadge rank={a.rank} /></td>
+                              <td><span className="cp-lb-name">{safeDisplayName(a.name)}</span></td>
+                              <td className="cp-td-num">{a.best1RM ? `${a.best1RM} кг` : '—'}</td>
+                              <td className="cp-td-num">{a.maxWeight} кг</td>
+                              <td className="cp-td-num">{a.bestWeightForReps}кг×{a.bestReps}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )
+          )}
 
-            {/* Приглашение */}
+        </div>
+      </div>
+
+      {/* ── Модал: участники ── */}
+      {showMembers && (
+        <div className="cp-modal-overlay" onClick={() => setShowMembers(false)}>
+          <div className="cp-members-modal" onClick={e => e.stopPropagation()}>
+            <div className="cp-members-modal-header">
+              <span className="cp-members-modal-title">Участники · {club.memberCount}</span>
+              <button className="cp-modal-close" onClick={() => setShowMembers(false)}>✕</button>
+            </div>
+
             {isOwnerOrCoach && (
               <div className="cp-invite-block">
                 <button onClick={handleCreateInvite} className="cp-invite-generate-btn">
@@ -632,29 +693,25 @@ export default function ClubPage() {
               </div>
             )}
 
-            {/* Список участников */}
             <div className="cp-members-list">
               {members.map(m => {
                 const displayName = [m.firstName, m.lastName].filter(Boolean).join(' ') || 'Атлет';
                 return (
-                <div key={m.userId} className="cp-member-row">
-                  <Avatar name={displayName} size={42} />
-                  <div className="cp-member-info">
-                    <span className="cp-member-name">
-                      {displayName}
-                    </span>
-                    <span className={`cp-role-badge ${m.role.toLowerCase()}`}>
-                      {m.role === 'OWNER' ? 'Владелец' : m.role === 'COACH' ? 'Тренер' : 'Атлет'}
-                    </span>
+                  <div key={m.userId} className="cp-member-row">
+                    <Avatar name={displayName} size={42} />
+                    <div className="cp-member-info">
+                      <span className="cp-member-name">{displayName}</span>
+                      <span className={`cp-role-badge ${m.role.toLowerCase()}`}>
+                        {m.role === 'OWNER' ? 'Владелец' : m.role === 'COACH' ? 'Тренер' : 'Атлет'}
+                      </span>
+                    </div>
                   </div>
-                </div>
                 );
               })}
             </div>
           </div>
-        )}
-
-      </div>
+        </div>
+      )}
 
       {/* Модальное подтверждение удаления */}
       {deleteConfirm && (

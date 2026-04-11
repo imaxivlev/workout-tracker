@@ -4871,6 +4871,7 @@ body.auth-page {
     margin-top: 0.85rem;
     overflow: hidden;
     transition: border-color 0.15s;
+    position: relative;
 }
 
 .cp-wod-card:hover {
@@ -4940,7 +4941,6 @@ body.auth-page {
 .cp-timecap {
     font-size: 0.78rem;
     color: var(--text-secondary);
-    margin-left: auto;
 }
 
 .cp-wod-exname {
@@ -5096,12 +5096,12 @@ body.auth-page {
 }
 
 .cp-block-title {
-    font-size: 0.7rem;
+    font-size: 1.3rem;
     font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    padding: 0.5rem 0 0.4rem;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--text-primary);
+    padding: 0.75rem 0 0.5rem;
 }
 
 /* ── Table ── */
@@ -5532,6 +5532,162 @@ body.auth-page {
 
 .cp-modal-confirm:hover {
     opacity: 0.85;
+}
+
+/* ── Members link (meta button) ── */
+.cp-members-link {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-size: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-color: transparent;
+    transition: color 0.15s, text-decoration-color 0.15s;
+}
+
+.cp-members-link:hover {
+    color: var(--text-primary);
+    text-decoration-color: currentColor;
+}
+
+/* ── Members Modal ── */
+.cp-members-modal {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 0;
+    max-width: 440px;
+    width: 100%;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    overflow: hidden;
+}
+
+.cp-members-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.1rem 1.25rem 0.9rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.cp-members-modal-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.cp-modal-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.cp-modal-close:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+.cp-members-modal .cp-invite-block {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.cp-members-modal .cp-members-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 0.5rem 1.25rem 1rem;
+}
+
+/* ── Collapse toggle ── */
+.cp-collapse-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+}
+
+.cp-collapse-toggle:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* Кнопка свернуть — абсолютная позиция в развёрнутой карточке */
+.cp-collapse-toggle-abs {
+    position: absolute;
+    top: 0.65rem;
+    right: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: none;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.cp-collapse-toggle-abs:hover {
+    background: var(--border-color);
+    color: var(--text-primary);
+}
+
+/* ── Collapsed summary ── */
+.cp-wod-summary {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.6rem 0.75rem 0.75rem 0;
+}
+
+.cp-wod-summary-rows {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 0 0 0 1rem;
+}
+
+.cp-wod-summary-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cp-summary-text {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
 }
 
 /* ── Desktop adjustments ── */

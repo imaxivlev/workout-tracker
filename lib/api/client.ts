@@ -155,6 +155,7 @@ export interface WodBlock {
   level: 'RX' | 'SCALED';
   timeCapSeconds?: number;
   isLadder: boolean;
+  ladderRounds?: number | null;
   resultType: 'TIME' | 'REPS' | 'WEIGHT';
   resultDisplay: string;
   resultSeconds?: number;
