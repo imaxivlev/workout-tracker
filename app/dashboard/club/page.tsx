@@ -148,7 +148,6 @@ export default function ClubPage() {
 
   const [collapsedTemplates, setCollapsedTemplates] = useState<Set<string>>(new Set());
 
-  const [rmTooltip, setRmTooltip] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => { loadClub(); }, []);
 
@@ -643,23 +642,12 @@ export default function ClubPage() {
                             <th>Атлет</th>
                             <th className="cp-th-num">
                               1RM
-                              <span
-                                className="th-hint"
-                                onMouseEnter={(e) => {
-                                  const r = e.currentTarget.getBoundingClientRect();
-                                  setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 7 });
-                                }}
-                                onMouseLeave={() => setRmTooltip(null)}
-                                onTouchEnd={(e) => {
-                                  e.preventDefault();
-                                  if (rmTooltip) {
-                                    setRmTooltip(null);
-                                  } else {
-                                    const r = e.currentTarget.getBoundingClientRect();
-                                    setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 7 });
-                                  }
-                                }}
-                              >?</span>
+                              <span className="th-hint">?
+                                <span className="th-hint-popup">
+                                  Расчётный максимум для одного повторения.<br />
+                                  Формула Эпли: 1RM = вес × (1 + повт / 30)
+                                </span>
+                              </span>
                             </th>
                             <th className="cp-th-num">Макс.</th>
                             <th className="cp-th-num">Лучший</th>
@@ -749,22 +737,6 @@ export default function ClubPage() {
         </div>
       )}
 
-      {rmTooltip && (
-        <>
-          <div
-            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
-            onTouchEnd={() => setRmTooltip(null)}
-            onClick={() => setRmTooltip(null)}
-          />
-          <div
-            className="th-hint-popup"
-            style={{ position: 'fixed', top: rmTooltip.y, left: rmTooltip.x }}
-          >
-            Расчётный максимум для одного повторения.<br />
-            Формула Эпли: 1RM = вес × (1 + повт / 30)
-          </div>
-        </>
-      )}
     </div>
   );
 }
