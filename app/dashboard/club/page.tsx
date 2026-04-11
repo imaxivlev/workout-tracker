@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { clubsApi, Club, ClubWorkoutTemplate, MonthlyLeaderboardEntry, WodLeaderboardEntry, SkillLeaderboardEntry } from '@/lib/api/client';
 import Link from 'next/link';
@@ -148,6 +148,8 @@ export default function ClubPage() {
 
   const [collapsedTemplates, setCollapsedTemplates] = useState<Set<string>>(new Set());
 
+  const [rmTooltip, setRmTooltip] = useState<{ x: number; y: number } | null>(null);
+  const rmHideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { loadClub(); }, []);
 
@@ -642,12 +644,26 @@ export default function ClubPage() {
                             <th>Атлет</th>
                             <th className="cp-th-num">
                               1RM
-                              <span className="th-hint">?
-                                <span className="th-hint-popup">
-                                  Расчётный максимум для одного повторения.<br />
-                                  Формула Эпли: 1RM = вес × (1 + повт / 30)
-                                </span>
-                              </span>
+                              <span
+                                className="th-hint"
+                                onMouseEnter={(e) => {
+                                  if (rmHideTimer.current) clearTimeout(rmHideTimer.current);
+                                  const r = e.currentTarget.getBoundingClientRect();
+                                  setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 4 });
+                                }}
+                                onMouseLeave={() => {
+                                  rmHideTimer.current = setTimeout(() => setRmTooltip(null), 100);
+                                }}
+                                onTouchEnd={(e) => {
+                                  e.preventDefault();
+                                  if (rmTooltip) {
+                                    setRmTooltip(null);
+                                  } else {
+                                    const r = e.currentTarget.getBoundingClientRect();
+                                    setRmTooltip({ x: r.left + r.width / 2, y: r.bottom + 4 });
+                                  }
+                                }}
+                              >?</span>
                             </th>
                             <th className="cp-th-num">Макс.</th>
                             <th className="cp-th-num">Лучший</th>
@@ -735,6 +751,27 @@ export default function ClubPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {rmTooltip && (
+        <>
+          <div
+            style={{ position: 'fixed', inset: 0, zIndex: 999 }}
+            onTouchEnd={() => setRmTooltip(null)}
+            onClick={() => setRmTooltip(null)}
+          />
+          <div
+            className="th-hint-popup"
+            style={{ position: 'fixed', top: rmTooltip.y, left: rmTooltip.x, zIndex: 1000 }}
+            onMouseEnter={() => {
+              if (rmHideTimer.current) clearTimeout(rmHideTimer.current);
+            }}
+            onMouseLeave={() => setRmTooltip(null)}
+          >
+            Расчётный максимум для одного повторения.<br />
+            Формула Эпли: 1RM = вес × (1 + повт / 30)
+          </div>
+        </>
       )}
 
     </div>
