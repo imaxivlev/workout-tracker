@@ -1279,9 +1279,9 @@ function NewWorkoutPage() {
                   </div>
                 )}
 
-                {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && (
+                {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && !saveAsClubTemplate && (
                 <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
-                  <label>Результат {canSkipResult && <span style={{ fontWeight: 400, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>(необязательно для шаблона)</span>}</label>
+                  <label>Результат</label>
                   <div className="form-row" style={{ gap: '0.5rem' }}>
                     <select
                       className="form-select"
