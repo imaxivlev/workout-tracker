@@ -2,10 +2,11 @@
 
 import { useState, FormEvent, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { workoutsApi, exercisesApi, ApiError, WorkoutInput, Workout } from '@/lib/api/client';
+import { workoutsApi, exercisesApi, ApiError, WorkoutInput, Workout, Exercise } from '@/lib/api/client';
 import { ExerciseAutocomplete } from '@/app/components/ExerciseAutocomplete';
 import { enToRuName } from '@/lib/exercise-names';
 import { SingleDatePicker } from '@/app/components/SingleDatePicker';
+import { NewExerciseModal, MeasureUnit } from '@/app/components/NewExerciseModal';
 
 type WodType = 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
 type WodLevel = 'RX' | 'SCALED';
@@ -243,8 +244,35 @@ export default function EditWorkoutPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState('');
+  const [exerciseSettings, setExerciseSettings] = useState<Record<string, { hasWeight: boolean; measureUnit: string }>>({});
+  const [pendingExerciseName, setPendingExerciseName] = useState<string | null>(null);
 
   const hideToast = useCallback(() => setToast(''), []);
+
+  function getHideWeight(name: string): boolean {
+    if (exerciseSettings[name] !== undefined) return !exerciseSettings[name].hasWeight;
+    return shouldHideWeight(name);
+  }
+
+  function getMeasureUnit(name: string): string {
+    return exerciseSettings[name]?.measureUnit ?? 'reps';
+  }
+
+  function handleExerciseSelect(ex: Exercise) {
+    const ruName = enToRuName(ex.name);
+    setExerciseSettings(prev => ({ ...prev, [ruName]: { hasWeight: ex.hasWeight, measureUnit: ex.measureUnit } }));
+  }
+
+  function handleNewExercise(name: string) {
+    setPendingExerciseName(name);
+  }
+
+  function handleNewExerciseConfirm(settings: { hasWeight: boolean; measureUnit: MeasureUnit }) {
+    if (pendingExerciseName) {
+      setExerciseSettings(prev => ({ ...prev, [pendingExerciseName]: settings }));
+    }
+    setPendingExerciseName(null);
+  }
 
   useEffect(() => {
     workoutsApi.getById(id)
@@ -469,10 +497,11 @@ export default function EditWorkoutPage() {
           weightIsPercent: b.weightIsPercent || undefined,
           sets: b.sets.map(s => ({
             reps: parseInt(s.reps),
-            weight: s.weight ? parseFloat(s.weight) : 0,
+            weight: s.weight ? parseFloat(s.weight) : undefined,
             weightIsPercent: b.weightIsPercent || undefined,
           })),
         })),
+        newExercises: Object.entries(exerciseSettings).map(([name, s]) => ({ name, ...s })),
         wodBlocks: wodBlocks.length > 0
           ? wodBlocks.flatMap(b => {
               function buildWodPayload(exercises: WodExerciseForm[], level: 'RX' | 'SCALED') {
@@ -497,9 +526,9 @@ export default function EditWorkoutPage() {
                     return {
                       exerciseName: ex.exerciseName,
                       reps,
-                      weight: ex.weight && !shouldHideWeight(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
+                      weight: ex.weight && !getHideWeight(ex.exerciseName) ? parseFloat(ex.weight) : undefined,
                       repsFemale: b.hasGenderSplit && ex.repsFemale ? parseInt(ex.repsFemale) : undefined,
-                      weightFemale: b.hasGenderSplit && ex.weightFemale && !shouldHideWeight(ex.exerciseName) ? parseFloat(ex.weightFemale) : undefined,
+                      weightFemale: b.hasGenderSplit && ex.weightFemale && !getHideWeight(ex.exerciseName) ? parseFloat(ex.weightFemale) : undefined,
                       exerciseNameFemale: b.hasGenderSplit && ex.exerciseNameFemale && ex.exerciseNameFemale !== ex.exerciseName ? ex.exerciseNameFemale : undefined,
                     };
                   }),
@@ -518,7 +547,7 @@ export default function EditWorkoutPage() {
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.details?.length) {
-          setError(err.details.map((d: { message: string }) => d.message).join('; '));
+          setError([...new Set(err.details.map((d: { message: string }) => d.message))].join('; '));
         } else {
           setError(err.message);
         }
@@ -553,6 +582,14 @@ export default function EditWorkoutPage() {
     <div className="container">
       <h1 className="page-title">Редактировать тренировку</h1>
 
+      {pendingExerciseName && (
+        <NewExerciseModal
+          exerciseName={pendingExerciseName}
+          onConfirm={handleNewExerciseConfirm}
+          onCancel={() => setPendingExerciseName(null)}
+        />
+      )}
+
       {toast && <Toast message={toast} onHide={hideToast} />}
 
       <form onSubmit={handleSubmit}>
@@ -583,6 +620,8 @@ export default function EditWorkoutPage() {
                     <ExerciseAutocomplete
                       value={skill.exerciseName}
                       onChange={v => updateSkillExercise(bi, v)}
+                      onExerciseSelect={handleExerciseSelect}
+                      onNewExercise={handleNewExercise}
                       placeholder="Начните вводить или кликните для списка"
                       inputClassName="form-input exercise-search"
                     />
@@ -629,7 +668,7 @@ export default function EditWorkoutPage() {
                     </div>
                   </div>
 
-                  {!shouldHideWeight(skill.exerciseName) && <div className="form-group">
+                  {!getHideWeight(skill.exerciseName) && <div className="form-group">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                       <label style={{ margin: 0 }}>{skill.weightIsPercent ? '% от 1RM для каждого подхода' : 'Вес для каждого подхода (кг, необязательно)'}</label>
                       <div className="unit-toggle">
@@ -794,12 +833,14 @@ export default function EditWorkoutPage() {
                   <div className="wod-exercises-container">
                     {wod.exercises.map((ex, ei) => (
                       <div key={ei}>
-                        <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${shouldHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
+                        <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${getHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
                           {wod.hasGenderSplit && <span className="gender-label">М:</span>}
                           <div className="wod-row-scroller">
                             <ExerciseAutocomplete
                               value={ex.exerciseName}
                               onChange={v => updateWodExercise(bi, ei, 'exerciseName', v)}
+                              onExerciseSelect={handleExerciseSelect}
+                              onNewExercise={handleNewExercise}
                               placeholder="Упражнение"
                               inputClassName="form-input-sm"
                               wrapperClassName="wod-exercise-name"
@@ -833,7 +874,7 @@ export default function EditWorkoutPage() {
                                       value={ex.reps}
                                       onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
                                       className="form-input-sm"
-                                      placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт.'}
+                                      placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
                                       min="1"
                                       required
                                     />
@@ -841,7 +882,7 @@ export default function EditWorkoutPage() {
                                   <div className="ladder-reps-container" style={{ display: 'none' }} />
                                 </>
                               )}
-                              {!shouldHideWeight(ex.exerciseName) && (
+                              {!getHideWeight(ex.exerciseName) && (
                                 <input
                                   type="number"
                                   value={ex.weight}
@@ -865,6 +906,8 @@ export default function EditWorkoutPage() {
                               <ExerciseAutocomplete
                                 value={ex.exerciseNameFemale || ex.exerciseName}
                                 onChange={v => updateWodExercise(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v)}
+                                onExerciseSelect={handleExerciseSelect}
+                                onNewExercise={handleNewExercise}
                                 placeholder="Упражнение"
                                 inputClassName="form-input-sm"
                                 wrapperClassName="wod-exercise-name"
@@ -876,11 +919,11 @@ export default function EditWorkoutPage() {
                                     value={ex.repsFemale}
                                     onChange={e => updateWodExercise(bi, ei, 'repsFemale', e.target.value)}
                                     className="form-input-sm"
-                                    placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт.'}
+                                    placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
                                     min="1"
                                   />
                                 </div>
-                                {!shouldHideWeight(ex.exerciseName) && (
+                                {!getHideWeight(ex.exerciseName) && (
                                   <input
                                     type="number"
                                     value={ex.weightFemale}
@@ -911,12 +954,14 @@ export default function EditWorkoutPage() {
                     <div className="wod-exercises-container">
                       {wod.scaledExercises.map((ex, ei) => (
                         <div key={ei}>
-                          <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${shouldHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
+                          <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${getHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
                             {wod.hasGenderSplit && <span className="gender-label">М:</span>}
                             <div className="wod-row-scroller">
                               <ExerciseAutocomplete
                                 value={ex.exerciseName}
                                 onChange={v => updateScaledExercise(bi, ei, 'exerciseName', v)}
+                                onExerciseSelect={handleExerciseSelect}
+                                onNewExercise={handleNewExercise}
                                 placeholder="Упражнение"
                                 inputClassName="form-input-sm"
                                 wrapperClassName="wod-exercise-name"
@@ -944,13 +989,13 @@ export default function EditWorkoutPage() {
                                       value={ex.reps}
                                       onChange={e => updateScaledExercise(bi, ei, 'reps', e.target.value)}
                                       className="form-input-sm"
-                                      placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт.'}
+                                      placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
                                       min="1"
                                       required
                                     />
                                   </div>
                                 )}
-                                {!shouldHideWeight(ex.exerciseName) && (
+                                {!getHideWeight(ex.exerciseName) && (
                                   <input
                                     type="number"
                                     value={ex.weight}
@@ -974,6 +1019,8 @@ export default function EditWorkoutPage() {
                                 <ExerciseAutocomplete
                                   value={ex.exerciseNameFemale || ex.exerciseName}
                                   onChange={v => updateScaledExercise(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v)}
+                                  onExerciseSelect={handleExerciseSelect}
+                                  onNewExercise={handleNewExercise}
                                   placeholder="Упражнение"
                                   inputClassName="form-input-sm"
                                   wrapperClassName="wod-exercise-name"
@@ -985,11 +1032,11 @@ export default function EditWorkoutPage() {
                                       value={ex.repsFemale}
                                       onChange={e => updateScaledExercise(bi, ei, 'repsFemale', e.target.value)}
                                       className="form-input-sm"
-                                      placeholder={isCardio(ex.exerciseName) ? 'Cal' : 'Повт.'}
+                                      placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
                                       min="1"
                                     />
                                   </div>
-                                  {!shouldHideWeight(ex.exerciseName) && (
+                                  {!getHideWeight(ex.exerciseName) && (
                                     <input
                                       type="number"
                                       value={ex.weightFemale}

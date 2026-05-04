@@ -61,6 +61,8 @@ model ExerciseDict {
   name               String        @db.VarChar(255)
   isGlobal           Boolean       @default(false) @map("is_global")
   userId             String?       @map("user_id") @db.VarChar(36)
+  hasWeight          Boolean       @default(true) @map("has_weight")
+  measureUnit        String        @default("reps") @map("measure_unit") @db.VarChar(20)
   createdAt          DateTime      @default(now()) @map("created_at")
   user               User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
   skillBlocks        SkillBlock[]

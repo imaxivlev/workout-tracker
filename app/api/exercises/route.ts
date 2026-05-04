@@ -43,6 +43,8 @@ export async function GET(request: NextRequest) {
           id: true,
           name: true,
           isGlobal: true,
+          hasWeight: true,
+          measureUnit: true,
         },
         orderBy: { name: 'asc' },
         take: limit,
@@ -63,6 +65,8 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         isGlobal: true,
+        hasWeight: true,
+        measureUnit: true,
       },
       take: limit,
     });
@@ -80,6 +84,8 @@ export async function GET(request: NextRequest) {
         id: true,
         name: true,
         isGlobal: true,
+        hasWeight: true,
+        measureUnit: true,
       },
       take: limit,
     });

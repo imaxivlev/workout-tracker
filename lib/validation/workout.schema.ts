@@ -46,7 +46,7 @@ const commentSchema = z.string()
 // Схема для подхода в Skill блоке
 const skillSetSchema = z.object({
   reps: repsSchema,
-  weight: weightSchema,
+  weight: weightSchema.optional(),
   weightIsPercent: z.boolean().optional(),
 });
 
@@ -117,6 +117,13 @@ const wodBlockSchema = z.object({
 // Примечание: валидация resultSeconds/resultTotalReps вынесена на уровень createWorkoutSchema,
 // чтобы учитывать isClubTemplate (шаблон клуба может не иметь результата)
 
+// Схема настроек нового упражнения (передаётся при сохранении тренировки)
+const newExerciseSettingSchema = z.object({
+  name: z.string().min(1).max(100),
+  hasWeight: z.boolean(),
+  measureUnit: z.enum(['reps', 'meters', 'calories']),
+});
+
 // Основная схема для создания тренировки
 export const createWorkoutSchema = z.object({
   date: dateSchema,
@@ -130,6 +137,7 @@ export const createWorkoutSchema = z.object({
   wodBlocks: z.array(wodBlockSchema)
     .max(10, 'Тренировка не может содержать более 10 WOD блоков')
     .optional(),
+  newExercises: z.array(newExerciseSettingSchema).optional(),
 }).refine((data) => {
   // Валидация: минимум 1 блок (skill или wod) должен присутствовать
   const hasSkillBlocks = data.skillBlocks && data.skillBlocks.length > 0;
@@ -162,6 +170,7 @@ export const updateWorkoutSchema = z.object({
   wodBlocks: z.array(wodBlockSchema)
     .max(10, 'Тренировка не может содержать более 10 WOD блоков')
     .optional(),
+  newExercises: z.array(newExerciseSettingSchema).optional(),
 });
 
 // Типы TypeScript, выведенные из схем

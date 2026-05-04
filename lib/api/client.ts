@@ -194,8 +194,9 @@ export interface WorkoutInput {
   showInLeaderboard?: boolean;
   skillBlocks?: Array<{
     exerciseName: string;
-    sets: Array<{ reps: number; weight: number; weightIsPercent?: boolean }>;
+    sets: Array<{ reps: number; weight?: number; weightIsPercent?: boolean }>;
   }>;
+  newExercises?: Array<{ name: string; hasWeight: boolean; measureUnit: string }>;
   wodBlocks?: Array<{
     wodType: 'FOR_TIME' | 'AMRAP' | 'EMOM' | 'TABATA';
     level: 'RX' | 'SCALED';
@@ -319,6 +320,8 @@ export interface Exercise {
   id: string;
   name: string;
   isGlobal: boolean;
+  hasWeight: boolean;
+  measureUnit: string;
 }
 
 export const exercisesApi = {

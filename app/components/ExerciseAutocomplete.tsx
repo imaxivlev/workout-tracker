@@ -7,12 +7,14 @@ import { formatForDropdown, enToRuName } from '@/lib/exercise-names';
 interface ExerciseAutocompleteProps {
   value: string;
   onChange: (value: string) => void;
+  onExerciseSelect?: (exercise: Exercise) => void;
+  onNewExercise?: (name: string) => void;
   placeholder?: string;
   inputClassName?: string;
   wrapperClassName?: string;
 }
 
-export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassName, wrapperClassName }: ExerciseAutocompleteProps) {
+export function ExerciseAutocomplete({ value, onChange, onExerciseSelect, onNewExercise, placeholder, inputClassName, wrapperClassName }: ExerciseAutocompleteProps) {
   const [allExercises, setAllExercises] = useState<Exercise[]>([]);
   const [filtered, setFiltered] = useState<Exercise[]>([]);
   const [open, setOpen] = useState(false);
@@ -20,7 +22,6 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
   const wrapperRef = useRef<HTMLDivElement>(null);
   const blurTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Загрузить все упражнения один раз
   const loadExercises = useCallback(async () => {
     if (loaded) return;
     try {
@@ -69,10 +70,18 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
   }
 
   function selectSuggestion(ex: Exercise) {
-    // Сохраняем русское название (для глобальных), или как есть (для пользовательских)
     const ruName = enToRuName(ex.name);
     onChange(ruName);
+    onExerciseSelect?.(ex);
     setOpen(false);
+  }
+
+  function handleAddNew() {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    onChange(trimmed);
+    setOpen(false);
+    onNewExercise?.(trimmed);
   }
 
   function handleBlur() {
@@ -89,6 +98,16 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loaded]);
+
+  const trimmedValue = value.trim();
+  const hasExactMatch = trimmedValue
+    ? allExercises.some(ex => {
+        const ruName = enToRuName(ex.name).toLowerCase();
+        const dropdownName = formatForDropdown(ex.name).toLowerCase();
+        return ruName === trimmedValue.toLowerCase() || dropdownName === trimmedValue.toLowerCase();
+      })
+    : true;
+  const showAddNew = onNewExercise && loaded && trimmedValue && !hasExactMatch;
 
   return (
     <div ref={wrapperRef} className={wrapperClassName} style={{ position: 'relative', flex: 1 }}>
@@ -117,7 +136,7 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
           </button>
         )}
       </div>
-      {open && filtered.length > 0 && (
+      {open && (filtered.length > 0 || showAddNew) && (
         <div className="autocomplete-dropdown active">
           {filtered.map(ex => (
             <div
@@ -129,6 +148,15 @@ export function ExerciseAutocomplete({ value, onChange, placeholder, inputClassN
               {formatForDropdown(ex.name)}
             </div>
           ))}
+          {showAddNew && (
+            <div
+              onMouseDown={handleMouseDownItem}
+              onClick={handleAddNew}
+              className="autocomplete-item autocomplete-item-add"
+            >
+              + Добавить: «{trimmedValue}»
+            </div>
+          )}
         </div>
       )}
     </div>

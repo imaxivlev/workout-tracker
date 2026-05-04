@@ -78,7 +78,9 @@ export class WorkoutService {
         data: {
           name: normalizedName,
           isGlobal: false,
-          userId: userId
+          userId: userId,
+          hasWeight: true,
+          measureUnit: 'reps',
         }
       });
       return newExercise.id;
@@ -114,6 +116,9 @@ export class WorkoutService {
    * Свойство 1: Атомарность транзакций создания тренировки
    */
   async createWorkout(userId: string, data: CreateWorkoutRequest): Promise<WorkoutResponse> {
+    const newExercisesMap = new Map<string, { hasWeight: boolean; measureUnit: string }>(
+      (data.newExercises ?? []).map(e => [e.name, { hasWeight: e.hasWeight, measureUnit: e.measureUnit }])
+    );
     try {
       // Начало транзакции Prisma
       const result = await prisma.$transaction(async (tx) => {
@@ -136,7 +141,8 @@ export class WorkoutService {
             const exerciseId = await this.resolveExerciseIdInTransaction(
               tx,
               skillBlock.exerciseName,
-              userId
+              userId,
+              newExercisesMap
             );
 
             // Создание skill блока
@@ -155,7 +161,7 @@ export class WorkoutService {
                   skillBlockId: createdSkillBlock.id,
                   setNumber: setNumber,
                   reps: set.reps,
-                  weight: set.weight,
+                  weight: set.weight ?? 0,
                   weightIsPercent: (set as any).weightIsPercent ?? false,
                 }
               });
@@ -190,10 +196,11 @@ export class WorkoutService {
               const exerciseId = await this.resolveExerciseIdInTransaction(
                 tx,
                 exercise.exerciseName,
-                userId
+                userId,
+                newExercisesMap
               );
               const exerciseIdFemale = exercise.exerciseNameFemale
-                ? await this.resolveExerciseIdInTransaction(tx, exercise.exerciseNameFemale, userId)
+                ? await this.resolveExerciseIdInTransaction(tx, exercise.exerciseNameFemale, userId, newExercisesMap)
                 : null;
 
               await tx.wodExercise.create({
@@ -237,7 +244,8 @@ export class WorkoutService {
   private async resolveExerciseIdInTransaction(
     tx: any,
     exerciseName: string,
-    userId: string
+    userId: string,
+    newExercisesMap?: Map<string, { hasWeight: boolean; measureUnit: string }>
   ): Promise<string> {
     const normalizedName = exerciseName.trim();
 
@@ -279,11 +287,14 @@ export class WorkoutService {
     }
 
     // Создание нового пользовательского упражнения
+    const settings = newExercisesMap?.get(normalizedName) ?? newExercisesMap?.get(enName);
     const newExercise = await tx.exerciseDict.create({
       data: {
         name: normalizedName,
         isGlobal: false,
-        userId: userId
+        userId: userId,
+        hasWeight: settings?.hasWeight ?? true,
+        measureUnit: settings?.measureUnit ?? 'reps',
       }
     });
 
@@ -612,6 +623,9 @@ export class WorkoutService {
     userId: string,
     data: Partial<CreateWorkoutRequest>
   ): Promise<WorkoutResponse> {
+    const newExercisesMap = new Map<string, { hasWeight: boolean; measureUnit: string }>(
+      (data.newExercises ?? []).map(e => [e.name, { hasWeight: e.hasWeight, measureUnit: e.measureUnit }])
+    );
     try {
       // Начало транзакции Prisma
       const result = await prisma.$transaction(async (tx) => {
@@ -656,7 +670,8 @@ export class WorkoutService {
               const exerciseId = await this.resolveExerciseIdInTransaction(
                 tx,
                 skillBlock.exerciseName,
-                userId
+                userId,
+                newExercisesMap
               );
 
               const createdSkillBlock = await tx.skillBlock.create({
@@ -673,7 +688,7 @@ export class WorkoutService {
                     skillBlockId: createdSkillBlock.id,
                     setNumber: setNumber,
                     reps: set.reps,
-                    weight: set.weight,
+                    weight: set.weight ?? 0,
                     weightIsPercent: set.weightIsPercent ?? false,
                   }
                 });
@@ -897,13 +912,14 @@ interface CreateWorkoutRequest {
   showInLeaderboard?: boolean;
   skillBlocks?: SkillBlockInput[];
   wodBlocks?: WodBlockInput[];
+  newExercises?: { name: string; hasWeight: boolean; measureUnit: string }[];
 }
 
 interface SkillBlockInput {
   exerciseName: string;
   sets: {
     reps: number;
-    weight: number;
+    weight?: number;
     weightIsPercent?: boolean;
   }[];
 }

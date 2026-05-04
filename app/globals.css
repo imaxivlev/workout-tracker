@@ -580,6 +580,33 @@ input[type=number]::-webkit-outer-spin-button {
     background: var(--bg-secondary);
 }
 
+.autocomplete-item-add {
+    color: var(--color-primary);
+    font-weight: 600;
+    border-top: 1px solid var(--border-color);
+}
+
+.autocomplete-item-add:hover {
+    background: var(--bg-secondary);
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.75rem;
+    width: 100%;
+}
+
+.new-exercise-radio {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.4rem 0;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
 /* WOD Exercise Rows Fix for Desktop */
 
 .wod-exercise-row {
@@ -5122,6 +5149,7 @@ body.auth-page {
 .cp-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
     min-width: 280px;
     font-size: 1.05rem;
 }
@@ -5152,6 +5180,7 @@ body.auth-page {
 }
 
 .cp-th-num {
+    width: 80px;
     text-align: left;
     white-space: nowrap;
 }
