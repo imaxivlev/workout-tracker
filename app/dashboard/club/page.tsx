@@ -464,6 +464,17 @@ export default function ClubPage() {
                             const name = showFemale ? (ex.exerciseNameFemale || ex.exerciseName) : ex.exerciseName;
                             const reps = showFemale ? (ex.repsFemale ?? ex.reps) : ex.reps;
                             const weight = showFemale ? (ex.weightFemale ?? ex.weight) : ex.weight;
+                            const dur = (ex as any).durationSeconds;
+                            if (dur) {
+                              const mm = Math.floor(dur / 60);
+                              const ss = String(dur % 60).padStart(2, '0');
+                              return (
+                                <div key={j} className="cp-exercise-row">
+                                  <span className="cp-ex-reps">{mm}:{ss}</span>
+                                  <span className="cp-ex-name">{name}</span>
+                                </div>
+                              );
+                            }
                             return (
                               <div key={j} className="cp-exercise-row">
                                 {reps > 0 && <span className="cp-ex-reps">{reps}</span>}

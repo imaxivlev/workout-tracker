@@ -405,6 +405,7 @@ export class ClubService {
             weight: e.weight ? Number(e.weight) : null,
             repsFemale: e.repsFemale,
             weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
+            durationSeconds: (e as any).durationSeconds ?? null,
           }))
         })),
       });
@@ -948,6 +949,7 @@ export interface ClubWorkoutTemplate {
       weight: number | null;
       repsFemale?: number | null;
       weightFemale?: number | null;
+      durationSeconds?: number | null;
     }>;
   }>;
 }
