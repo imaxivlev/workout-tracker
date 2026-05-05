@@ -80,11 +80,12 @@ const wodExerciseSchema = z.object({
   exerciseName: z.string()
     .min(1, 'Название упражнения не может быть пустым')
     .max(100, 'Название упражнения не может быть длиннее 100 символов'),
-  reps: repsSchema,
+  reps: z.number().int('Количество повторений должно быть целым числом').min(0, 'Количество повторений не может быть отрицательным'),
   weight: weightSchema.optional(),
   repsFemale: z.number().int().min(1).optional(),
   weightFemale: weightSchema.optional(),
   exerciseNameFemale: z.string().max(100).optional(),
+  durationSeconds: z.number().int().nonnegative().optional(),
 });
 
 // Схема для WOD блока
@@ -121,7 +122,7 @@ const wodBlockSchema = z.object({
 const newExerciseSettingSchema = z.object({
   name: z.string().min(1).max(100),
   hasWeight: z.boolean(),
-  measureUnit: z.enum(['reps', 'meters', 'calories']),
+  measureUnit: z.enum(['reps', 'meters', 'calories', 'time']),
 });
 
 // Основная схема для создания тренировки

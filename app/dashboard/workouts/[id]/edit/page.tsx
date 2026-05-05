@@ -22,6 +22,7 @@ interface WodExerciseForm {
   exerciseName: string;
   reps: string;
   weight: string;
+  durationSeconds: string;
   ladderRepsPerRound: string[];
   repsFemale: string;
   weightFemale: string;
@@ -136,6 +137,12 @@ function Toast({ message, onHide }: { message: string; onHide: () => void }) {
   );
 }
 
+function secondsToMmSs(s: number): string {
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
+  return `${mm}:${ss}`;
+}
+
 function mapWodExercises(exercises: any[]): WodExerciseForm[] {
   return exercises.map(ex => ({
     exerciseName: enToRuName(ex.exercise.name),
@@ -146,11 +153,12 @@ function mapWodExercises(exercises: any[]): WodExerciseForm[] {
     weightFemale: ex.weightFemale ? String(ex.weightFemale) : '',
     exerciseNameFemale: ex.exerciseNameFemale ? enToRuName(ex.exerciseNameFemale) : '',
     ladderRepsPerRoundFemale: [],
+    durationSeconds: ex.durationSeconds ? secondsToMmSs(ex.durationSeconds) : '',
   }));
 }
 
 function emptyWodExercise(): WodExerciseForm {
-  return { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [], repsFemale: '', weightFemale: '', exerciseNameFemale: '', ladderRepsPerRoundFemale: [] };
+  return { exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [], repsFemale: '', weightFemale: '', exerciseNameFemale: '', ladderRepsPerRoundFemale: [], durationSeconds: '' };
 }
 
 function workoutToBlocks(workout: Workout): BlockItem[] {
@@ -282,6 +290,17 @@ export default function EditWorkoutPage() {
         setComment(w.comment || '');
         setIsClubTemplate(w.isClubTemplate || false);
         setBlocks(workoutToBlocks(w));
+        // Populate exerciseSettings for REST exercises
+        const restSettings: Record<string, { hasWeight: boolean; measureUnit: string }> = {};
+        for (const wb of w.wodBlocks) {
+          for (const ex of wb.exercises) {
+            if ((ex as any).durationSeconds) {
+              const name = enToRuName(ex.exercise.name);
+              restSettings[name] = { hasWeight: false, measureUnit: 'time' };
+            }
+          }
+        }
+        if (Object.keys(restSettings).length > 0) setExerciseSettings(prev => ({ ...prev, ...restSettings }));
       })
       .catch(err => {
         if (err instanceof ApiError && err.status === 404) {
@@ -530,6 +549,7 @@ export default function EditWorkoutPage() {
                       repsFemale: b.hasGenderSplit && ex.repsFemale ? parseInt(ex.repsFemale) : undefined,
                       weightFemale: b.hasGenderSplit && ex.weightFemale && !getHideWeight(ex.exerciseName) ? parseFloat(ex.weightFemale) : undefined,
                       exerciseNameFemale: b.hasGenderSplit && ex.exerciseNameFemale && ex.exerciseNameFemale !== ex.exerciseName ? ex.exerciseNameFemale : undefined,
+                      durationSeconds: getMeasureUnit(ex.exerciseName) === 'time' ? parseMmSs(ex.durationSeconds) : undefined,
                     };
                   }),
                 };
@@ -866,6 +886,18 @@ export default function EditWorkoutPage() {
                                     ))}
                                   </div>
                                 </>
+                              ) : getMeasureUnit(ex.exerciseName) === 'time' ? (
+                                <div className="single-reps-container" style={{ display: 'flex' }}>
+                                  <input
+                                    type="text"
+                                    value={ex.durationSeconds}
+                                    onChange={e => updateWodExercise(bi, ei, 'durationSeconds', formatMmSsInput(e.target.value, ex.durationSeconds))}
+                                    className="form-input-sm"
+                                    placeholder="ММ:СС"
+                                    maxLength={5}
+                                    required
+                                  />
+                                </div>
                               ) : (
                                 <>
                                   <div className="single-reps-container" style={{ display: 'flex' }}>
@@ -981,6 +1013,18 @@ export default function EditWorkoutPage() {
                                         required
                                       />
                                     ))}
+                                  </div>
+                                ) : getMeasureUnit(ex.exerciseName) === 'time' ? (
+                                  <div className="single-reps-container" style={{ display: 'flex' }}>
+                                    <input
+                                      type="text"
+                                      value={ex.durationSeconds}
+                                      onChange={e => updateScaledExercise(bi, ei, 'durationSeconds', formatMmSsInput(e.target.value, ex.durationSeconds))}
+                                      className="form-input-sm"
+                                      placeholder="ММ:СС"
+                                      maxLength={5}
+                                      required
+                                    />
                                   </div>
                                 ) : (
                                   <div className="single-reps-container" style={{ display: 'flex' }}>

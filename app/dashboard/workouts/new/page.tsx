@@ -27,6 +27,7 @@ interface WodExerciseForm {
   repsFemale: string;
   weightFemale: string;
   ladderRepsPerRoundFemale: string[];
+  durationSeconds: string;
 }
 interface WodBlockForm {
   wodType: WodType;
@@ -94,6 +95,12 @@ function formatMmSsInput(raw: string, prev: string): string {
   // Автоматически вставляем двоеточие после 2 цифр
   const mm = digits.slice(0, 2);
   const ss = digits.slice(2, 4);
+  return `${mm}:${ss}`;
+}
+
+function secondsToMmSs(s: number): string {
+  const mm = String(Math.floor(s / 60)).padStart(2, '0');
+  const ss = String(s % 60).padStart(2, '0');
   return `${mm}:${ss}`;
 }
 
@@ -282,6 +289,7 @@ function NewWorkoutPage() {
                   repsFemale: '',
                   weightFemale: '',
                   ladderRepsPerRoundFemale: [],
+                  durationSeconds: ex.durationSeconds ? secondsToMmSs(ex.durationSeconds) : '',
                 };
               });
 
@@ -313,6 +321,16 @@ function NewWorkoutPage() {
 
           if (newBlocks.length > 0) {
             setBlocks(newBlocks);
+            // Populate exerciseSettings for REST exercises from template
+            const restSettings: Record<string, { hasWeight: boolean; measureUnit: string }> = {};
+            for (const b of newBlocks) {
+              if (b.type === 'wod') {
+                for (const ex of [...b.data.exercises, ...b.data.scaledExercises]) {
+                  if (ex.durationSeconds) restSettings[ex.exerciseName] = { hasWeight: false, measureUnit: 'time' };
+                }
+              }
+            }
+            if (Object.keys(restSettings).length > 0) setExerciseSettings(prev => ({ ...prev, ...restSettings }));
             setFromClubTemplate(true);
             setSaveAsClubTemplate(false);
             setToast('Шаблон тренировки загружен — заполните свой результат');
@@ -346,6 +364,7 @@ function NewWorkoutPage() {
   const emptyWodExercise = (): WodExerciseForm => ({
     exerciseName: '', reps: '', weight: '', ladderRepsPerRound: [],
     exerciseNameFemale: '', repsFemale: '', weightFemale: '', ladderRepsPerRoundFemale: [],
+    durationSeconds: '',
   });
 
   function addWodBlock() {
@@ -811,6 +830,7 @@ function NewWorkoutPage() {
                       repsFemale,
                       weightFemale,
                       exerciseNameFemale,
+                      durationSeconds: getMeasureUnit(ex.exerciseName) === 'time' ? parseMmSs(ex.durationSeconds) : undefined,
                     };
                   }),
                 };
@@ -1175,6 +1195,18 @@ function NewWorkoutPage() {
                                         ))}
                                       </div>
                                     </>
+                                  ) : getMeasureUnit(ex.exerciseName) === 'time' ? (
+                                    <div className="single-reps-container" style={{ display: 'flex' }}>
+                                      <input
+                                        type="text"
+                                        value={ex.durationSeconds}
+                                        onChange={e => updateWodExercise(bi, ei, 'durationSeconds', formatMmSsInput(e.target.value, ex.durationSeconds))}
+                                        className="form-input-sm"
+                                        placeholder="ММ:СС"
+                                        maxLength={5}
+                                        required
+                                      />
+                                    </div>
                                   ) : (
                                     <>
                                       <div className="single-reps-container" style={{ display: 'flex' }}>
@@ -1272,6 +1304,18 @@ function NewWorkoutPage() {
                                           ))}
                                         </div>
                                       </>
+                                    ) : getMeasureUnit(ex.exerciseName) === 'time' ? (
+                                      <div className="single-reps-container" style={{ display: 'flex' }}>
+                                        <input
+                                          type="text"
+                                          value={ex.durationSeconds}
+                                          onChange={e => updateScaledExercise(bi, ei, 'durationSeconds', formatMmSsInput(e.target.value, ex.durationSeconds))}
+                                          className="form-input-sm"
+                                          placeholder="ММ:СС"
+                                          maxLength={5}
+                                          required
+                                        />
+                                      </div>
                                     ) : (
                                       <div className="single-reps-container" style={{ display: 'flex' }}>
                                         <input

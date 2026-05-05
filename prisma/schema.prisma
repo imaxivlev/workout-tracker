@@ -152,6 +152,7 @@ model WodExercise {
   repsFemale           Int?          @map("reps_female")
   weightFemale         Decimal?      @map("weight_female") @db.Decimal(6, 2)
   exerciseDictIdFemale String?       @map("exercise_dict_id_female") @db.VarChar(36)
+  durationSeconds      Int?          @map("duration_seconds")
   exerciseFemale       ExerciseDict? @relation("WodExerciseFemale", fields: [exerciseDictIdFemale], references: [id])
   exercise             ExerciseDict  @relation("WodExerciseMale", fields: [exerciseDictId], references: [id])
   wodBlock             WodBlock      @relation(fields: [wodBlockId], references: [id], onDelete: Cascade)

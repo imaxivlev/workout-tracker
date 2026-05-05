@@ -4,6 +4,7 @@
  */
 
 export const EN_TO_RU: Record<string, string> = {
+  'Rest': 'Отдых',
   'Back Squat': 'Приседания со штангой на спине',
   'Front Squat': 'Фронтальные приседания',
   'Deadlift': 'Становая тяга',

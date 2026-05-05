@@ -90,6 +90,24 @@ async function main() {
   }
 
   console.log(`✓ ${globalExercises.length} глобальных упражнений (создано новых: ${created})`);
+
+  // Шаг 3: Создать/обновить упражнение "Отдых" (особое: hasWeight=false, measureUnit='time')
+  const restExercise = await prisma.exerciseDict.findFirst({
+    where: { name: 'Отдых', isGlobal: true, userId: null },
+  });
+  if (!restExercise) {
+    await prisma.exerciseDict.create({
+      data: { name: 'Отдых', isGlobal: true, userId: null, hasWeight: false, measureUnit: 'time' },
+    });
+    console.log('✓ Создано упражнение "Отдых"');
+  } else if (restExercise.measureUnit !== 'time' || restExercise.hasWeight) {
+    await prisma.exerciseDict.update({
+      where: { id: restExercise.id },
+      data: { hasWeight: false, measureUnit: 'time' },
+    });
+    console.log('✓ Обновлено упражнение "Отдых"');
+  }
+
   console.log('Заполнение базы данных завершено!');
 }
 

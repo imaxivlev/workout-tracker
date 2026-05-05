@@ -111,7 +111,13 @@ export default function WorkoutDetailPage() {
 
         {workout.wodBlocks.map(block => {
           const wodDetails = block.exercises.map(ex => {
-            const parts = [enToRuName(ex.exercise.name)];
+            const name = enToRuName(ex.exercise.name);
+            if (ex.durationSeconds) {
+              const mm = Math.floor(ex.durationSeconds / 60);
+              const ss = String(ex.durationSeconds % 60).padStart(2, '0');
+              return `${mm}:${ss} ${name}`;
+            }
+            const parts = [name];
             if (ex.reps) parts.unshift(`${ex.reps}×`);
             if (ex.weight) parts.push(`@ ${ex.weight}кг`);
             return parts.join(' ');

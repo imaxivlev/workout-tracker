@@ -212,7 +212,8 @@ export class WorkoutService {
                   repsFemale: (exercise as any).repsFemale || null,
                   weightFemale: (exercise as any).weightFemale || null,
                   exerciseDictIdFemale: exerciseIdFemale,
-                  orderIndex: orderIndex
+                  orderIndex: orderIndex,
+                  durationSeconds: (exercise as any).durationSeconds || null,
                 }
               });
               orderIndex++;
@@ -476,7 +477,8 @@ export class WorkoutService {
           exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
-          orderIndex: e.orderIndex
+          orderIndex: e.orderIndex,
+          durationSeconds: (e as any).durationSeconds ?? null,
         }))
       })),
       createdAt: workout.createdAt.toISOString(),
@@ -593,7 +595,8 @@ export class WorkoutService {
           exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
-          orderIndex: e.orderIndex
+          orderIndex: e.orderIndex,
+          durationSeconds: (e as any).durationSeconds ?? null,
         }))
       })),
       createdAt: workout.createdAt.toISOString(),
@@ -743,7 +746,8 @@ export class WorkoutService {
                     repsFemale: exercise.repsFemale || null,
                     weightFemale: exercise.weightFemale || null,
                     exerciseDictIdFemale: exerciseIdFemale,
-                    orderIndex: orderIndex
+                    orderIndex: orderIndex,
+                    durationSeconds: (exercise as any).durationSeconds || null,
                   }
                 });
                 orderIndex++;
@@ -893,7 +897,8 @@ export class WorkoutService {
           exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
           repsFemale: e.repsFemale,
           weightFemale: e.weightFemale ? Number(e.weightFemale) : null,
-          orderIndex: e.orderIndex
+          orderIndex: e.orderIndex,
+          durationSeconds: (e as any).durationSeconds ?? null,
         }))
       })),
       createdAt: workout.createdAt.toISOString(),
@@ -941,6 +946,7 @@ interface WodBlockInput {
     repsFemale?: number;
     weightFemale?: number;
     exerciseNameFemale?: string;
+    durationSeconds?: number;
   }[];
 }
 
@@ -989,6 +995,7 @@ interface WorkoutResponse {
       repsFemale: number | null;
       weightFemale: number | null;
       orderIndex: number;
+      durationSeconds: number | null;
     }[];
   }[];
   createdAt: string;

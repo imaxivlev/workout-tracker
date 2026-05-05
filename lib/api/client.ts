@@ -147,6 +147,7 @@ export interface WodExercise {
   repsFemale?: number | null;
   weightFemale?: number | null;
   exerciseNameFemale?: string | null;
+  durationSeconds?: number | null;
 }
 
 export interface WodBlock {
@@ -215,6 +216,7 @@ export interface WorkoutInput {
       repsFemale?: number;
       weightFemale?: number;
       exerciseNameFemale?: string;
+      durationSeconds?: number;
     }>;
   }>;
 }
@@ -447,6 +449,7 @@ export interface ClubWorkoutTemplate {
       weight: number | null;
       repsFemale?: number | null;
       weightFemale?: number | null;
+      durationSeconds?: number | null;
     }>;
   }>;
 }
