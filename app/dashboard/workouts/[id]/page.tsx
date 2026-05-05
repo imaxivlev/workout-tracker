@@ -125,7 +125,7 @@ export default function WorkoutDetailPage() {
           return (
             <div key={block.id} className="added-block wod-block" style={{ marginBottom: '2rem' }}>
               <h3 className="block-title" style={{ color: 'var(--color-primary)', marginBottom: '1rem' }}>
-                ⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}{block.isLadder ? ' · Лесенка' : ''}
+                ⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}{block.isLadder ? ` · Лесенка${block.ladderRounds ? ` ×${block.ladderRounds}` : ''}` : ''}
               </h3>
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Тип:</strong> {block.level ? block.level.toUpperCase() : 'RX'}
@@ -139,6 +139,11 @@ export default function WorkoutDetailPage() {
               <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
                 <strong>Время:</strong> {Math.floor(block.timeCapSeconds / 60)} мин
               </div>
+              ) : null}
+              {block.isLadder && block.restBetweenRoundsSeconds ? (
+                <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
+                  <strong>Отдых между раундами:</strong> {Math.floor(block.restBetweenRoundsSeconds / 60)}:{String(block.restBetweenRoundsSeconds % 60).padStart(2, '0')} мин
+                </div>
               ) : null}
               {wodDetails.length > 0 && (
                 <div className="detail-row" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>

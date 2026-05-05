@@ -134,7 +134,8 @@ model WodBlock {
   resultTotalReps Int?          @map("result_total_reps")
   createdAt       DateTime      @default(now()) @map("created_at")
   hasGenderSplit  Boolean       @default(false) @map("has_gender_split")
-  ladderRounds    Int?          @map("ladder_rounds")
+  ladderRounds              Int?          @map("ladder_rounds")
+  restBetweenRoundsSeconds  Int?          @map("rest_between_rounds_seconds")
   workout         Workout       @relation(fields: [workoutId], references: [id], onDelete: Cascade)
   exercises       WodExercise[]
 

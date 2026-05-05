@@ -157,6 +157,7 @@ export interface WodBlock {
   timeCapSeconds?: number;
   isLadder: boolean;
   ladderRounds?: number | null;
+  restBetweenRoundsSeconds?: number | null;
   resultType: 'TIME' | 'REPS' | 'WEIGHT';
   resultDisplay: string;
   resultSeconds?: number;
@@ -441,6 +442,7 @@ export interface ClubWorkoutTemplate {
     timeCapSeconds: number | null;
     isLadder: boolean;
     ladderRounds: number | null;
+    restBetweenRoundsSeconds?: number | null;
     hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;

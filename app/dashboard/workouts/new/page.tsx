@@ -35,6 +35,7 @@ interface WodBlockForm {
   timeCapSeconds: string;
   isLadder: boolean;
   ladderRounds: number;
+  restBetweenRounds: string;
   resultDisplay: string;
   resultSeconds: string;
   resultTotalReps: string;
@@ -217,7 +218,9 @@ function NewWorkoutPage() {
       if (club) {
         setHasClub(true);
         setClubRole(club.myRole);
-        setSaveAsClubTemplate(club.myRole === 'OWNER' || club.myRole === 'COACH');
+        if (!hasClubTemplateParam) {
+          setSaveAsClubTemplate(club.myRole === 'OWNER' || club.myRole === 'COACH');
+        }
       }
     }).catch(() => {});
   }, []);
@@ -303,6 +306,7 @@ function NewWorkoutPage() {
                   timeCapSeconds: wb.timeCapSeconds ? String(Math.floor(wb.timeCapSeconds / 60)) : '',
                   isLadder,
                   ladderRounds: rounds,
+                  restBetweenRounds: wb.restBetweenRoundsSeconds ? secondsToMmSs(wb.restBetweenRoundsSeconds) : '',
                   resultDisplay: '',
                   resultSeconds: '',
                   resultTotalReps: '',
@@ -377,6 +381,7 @@ function NewWorkoutPage() {
         timeCapSeconds: '',
         isLadder: false,
         ladderRounds: 5,
+        restBetweenRounds: '',
         resultDisplay: '',
         resultSeconds: '',
         resultTotalReps: '',
@@ -794,6 +799,7 @@ function NewWorkoutPage() {
                   timeCapSeconds: b.timeCapSeconds ? parseInt(b.timeCapSeconds) * 60 : undefined,
                   isLadder: b.isLadder,
                   ladderRounds: b.isLadder ? b.ladderRounds : undefined,
+                  restBetweenRoundsSeconds: b.isLadder && b.restBetweenRounds ? parseMmSs(b.restBetweenRounds) : undefined,
                   resultType: b.wodType === 'FOR_TIME' ? 'TIME' as const : b.wodType === 'AMRAP' ? 'REPS' as const : 'TIME' as const,
                   resultDisplay: (b.wodType === 'EMOM' || b.wodType === 'TABATA')
                     ? (b.timeCapSeconds ? `${b.timeCapSeconds} мин` : b.wodType)
@@ -1132,27 +1138,40 @@ function NewWorkoutPage() {
                 </div>
 
                 {wod.isLadder && (
-                  <div className="form-group ladder-rounds-container">
-                    <label>Количество раундов</label>
-                    <select
-                      className="form-select"
-                      value={wod.ladderRounds}
-                      onChange={e => updateWodBlock(bi, { ladderRounds: parseInt(e.target.value) })}
-                    >
-                      <option value="1">1 раунд</option>
-                      <option value="2">2 раунда</option>
-                      <option value="3">3 раунда</option>
-                      <option value="4">4 раунда</option>
-                      <option value="5">5 раундов</option>
-                      <option value="6">6 раундов</option>
-                      <option value="7">7 раундов</option>
-                      <option value="8">8 раундов</option>
-                      <option value="9">9 раундов</option>
-                      <option value="10">10 раундов</option>
-                      <option value="11">11 раундов</option>
-                      <option value="12">12 раундов</option>
-                    </select>
-                  </div>
+                  <>
+                    <div className="form-group ladder-rounds-container">
+                      <label>Количество раундов</label>
+                      <select
+                        className="form-select"
+                        value={wod.ladderRounds}
+                        onChange={e => updateWodBlock(bi, { ladderRounds: parseInt(e.target.value) })}
+                      >
+                        <option value="1">1 раунд</option>
+                        <option value="2">2 раунда</option>
+                        <option value="3">3 раунда</option>
+                        <option value="4">4 раунда</option>
+                        <option value="5">5 раундов</option>
+                        <option value="6">6 раундов</option>
+                        <option value="7">7 раундов</option>
+                        <option value="8">8 раундов</option>
+                        <option value="9">9 раундов</option>
+                        <option value="10">10 раундов</option>
+                        <option value="11">11 раундов</option>
+                        <option value="12">12 раундов</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Отдых между раундами</label>
+                      <input
+                        type="text"
+                        className="form-input"
+                        placeholder="мм:сс"
+                        value={wod.restBetweenRounds}
+                        onChange={e => updateWodBlock(bi, { restBetweenRounds: formatMmSsInput(e.target.value, wod.restBetweenRounds) })}
+                        style={{ width: '100px' }}
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="form-group">

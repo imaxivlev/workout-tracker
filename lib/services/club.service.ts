@@ -397,6 +397,7 @@ export class ClubService {
           timeCapSeconds: wb.timeCapSeconds,
           isLadder: wb.isLadder,
           ladderRounds: wb.ladderRounds ?? null,
+          restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
           hasGenderSplit: wb.hasGenderSplit,
           exercises: wb.exercises.map(e => ({
             exerciseName: e.exercise.name,
@@ -941,6 +942,7 @@ export interface ClubWorkoutTemplate {
     timeCapSeconds: number | null;
     isLadder: boolean;
     ladderRounds?: number | null;
+    restBetweenRoundsSeconds?: number | null;
     hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;

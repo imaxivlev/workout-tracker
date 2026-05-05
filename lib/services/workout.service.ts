@@ -182,6 +182,7 @@ export class WorkoutService {
                 timeCapSeconds: wodBlock.timeCapSeconds || null,
                 isLadder: wodBlock.isLadder,
                 ladderRounds: wodBlock.isLadder ? (wodBlock.ladderRounds || null) : null,
+                restBetweenRoundsSeconds: wodBlock.isLadder ? (wodBlock.restBetweenRoundsSeconds || null) : null,
                 resultType: this.determineResultType(wodBlock.wodType),
                 resultDisplay: wodBlock.resultDisplay,
                 resultSeconds: wodBlock.resultSeconds || null,
@@ -461,6 +462,7 @@ export class WorkoutService {
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
         ladderRounds: wb.ladderRounds ?? null,
+        restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -579,6 +581,7 @@ export class WorkoutService {
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
         ladderRounds: wb.ladderRounds ?? null,
+        restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -718,6 +721,8 @@ export class WorkoutService {
                   level: wodBlock.level,
                   timeCapSeconds: wodBlock.timeCapSeconds || null,
                   isLadder: wodBlock.isLadder,
+                  ladderRounds: wodBlock.isLadder ? (wodBlock.ladderRounds || null) : null,
+                  restBetweenRoundsSeconds: wodBlock.isLadder ? (wodBlock.restBetweenRoundsSeconds || null) : null,
                   resultType: this.determineResultType(wodBlock.wodType),
                   resultDisplay: wodBlock.resultDisplay,
                   resultSeconds: wodBlock.resultSeconds || null,
@@ -881,6 +886,7 @@ export class WorkoutService {
         timeCapSeconds: wb.timeCapSeconds,
         isLadder: wb.isLadder,
         ladderRounds: wb.ladderRounds ?? null,
+        restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
         resultType: wb.resultType,
         resultDisplay: wb.resultDisplay,
         resultSeconds: wb.resultSeconds,
@@ -935,6 +941,7 @@ interface WodBlockInput {
   timeCapSeconds?: number;
   isLadder: boolean;
   ladderRounds?: number;
+  restBetweenRoundsSeconds?: number;
   resultDisplay: string;
   resultSeconds?: number;
   resultTotalReps?: number;
