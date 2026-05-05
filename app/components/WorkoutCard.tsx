@@ -51,7 +51,10 @@ export function WorkoutCard({ workout, onDelete }: WorkoutCardProps) {
 
           {workout.wodBlocks.map(block => (
             <div key={block.id} className="workout-block wod">
-              <div className="block-title">⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}</div>
+              <div className="block-title">
+                ⚡ ВОД: {wodTypeLabels[block.wodType] || block.wodType}
+                {block.isLadder && <span style={{ marginLeft: '0.4rem', opacity: 0.75, fontSize: '0.85em' }}>Лесенка{block.ladderRounds ? ` ×${block.ladderRounds}` : ''}{block.restBetweenRoundsSeconds ? ` · ${Math.floor(block.restBetweenRoundsSeconds / 60)}:${String(block.restBetweenRoundsSeconds % 60).padStart(2, '0')} отдых` : ''}</span>}
+              </div>
               <div className="workout-footer">
                 {block.wodType === 'EMOM' || block.wodType === 'TABATA' ? (
                   <span className="result-time">

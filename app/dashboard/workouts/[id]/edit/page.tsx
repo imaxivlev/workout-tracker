@@ -830,7 +830,7 @@ export default function EditWorkoutPage() {
                 </div>
 
                 {wod.isLadder && (
-                  <>
+                  <div className="form-row">
                     <div className="form-group ladder-rounds-container">
                       <label>Количество раундов</label>
                       <select
@@ -853,17 +853,16 @@ export default function EditWorkoutPage() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Отдых между раундами</label>
+                      <label>Отдых мм:сс</label>
                       <input
                         type="text"
                         className="form-input"
-                        placeholder="мм:сс"
+                        placeholder="02:00"
                         value={wod.restBetweenRounds}
                         onChange={e => updateWodBlock(bi, { restBetweenRounds: formatMmSsInput(e.target.value, wod.restBetweenRounds) })}
-                        style={{ width: '100px' }}
                       />
                     </div>
-                  </>
+                  </div>
                 )}
 
                 <div className="form-group">

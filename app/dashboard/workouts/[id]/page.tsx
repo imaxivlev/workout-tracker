@@ -142,7 +142,7 @@ export default function WorkoutDetailPage() {
               ) : null}
               {block.isLadder && block.restBetweenRoundsSeconds ? (
                 <div className="detail-row" style={{ marginBottom: '0.5rem' }}>
-                  <strong>Отдых между раундами:</strong> {Math.floor(block.restBetweenRoundsSeconds / 60)}:{String(block.restBetweenRoundsSeconds % 60).padStart(2, '0')} мин
+                  <strong>Отдых между раундами:</strong> {Math.floor(block.restBetweenRoundsSeconds / 60)}:{String(block.restBetweenRoundsSeconds % 60).padStart(2, '0')}
                 </div>
               ) : null}
               {wodDetails.length > 0 && (

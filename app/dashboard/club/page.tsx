@@ -19,6 +19,9 @@ type WodBlock = ClubWorkoutTemplate['wodBlocks'][0];
 type WodGroup = {
   wodType: string;
   timeCapSeconds: number | null;
+  isLadder: boolean;
+  ladderRounds: number | null;
+  restBetweenRoundsSeconds: number | null;
   rx: WodBlock | null;
   sc: WodBlock | null;
 };
@@ -41,6 +44,9 @@ function groupWodBlocks(wodBlocks: WodBlock[]): WodGroup[] {
       groups.push({
         wodType: wb.wodType,
         timeCapSeconds: wb.timeCapSeconds,
+        isLadder: wb.isLadder,
+        ladderRounds: wb.ladderRounds,
+        restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
         rx: wb.level === 'RX' ? wb : paired,
         sc: wb.level === 'SCALED' ? wb : paired,
       });
@@ -48,6 +54,9 @@ function groupWodBlocks(wodBlocks: WodBlock[]): WodGroup[] {
       groups.push({
         wodType: wb.wodType,
         timeCapSeconds: wb.timeCapSeconds,
+        isLadder: wb.isLadder,
+        ladderRounds: wb.ladderRounds,
+        restBetweenRoundsSeconds: wb.restBetweenRoundsSeconds ?? null,
         rx: wb.level === 'RX' ? wb : null,
         sc: wb.level === 'SCALED' ? wb : null,
       });
@@ -492,6 +501,9 @@ export default function ClubPage() {
                               <span className="cp-wod-type-text">{wodTypeLabels[group.wodType] || group.wodType}</span>
                               {group.timeCapSeconds && (
                                 <span className="cp-timecap">{Math.floor(group.timeCapSeconds / 60)} мин</span>
+                              )}
+                              {group.isLadder && (
+                                <span className="cp-timecap">Лесенка{group.ladderRounds ? ` ×${group.ladderRounds}` : ''}{group.restBetweenRoundsSeconds ? ` · отдых ${Math.floor(group.restBetweenRoundsSeconds / 60)}:${String(group.restBetweenRoundsSeconds % 60).padStart(2, '0')}` : ''}</span>
                               )}
                               {cardHasGenderSplit && (
                                 <div className="cp-gender-toggle" style={{ marginTop: 0, marginBottom: 0 }}>
