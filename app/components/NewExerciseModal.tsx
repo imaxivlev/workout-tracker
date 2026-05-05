@@ -15,44 +15,76 @@ export function NewExerciseModal({ exerciseName, onConfirm, onCancel }: NewExerc
   const [measureUnit, setMeasureUnit] = useState<MeasureUnit>('reps');
 
   return (
-    <div className="modal-overlay" onClick={onCancel}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '360px' }}>
-        <h3 style={{ marginBottom: '0.25rem' }}>Новое упражнение</h3>
-        <p style={{ color: 'var(--color-secondary)', fontWeight: 600, marginBottom: '1.25rem', fontSize: '0.95rem' }}>
-          «{exerciseName}»
-        </p>
+    <div className="nex-overlay" onClick={onCancel}>
+      <div className="nex-modal" onClick={e => e.stopPropagation()}>
+        <div className="nex-top-bar" />
 
-        <div style={{ marginBottom: '1.25rem' }}>
-          <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.9rem' }}>Тип:</p>
-          <label className="new-exercise-radio">
-            <input type="radio" name="hasWeight" checked={!hasWeight} onChange={() => setHasWeight(false)} />
-            <span>Без веса (собственный вес)</span>
-          </label>
-          <label className="new-exercise-radio">
-            <input type="radio" name="hasWeight" checked={hasWeight} onChange={() => setHasWeight(true)} />
-            <span>С весом (штанга, гиря, гантель)</span>
-          </label>
+        <div className="nex-header">
+          <div className="nex-badge">НОВОЕ УПРАЖНЕНИЕ</div>
+          <div className="nex-exercise-name">«{exerciseName}»</div>
         </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <p style={{ fontWeight: 600, marginBottom: '0.5rem', fontSize: '0.9rem' }}>Результат считается в:</p>
-          <label className="new-exercise-radio">
-            <input type="radio" name="measureUnit" checked={measureUnit === 'reps'} onChange={() => setMeasureUnit('reps')} />
-            <span>Повторениях</span>
-          </label>
-          <label className="new-exercise-radio">
-            <input type="radio" name="measureUnit" checked={measureUnit === 'meters'} onChange={() => setMeasureUnit('meters')} />
-            <span>Метрах</span>
-          </label>
-          <label className="new-exercise-radio">
-            <input type="radio" name="measureUnit" checked={measureUnit === 'calories'} onChange={() => setMeasureUnit('calories')} />
-            <span>Калориях</span>
-          </label>
+        <div className="nex-section">
+          <div className="nex-section-label">Тип</div>
+          <div className="nex-card-grid nex-grid-2">
+            <button
+              type="button"
+              className={`nex-card nex-card-green${!hasWeight ? ' nex-card-selected' : ''}`}
+              onClick={() => setHasWeight(false)}
+            >
+              <span className="nex-card-icon">🤸</span>
+              <span className="nex-card-text">Без веса</span>
+              <span className="nex-card-sub">собственный вес</span>
+            </button>
+            <button
+              type="button"
+              className={`nex-card nex-card-yellow${hasWeight ? ' nex-card-selected' : ''}`}
+              onClick={() => setHasWeight(true)}
+            >
+              <span className="nex-card-icon">🏋️</span>
+              <span className="nex-card-text">С весом</span>
+              <span className="nex-card-sub">штанга, гиря, гантель</span>
+            </button>
+          </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
-          <button type="button" className="btn-secondary" onClick={onCancel}>Отмена</button>
-          <button type="button" className="btn-primary" onClick={() => onConfirm({ hasWeight, measureUnit })}>Добавить</button>
+        <div className="nex-section">
+          <div className="nex-section-label">Результат считается в</div>
+          <div className="nex-card-grid nex-grid-3">
+            <button
+              type="button"
+              className={`nex-card nex-card-red${measureUnit === 'reps' ? ' nex-card-selected' : ''}`}
+              onClick={() => setMeasureUnit('reps')}
+            >
+              <span className="nex-card-icon">🔢</span>
+              <span className="nex-card-text">Повторения</span>
+            </button>
+            <button
+              type="button"
+              className={`nex-card nex-card-red${measureUnit === 'meters' ? ' nex-card-selected' : ''}`}
+              onClick={() => setMeasureUnit('meters')}
+            >
+              <span className="nex-card-icon">📏</span>
+              <span className="nex-card-text">Метры</span>
+            </button>
+            <button
+              type="button"
+              className={`nex-card nex-card-red${measureUnit === 'calories' ? ' nex-card-selected' : ''}`}
+              onClick={() => setMeasureUnit('calories')}
+            >
+              <span className="nex-card-icon">🔥</span>
+              <span className="nex-card-text">Калории</span>
+            </button>
+          </div>
+        </div>
+
+        <div className="nex-actions">
+          <button type="button" className="nex-btn-cancel" onClick={onCancel}>
+            Отмена
+          </button>
+          <button type="button" className="nex-btn-confirm" onClick={() => onConfirm({ hasWeight, measureUnit })}>
+            Добавить →
+          </button>
         </div>
       </div>
     </div>
