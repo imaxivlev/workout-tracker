@@ -32,6 +32,7 @@ const mockClubModel = { count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), 
 const mockWorkoutModel = { count: vi.fn(), findMany: vi.fn(), delete: vi.fn() };
 const mockExerciseDict = { count: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn(), delete: vi.fn() };
 const mockUserConsent = { count: vi.fn(), findMany: vi.fn() };
+const mockClubMember = { findFirst: vi.fn(), create: vi.fn(), updateMany: vi.fn(), deleteMany: vi.fn() };
 
 vi.mock('@prisma/client', () => ({
   PrismaClient: class MockPrismaClient {
@@ -40,6 +41,7 @@ vi.mock('@prisma/client', () => ({
     workout = mockWorkoutModel;
     exerciseDict = mockExerciseDict;
     userConsent = mockUserConsent;
+    clubMember = mockClubMember;
   },
 }));
 
@@ -176,6 +178,87 @@ describe('Admin API', () => {
       const updateCall = mockUser.update.mock.calls[0][0];
       expect(updateCall.data).not.toHaveProperty('hackField');
     });
+
+    it('должен добавить пользователя в клуб (addToClub)', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+      mockClubMember.findFirst.mockResolvedValue(null);
+      mockClubMember.create.mockResolvedValue({});
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { addToClub: { clubId: 'c1', role: 'ATHLETE' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.message).toBe('Пользователь добавлен в клуб');
+    });
+
+    it('должен вернуть 409 если пользователь уже в клубе', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+      mockClubMember.findFirst.mockResolvedValue({ id: 'cm1' });
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { addToClub: { clubId: 'c1', role: 'ATHLETE' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+
+      expect(res.status).toBe(409);
+    });
+
+    it('должен вернуть 400 для addToClub с невалидной ролью', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { addToClub: { clubId: 'c1', role: 'SUPERUSER' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it('должен обновить роль пользователя в клубе (updateRoleInClub)', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+      mockClubMember.updateMany.mockResolvedValue({ count: 1 });
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { updateRoleInClub: { clubId: 'c1', role: 'COACH' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.message).toBe('Роль обновлена');
+      expect(mockClubMember.updateMany).toHaveBeenCalledWith({
+        where: { userId: 'u1', clubId: 'c1' },
+        data: { role: 'COACH' },
+      });
+    });
+
+    it('должен вернуть 400 для updateRoleInClub с невалидной ролью', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { updateRoleInClub: { clubId: 'c1', role: 'INVALID' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+
+      expect(res.status).toBe(400);
+    });
+
+    it('должен удалить пользователя из клуба (removeFromClub)', async () => {
+      const { PATCH } = await import('../users/[id]/route');
+      mockClubMember.deleteMany.mockResolvedValue({ count: 1 });
+
+      const res = await PATCH(
+        makeRequest('/api/admin/users/u1', 'PATCH', { removeFromClub: { clubId: 'c1' } }),
+        { params: Promise.resolve({ id: 'u1' }) }
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.message).toBe('Пользователь удалён из клуба');
+    });
   });
 
   // === DELETE /api/admin/users/[id] ===
@@ -211,6 +294,183 @@ describe('Admin API', () => {
 
       expect(res.status).toBe(200);
       expect(data.consents).toHaveLength(1);
+    });
+  });
+
+  // === GET /api/admin/exercises ===
+  describe('GET /api/admin/exercises', () => {
+    it('должен вернуть список упражнений с полями hasWeight и measureUnit', async () => {
+      const { GET } = await import('../exercises/route');
+
+      mockExerciseDict.findMany.mockResolvedValue([
+        { id: 'e1', name: 'Приседания', isGlobal: true, hasWeight: true, measureUnit: 'reps', createdAt: new Date(), user: null },
+        { id: 'e2', name: 'Бег', isGlobal: true, hasWeight: false, measureUnit: 'meters', createdAt: new Date(), user: null },
+      ]);
+      mockExerciseDict.count.mockResolvedValue(2);
+
+      const res = await GET(makeRequest('/api/admin/exercises'));
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.exercises).toHaveLength(2);
+      expect(data.exercises[0].hasWeight).toBe(true);
+      expect(data.exercises[1].measureUnit).toBe('meters');
+      expect(data.pagination.total).toBe(2);
+    });
+
+    it('должен поддерживать фильтр по global', async () => {
+      const { GET } = await import('../exercises/route');
+
+      mockExerciseDict.findMany.mockResolvedValue([]);
+      mockExerciseDict.count.mockResolvedValue(0);
+
+      const res = await GET(makeRequest('/api/admin/exercises?filter=global&search=бег'));
+      expect(res.status).toBe(200);
+
+      const findCall = mockExerciseDict.findMany.mock.calls[0][0];
+      expect(findCall.where.isGlobal).toBe(true);
+      expect(findCall.where.name).toEqual({ contains: 'бег' });
+    });
+
+    it('должен вернуть 403 для не-админа', async () => {
+      const { GET } = await import('../exercises/route');
+      mockAuthenticateAdmin.mockResolvedValue({ error: 'Доступ запрещён', status: 403 });
+
+      const res = await GET(makeRequest('/api/admin/exercises'));
+      expect(res.status).toBe(403);
+    });
+  });
+
+  // === POST /api/admin/exercises ===
+  describe('POST /api/admin/exercises', () => {
+    it('должен создать упражнение с дефолтными hasWeight=true, measureUnit=reps', async () => {
+      const { POST } = await import('../exercises/route');
+
+      mockExerciseDict.create.mockResolvedValue({
+        id: 'e1', name: 'Новое', isGlobal: true, hasWeight: true, measureUnit: 'reps', createdAt: new Date(),
+      });
+
+      const res = await POST(makeRequest('/api/admin/exercises', 'POST', { name: 'Новое' }));
+      const data = await res.json();
+
+      expect(res.status).toBe(201);
+      expect(data.exercise.name).toBe('Новое');
+      const createCall = mockExerciseDict.create.mock.calls[0][0];
+      expect(createCall.data.hasWeight).toBe(true);
+      expect(createCall.data.measureUnit).toBe('reps');
+    });
+
+    it('должен создать упражнение с явными hasWeight и measureUnit', async () => {
+      const { POST } = await import('../exercises/route');
+
+      mockExerciseDict.create.mockResolvedValue({
+        id: 'e2', name: 'Бег', isGlobal: true, hasWeight: false, measureUnit: 'meters', createdAt: new Date(),
+      });
+
+      const res = await POST(makeRequest('/api/admin/exercises', 'POST', { name: 'Бег', hasWeight: false, measureUnit: 'meters' }));
+      const data = await res.json();
+
+      expect(res.status).toBe(201);
+      const createCall = mockExerciseDict.create.mock.calls[0][0];
+      expect(createCall.data.hasWeight).toBe(false);
+      expect(createCall.data.measureUnit).toBe('meters');
+    });
+
+    it('должен вернуть 400 при пустом названии', async () => {
+      const { POST } = await import('../exercises/route');
+
+      const res = await POST(makeRequest('/api/admin/exercises', 'POST', { name: '  ' }));
+      expect(res.status).toBe(400);
+    });
+
+    it('должен вернуть 400 при отсутствии названия', async () => {
+      const { POST } = await import('../exercises/route');
+
+      const res = await POST(makeRequest('/api/admin/exercises', 'POST', {}));
+      expect(res.status).toBe(400);
+    });
+  });
+
+  // === PATCH /api/admin/exercises/[id] ===
+  describe('PATCH /api/admin/exercises/[id]', () => {
+    it('должен обновить название упражнения', async () => {
+      const { PATCH } = await import('../exercises/[id]/route');
+
+      mockExerciseDict.update.mockResolvedValue({
+        id: 'e1', name: 'Обновлённое', isGlobal: true, hasWeight: true, measureUnit: 'reps',
+      });
+
+      const res = await PATCH(
+        makeRequest('/api/admin/exercises/e1', 'PATCH', { name: 'Обновлённое' }),
+        { params: Promise.resolve({ id: 'e1' }) }
+      );
+
+      expect(res.status).toBe(200);
+      const updateCall = mockExerciseDict.update.mock.calls[0][0];
+      expect(updateCall.data.name).toBe('Обновлённое');
+    });
+
+    it('должен обновить hasWeight и measureUnit', async () => {
+      const { PATCH } = await import('../exercises/[id]/route');
+
+      mockExerciseDict.update.mockResolvedValue({
+        id: 'e1', name: 'Бег', isGlobal: true, hasWeight: false, measureUnit: 'meters',
+      });
+
+      const res = await PATCH(
+        makeRequest('/api/admin/exercises/e1', 'PATCH', { hasWeight: false, measureUnit: 'meters' }),
+        { params: Promise.resolve({ id: 'e1' }) }
+      );
+
+      expect(res.status).toBe(200);
+      const updateCall = mockExerciseDict.update.mock.calls[0][0];
+      expect(updateCall.data.hasWeight).toBe(false);
+      expect(updateCall.data.measureUnit).toBe('meters');
+    });
+
+    it('должен игнорировать undefined поля', async () => {
+      const { PATCH } = await import('../exercises/[id]/route');
+
+      mockExerciseDict.update.mockResolvedValue({ id: 'e1', name: 'Бег' });
+
+      await PATCH(
+        makeRequest('/api/admin/exercises/e1', 'PATCH', { isGlobal: false }),
+        { params: Promise.resolve({ id: 'e1' }) }
+      );
+
+      const updateCall = mockExerciseDict.update.mock.calls[0][0];
+      expect(updateCall.data).not.toHaveProperty('name');
+      expect(updateCall.data).not.toHaveProperty('hasWeight');
+      expect(updateCall.data.isGlobal).toBe(false);
+    });
+  });
+
+  // === DELETE /api/admin/exercises/[id] ===
+  describe('DELETE /api/admin/exercises/[id]', () => {
+    it('должен удалить упражнение', async () => {
+      const { DELETE } = await import('../exercises/[id]/route');
+      mockExerciseDict.delete.mockResolvedValue({});
+
+      const res = await DELETE(
+        makeRequest('/api/admin/exercises/e1', 'DELETE'),
+        { params: Promise.resolve({ id: 'e1' }) }
+      );
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.message).toBe('Упражнение удалено');
+    });
+
+    it('должен вернуть 403 для не-админа', async () => {
+      const { DELETE } = await import('../exercises/[id]/route');
+      mockAuthenticateAdmin.mockResolvedValue({ error: 'Доступ запрещён', status: 403 });
+
+      const res = await DELETE(
+        makeRequest('/api/admin/exercises/e1', 'DELETE'),
+        { params: Promise.resolve({ id: 'e1' }) }
+      );
+
+      expect(res.status).toBe(403);
     });
   });
 });

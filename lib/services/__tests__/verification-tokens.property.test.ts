@@ -16,9 +16,13 @@ describe('Verification Tokens - Property-Based Tests', () => {
   const userService = new UserService();
   
   // Очистка тестовых данных после каждого теста
+  // Порядок важен: SkillBlock ссылается на ExerciseDict без cascade,
+  // поэтому сначала удаляем Workout (каскадно удаляет SkillBlock/WodExercise),
+  // иначе user.deleteMany → cascade ExerciseDict → FK constraint в SkillBlock
   afterEach(async () => {
     await prisma.passwordResetToken.deleteMany({});
     await prisma.verificationToken.deleteMany({});
+    await prisma.workout.deleteMany({});
     await prisma.user.deleteMany({});
   });
   
