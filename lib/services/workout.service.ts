@@ -1,4 +1,4 @@
-import { PrismaClient, ResultType } from '@prisma/client';
+import { PrismaClient, ResultType, ClubRole } from '@prisma/client';
 import { ruToEnName } from '@/lib/exercise-names';
 
 const prisma = new PrismaClient();
@@ -546,10 +546,15 @@ export class WorkoutService {
       return null;
     }
 
-    // Требование 10.2: Проверка прав доступа (userId совпадает)
-    // Если userId не совпадает, выбрасываем ошибку 403 Forbidden
+    // Требование 10.2: Проверка прав доступа
     if (workout.userId !== userId) {
-      throw new Error('FORBIDDEN');
+      if (!workout.isClubTemplate) {
+        throw new Error('FORBIDDEN');
+      }
+      const hasAccess = await this.isClubOwnerOrCoachForWorkout(workout.userId, userId);
+      if (!hasAccess) {
+        throw new Error('FORBIDDEN');
+      }
     }
 
     // Преобразование в формат ответа
@@ -644,9 +649,15 @@ export class WorkoutService {
           throw new Error('NOT_FOUND');
         }
 
-        // Шаг 2: Требование 10.4 - Проверка прав доступа (userId совпадает)
+        // Шаг 2: Требование 10.4 - Проверка прав доступа
         if (existingWorkout.userId !== userId) {
-          throw new Error('FORBIDDEN');
+          if (!existingWorkout.isClubTemplate) {
+            throw new Error('FORBIDDEN');
+          }
+          const hasAccess = await this.isClubOwnerOrCoachForWorkout(existingWorkout.userId, userId);
+          if (!hasAccess) {
+            throw new Error('FORBIDDEN');
+          }
         }
 
         // Шаг 3: Обновление основных полей тренировки
@@ -910,6 +921,26 @@ export class WorkoutService {
       createdAt: workout.createdAt.toISOString(),
       updatedAt: workout.updatedAt.toISOString()
     };
+  }
+
+  private async isClubOwnerOrCoachForWorkout(creatorId: string, requesterId: string): Promise<boolean> {
+    const creatorMemberships = await prisma.clubMember.findMany({
+      where: { userId: creatorId },
+      select: { clubId: true }
+    });
+
+    const clubIds = creatorMemberships.map(m => m.clubId);
+    if (clubIds.length === 0) return false;
+
+    const membership = await prisma.clubMember.findFirst({
+      where: {
+        userId: requesterId,
+        clubId: { in: clubIds },
+        role: { in: [ClubRole.OWNER, ClubRole.COACH] }
+      }
+    });
+
+    return membership !== null;
   }
 }
 
