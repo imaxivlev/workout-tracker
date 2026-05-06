@@ -56,6 +56,19 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ message: 'Пользователь добавлен в клуб' });
   }
 
+  // Изменение роли в клубе
+  if (body.updateRoleInClub) {
+    const { clubId, role } = body.updateRoleInClub;
+    if (!clubId || !['OWNER', 'COACH', 'ATHLETE'].includes(role)) {
+      return NextResponse.json({ error: 'Укажите clubId и role (OWNER/COACH/ATHLETE)' }, { status: 400 });
+    }
+    await prisma.clubMember.updateMany({
+      where: { userId: id, clubId },
+      data: { role },
+    });
+    return NextResponse.json({ message: 'Роль обновлена' });
+  }
+
   // Отвязка от клуба
   if (body.removeFromClub) {
     const { clubId } = body.removeFromClub;

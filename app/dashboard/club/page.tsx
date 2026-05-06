@@ -154,6 +154,8 @@ export default function ClubPage() {
 
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
+  const [templateDates, setTemplateDates] = useState<Record<string, { hasSkill: boolean; hasWod: boolean }>>({});
 
   const [collapsedTemplates, setCollapsedTemplates] = useState<Set<string>>(new Set());
 
@@ -181,6 +183,7 @@ export default function ClubPage() {
       const { club: myClub } = await clubsApi.getMy();
       if (!myClub) { router.push('/dashboard/club/join'); return; }
       setClub(myClub);
+      clubsApi.getTemplateDates(myClub.id).then(({ dates }) => setTemplateDates(dates)).catch(() => {});
     } catch {
       router.push('/dashboard/club/join');
     } finally {
@@ -246,6 +249,7 @@ export default function ClubPage() {
       const { invite } = await clubsApi.createInvite(club.id);
       setInviteCode(invite.code);
       setInviteCopied(false);
+      setInviteLinkCopied(false);
     } catch (e: any) {
       alert(e.message || 'Ошибка создания приглашения');
     }
@@ -256,6 +260,14 @@ export default function ClubPage() {
     navigator.clipboard.writeText(inviteCode);
     setInviteCopied(true);
     setTimeout(() => setInviteCopied(false), 2000);
+  }
+
+  function copyInviteLink() {
+    if (!inviteCode) return;
+    const link = `${window.location.origin}/auth/login?ref=${inviteCode}`;
+    navigator.clipboard.writeText(link);
+    setInviteLinkCopied(true);
+    setTimeout(() => setInviteLinkCopied(false), 2000);
   }
 
   function toggleCollapse(sig: string) {
@@ -379,6 +391,8 @@ export default function ClubPage() {
                 <SingleDatePicker
                   value={wodDate}
                   onChange={(d) => { setWodDate(d); setSelectedWodSignature(''); }}
+                  allowFuture
+                  markedDates={templateDates}
                 />
                 {isOwnerOrCoach && (
                   <Link href={`/dashboard/workouts/new?date=${wodDate}`} className="cp-add-btn">
@@ -503,7 +517,7 @@ export default function ClubPage() {
                                 <span className="cp-timecap">{Math.floor(group.timeCapSeconds / 60)} мин</span>
                               )}
                               {group.isLadder && (
-                                <span className="cp-timecap">Лесенка{group.ladderRounds ? ` ×${group.ladderRounds}` : ''}{group.restBetweenRoundsSeconds ? ` · отдых ${Math.floor(group.restBetweenRoundsSeconds / 60)}:${String(group.restBetweenRoundsSeconds % 60).padStart(2, '0')}` : ''}</span>
+                                <span className="cp-timecap">{group.ladderRounds ? (() => { const n = group.ladderRounds; const mod10 = n % 10; const mod100 = n % 100; const word = (mod100 >= 11 && mod100 <= 14) ? 'раундов' : mod10 === 1 ? 'раунд' : (mod10 >= 2 && mod10 <= 4) ? 'раунда' : 'раундов'; return `${n} ${word}`; })() : 'Лесенка'}{group.restBetweenRoundsSeconds ? (() => { const mins = Math.floor(group.restBetweenRoundsSeconds / 60); const secs = group.restBetweenRoundsSeconds % 60; return ` · Отдых между раундами: ${mins > 0 && secs === 0 ? `${mins} мин` : mins === 0 ? `${secs} сек` : `${mins}:${String(secs).padStart(2, '0')}`}`; })() : ''}</span>
                               )}
                               {cardHasGenderSplit && (
                                 <div className="cp-gender-toggle" style={{ marginTop: 0, marginBottom: 0 }}>
@@ -749,10 +763,18 @@ export default function ClubPage() {
                     <div className="cp-invite-row">
                       <code className="cp-invite-code">{inviteCode}</code>
                       <button onClick={copyInviteCode} className={`cp-copy-btn ${inviteCopied ? 'copied' : ''}`}>
-                        {inviteCopied ? '✓ Скопировано' : 'Копировать'}
+                        {inviteCopied ? '✓ Скопировано' : 'Копировать код'}
                       </button>
                     </div>
-                    <p className="cp-invite-hint">Отправьте этот код атлетам для вступления в клуб</p>
+                    <div className="cp-invite-row" style={{ marginTop: '0.5rem' }}>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', flex: 1, wordBreak: 'break-all' }}>
+                        {typeof window !== 'undefined' ? `${window.location.origin}/auth/login?ref=${inviteCode}` : ''}
+                      </span>
+                      <button onClick={copyInviteLink} className={`cp-copy-btn ${inviteLinkCopied ? 'copied' : ''}`}>
+                        {inviteLinkCopied ? '✓ Скопировано' : 'Копировать ссылку'}
+                      </button>
+                    </div>
+                    <p className="cp-invite-hint">Код — для уже зарегистрированных. Ссылка — новый пользователь вступит в клуб автоматически после регистрации.</p>
                   </div>
                 )}
               </div>

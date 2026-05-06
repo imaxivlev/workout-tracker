@@ -1,16 +1,37 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, FormEvent, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { authApi, ApiError } from '@/lib/api/client';
+import { authApi, clubsApi, ApiError } from '@/lib/api/client';
 import CustomSelect from '@/app/components/CustomSelect';
+import { Suspense } from 'react';
 
 type Tab = 'login' | 'register' | 'reset';
 
-export default function AuthPage() {
+function AuthPageInner() {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>('login');
+  const searchParams = useSearchParams();
+  const [tab, setTab] = useState<Tab>(() => {
+    if (typeof window !== 'undefined') {
+      const t = new URLSearchParams(window.location.search).get('tab');
+      if (t === 'register') return 'register';
+    }
+    return 'login';
+  });
+  const [pendingRef, setPendingRef] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ref = searchParams.get('ref');
+    if (ref) {
+      setPendingRef(ref);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('pendingClubRef', ref);
+      }
+    }
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'register') setTab('register');
+  }, []);
 
   // Login
   const [loginEmail, setLoginEmail] = useState('');
@@ -43,6 +64,18 @@ export default function AuthPage() {
     setLoginLoading(true);
     try {
       await authApi.login(loginEmail, loginPassword);
+      const storedRef = typeof window !== 'undefined' ? localStorage.getItem('pendingClubRef') : null;
+      if (storedRef) {
+        localStorage.removeItem('pendingClubRef');
+        try {
+          await clubsApi.join(storedRef.toUpperCase());
+          router.push('/dashboard/club');
+          router.refresh();
+          return;
+        } catch {
+          // Если уже в клубе или ссылка недействительна — просто переходим в дашборд
+        }
+      }
       router.push('/dashboard');
       router.refresh();
     } catch (err) {
@@ -83,7 +116,11 @@ export default function AuthPage() {
         fetch('/api/consents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, consentType: 'terms', accepted: true }) }).catch(() => {});
         fetch('/api/consents', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ userId, consentType: 'privacy_policy', accepted: true }) }).catch(() => {});
       }
-      setRegSuccess('Аккаунт создан! Проверьте почту для подтверждения email.');
+      const ref = pendingRef || (typeof window !== 'undefined' ? searchParams.get('ref') : null);
+      if (ref && typeof window !== 'undefined') {
+        localStorage.setItem('pendingClubRef', ref);
+      }
+      setRegSuccess('Аккаунт создан! Проверьте почту для подтверждения email. После входа вы автоматически вступите в клуб.');
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) setRegError('Пользователь с таким email уже существует');
@@ -367,5 +404,13 @@ export default function AuthPage() {
         </form>
       </div>
     </div>
+  );
+}
+
+export default function AuthPage() {
+  return (
+    <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
+      <AuthPageInner />
+    </Suspense>
   );
 }

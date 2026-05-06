@@ -12,8 +12,12 @@ export default function AdminExercisesPage() {
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState('');
+  const [newHasWeight, setNewHasWeight] = useState(true);
+  const [newMeasureUnit, setNewMeasureUnit] = useState('reps');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [editHasWeight, setEditHasWeight] = useState(true);
+  const [editMeasureUnit, setEditMeasureUnit] = useState('reps');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,13 +40,15 @@ export default function AdminExercisesPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     if (!newName.trim()) return;
-    await adminApi.createExercise(newName.trim());
+    await adminApi.createExercise(newName.trim(), { hasWeight: newHasWeight, measureUnit: newMeasureUnit });
     setNewName('');
+    setNewHasWeight(true);
+    setNewMeasureUnit('reps');
     load();
   }
 
   async function handleSave(id: string) {
-    await adminApi.updateExercise(id, { name: editName });
+    await adminApi.updateExercise(id, { name: editName, hasWeight: editHasWeight, measureUnit: editMeasureUnit });
     setEditingId(null);
     load();
   }
@@ -60,9 +66,21 @@ export default function AdminExercisesPage() {
 
   return (
     <div>
-      <form onSubmit={handleCreate} className="admin-search-bar" style={{ marginBottom: '0.75rem' }}>
+      <form onSubmit={handleCreate} style={{ marginBottom: '0.75rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
         <input type="text" value={newName} onChange={e => setNewName(e.target.value)}
-          placeholder="Новое глобальное упражнение..." className="admin-search-input" />
+          placeholder="Новое глобальное упражнение..." className="admin-search-input" style={{ flex: '1 1 180px' }} />
+        <select value={newHasWeight ? 'weight' : 'bodyweight'} onChange={e => setNewHasWeight(e.target.value === 'weight')}
+          className="admin-search-input" style={{ maxWidth: '130px' }}>
+          <option value="weight">С весом</option>
+          <option value="bodyweight">Без веса</option>
+        </select>
+        <select value={newMeasureUnit} onChange={e => setNewMeasureUnit(e.target.value)}
+          className="admin-search-input" style={{ maxWidth: '130px' }}>
+          <option value="reps">Повторения</option>
+          <option value="meters">Метры</option>
+          <option value="calories">Калории</option>
+          <option value="time">Время</option>
+        </select>
         <button type="submit" className="btn btn-primary btn-sm">Добавить</button>
       </form>
 
@@ -86,7 +104,7 @@ export default function AdminExercisesPage() {
           <div className="admin-table-wrap">
             <table className="admin-table">
               <thead>
-                <tr><th>Название</th><th>Тип</th><th>Автор</th><th>Действия</th></tr>
+                <tr><th>Название</th><th>Тип / Измерение</th><th>Автор</th><th>Действия</th></tr>
               </thead>
               <tbody>
                 {exercises.map(ex => (
@@ -94,7 +112,22 @@ export default function AdminExercisesPage() {
                     {editingId === ex.id ? (
                       <>
                         <td><input className="admin-edit-input" value={editName} onChange={e => setEditName(e.target.value)} /></td>
-                        <td colSpan={2} />
+                        <td>
+                          <select value={editHasWeight ? 'weight' : 'bodyweight'} onChange={e => setEditHasWeight(e.target.value === 'weight')}
+                            className="admin-edit-input" style={{ fontSize: '0.8rem' }}>
+                            <option value="weight">С весом</option>
+                            <option value="bodyweight">Без веса</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select value={editMeasureUnit} onChange={e => setEditMeasureUnit(e.target.value)}
+                            className="admin-edit-input" style={{ fontSize: '0.8rem' }}>
+                            <option value="reps">Повторения</option>
+                            <option value="meters">Метры</option>
+                            <option value="calories">Калории</option>
+                            <option value="time">Время</option>
+                          </select>
+                        </td>
                         <td className="admin-actions">
                           <button onClick={() => handleSave(ex.id)} className="admin-btn save">Сохр.</button>
                           <button onClick={() => setEditingId(null)} className="admin-btn cancel">Отм.</button>
@@ -108,10 +141,18 @@ export default function AdminExercisesPage() {
                             className={`admin-badge clickable ${ex.isGlobal ? 'green' : 'gray'}`}>
                             {ex.isGlobal ? 'Глобальное' : 'Польз.'}
                           </button>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: '0.4rem' }}>
+                            {ex.hasWeight ? '⚖️' : '🤸'} {ex.measureUnit === 'reps' ? 'повт.' : ex.measureUnit === 'meters' ? 'м' : ex.measureUnit === 'calories' ? 'кал' : ex.measureUnit}
+                          </span>
                         </td>
                         <td>{ex.user ? ex.user.email : '—'}</td>
                         <td className="admin-actions">
-                          <button onClick={() => { setEditingId(ex.id); setEditName(ex.name); }} className="admin-btn edit">Ред.</button>
+                          <button onClick={() => {
+                            setEditingId(ex.id);
+                            setEditName(ex.name);
+                            setEditHasWeight(ex.hasWeight);
+                            setEditMeasureUnit(ex.measureUnit || 'reps');
+                          }} className="admin-btn edit">Ред.</button>
                           <button onClick={() => handleDelete(ex.id, ex.name)} className="admin-btn delete">Уд.</button>
                         </td>
                       </>

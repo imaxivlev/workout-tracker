@@ -103,6 +103,16 @@ export default function AdminClubsPage() {
     load();
   }
 
+  async function handleUpdateRole(userId: string, newRole: string) {
+    if (!membersClub) return;
+    try {
+      await adminApi.updateMemberRoleInClub(userId, membersClub.id, newRole);
+      setMembers(prev => prev.map(m => m.userId === userId ? { ...m, role: newRole } : m));
+    } catch (e: unknown) {
+      alert((e instanceof Error ? e.message : null) || 'Ошибка обновления роли');
+    }
+  }
+
   const roleLabel: Record<string, string> = { OWNER: 'Владелец', COACH: 'Тренер', ATHLETE: 'Атлет' };
 
   return (
@@ -209,7 +219,18 @@ export default function AdminClubsPage() {
                     <tr key={m.userId}>
                       <td style={{ fontSize: '0.85rem' }}>{m.user.email}</td>
                       <td style={{ fontSize: '0.85rem' }}>{[m.user.firstName, m.user.lastName].filter(Boolean).join(' ') || '—'}</td>
-                      <td><span className="admin-badge blue">{roleLabel[m.role] ?? m.role}</span></td>
+                      <td>
+                        <select
+                          value={m.role}
+                          onChange={e => handleUpdateRole(m.userId, e.target.value)}
+                          className="admin-edit-input"
+                          style={{ fontSize: '0.8rem', padding: '2px 4px' }}
+                        >
+                          <option value="OWNER">Владелец</option>
+                          <option value="COACH">Тренер</option>
+                          <option value="ATHLETE">Атлет</option>
+                        </select>
+                      </td>
                       <td>
                         <button onClick={() => handleRemoveMember(m.userId)} className="admin-btn delete"
                           style={{ fontSize: '0.75rem', padding: '2px 6px' }}>Удалить</button>

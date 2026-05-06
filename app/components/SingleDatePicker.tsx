@@ -29,13 +29,16 @@ interface Props {
   value: string;        // YYYY-MM-DD
   onChange: (ymd: string) => void;
   maxDate?: string;     // YYYY-MM-DD, default = today
+  allowFuture?: boolean;
   className?: string;
+  markedDates?: Record<string, { hasSkill: boolean; hasWod: boolean }>;
 }
 
-export function SingleDatePicker({ value, onChange, maxDate, className }: Props) {
+export function SingleDatePicker({ value, onChange, maxDate, allowFuture, className, markedDates }: Props) {
   const now = new Date();
   const today = toYMD(now);
-  const max = maxDate || today;
+  const farFuture = `${now.getFullYear() + 2}-12-31`;
+  const max = maxDate || (allowFuture ? farFuture : today);
 
   const [open, setOpen] = useState(false);
   const [year, setYear] = useState(() => value ? parseInt(value.split('-')[0]) : now.getFullYear());
@@ -127,6 +130,7 @@ export function SingleDatePicker({ value, onChange, maxDate, className }: Props)
               const isFuture = ymd > max;
               const isSelected = ymd === value;
               const isToday = ymd === today;
+              const mark = markedDates?.[ymd];
               let cls = 'day-cell';
               if (isFuture) cls += ' empty';
               else if (isSelected) cls += ' selected';
@@ -138,6 +142,12 @@ export function SingleDatePicker({ value, onChange, maxDate, className }: Props)
                   style={isToday && !isSelected ? { fontWeight: 700, color: 'var(--color-primary)' } : undefined}
                 >
                   {parseInt(ymd.split('-')[2])}
+                  {mark && (mark.hasSkill || mark.hasWod) && (
+                    <div className="workout-dots">
+                      {mark.hasWod && <div className="dot dot-wod" />}
+                      {mark.hasSkill && <div className="dot dot-skill" />}
+                    </div>
+                  )}
                 </div>
               );
             })}

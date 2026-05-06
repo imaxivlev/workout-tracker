@@ -175,6 +175,7 @@ function NewWorkoutPage() {
   // Club template
   const [hasClub, setHasClub] = useState(false);
   const [clubRole, setClubRole] = useState<string | null>(null);
+  const [clubId, setClubId] = useState<string | null>(null);
   const [saveAsClubTemplate, setSaveAsClubTemplate] = useState(!hasClubTemplateParam);
   const [showTemplateTooltip, setShowTemplateTooltip] = useState(false);
   const [showInLeaderboard, setShowInLeaderboard] = useState(true);
@@ -218,6 +219,7 @@ function NewWorkoutPage() {
       if (club) {
         setHasClub(true);
         setClubRole(club.myRole);
+        setClubId(club.id);
         if (!hasClubTemplateParam) {
           setSaveAsClubTemplate(club.myRole === 'OWNER' || club.myRole === 'COACH');
         }
@@ -855,7 +857,11 @@ function NewWorkoutPage() {
       };
 
       await workoutsApi.create(payload);
-      router.push('/dashboard/workouts');
+      if (saveAsClubTemplate && !fromClubTemplate && clubId) {
+        router.push('/dashboard/club');
+      } else {
+        router.push('/dashboard/workouts');
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.details?.length) {
@@ -1161,7 +1167,7 @@ function NewWorkoutPage() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Отдых мм:сс</label>
+                      <label>Отдых между раундами</label>
                       <input
                         type="text"
                         className="form-input"
@@ -1174,7 +1180,7 @@ function NewWorkoutPage() {
                 )}
 
                 <div className="form-group">
-                  <label>{wod.hasSeparateScaled ? <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Rx план</span> : 'Упражнения'}</label>
+                  <label>{wod.hasSeparateScaled ? <span style={{ color: 'var(--color-primary)', fontWeight: 700, fontSize: '1.05rem' }}>Rx план</span> : 'Упражнения'}</label>
                   <div className="wod-exercises-container">
                     {wod.exercises.map((ex, ei) => (
                       <React.Fragment key={ei}>
@@ -1230,7 +1236,7 @@ function NewWorkoutPage() {
                                       <div className="single-reps-container" style={{ display: 'flex' }}>
                                         <input
                                           type="number"
-                                          value={ex.reps}
+                                          value={ex.reps ?? ''}
                                           onChange={e => updateWodExercise(bi, ei, 'reps', e.target.value)}
                                           className="form-input-sm"
                                           placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт'}
@@ -1283,7 +1289,7 @@ function NewWorkoutPage() {
                 {/* Sc план — отдельный набор упражнений */}
                 {wod.hasSeparateScaled && (
                   <div className="form-group" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '2px dashed var(--border-color)' }}>
-                    <label><span style={{ color: 'var(--color-secondary)', fontWeight: 600 }}>Sc план</span></label>
+                    <label><span style={{ color: 'var(--color-secondary)', fontWeight: 700, fontSize: '1.05rem' }}>Sc план</span></label>
                     <div className="wod-exercises-container">
                       {wod.scaledExercises.map((ex, ei) => (
                         <React.Fragment key={ei}>
@@ -1338,7 +1344,7 @@ function NewWorkoutPage() {
                                       <div className="single-reps-container" style={{ display: 'flex' }}>
                                         <input
                                           type="number"
-                                          value={ex.reps}
+                                          value={ex.reps ?? ''}
                                           onChange={e => updateScaledExercise(bi, ei, 'reps', e.target.value)}
                                           className="form-input-sm"
                                           placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт'}
@@ -1491,7 +1497,7 @@ function NewWorkoutPage() {
         )}
 
         {/* Чекбокс "Учитывать в лидерборде" */}
-        {hasClub && (
+        {hasClub && !saveAsClubTemplate && (
           <div style={{ marginTop: '1rem', marginBottom: '1.5rem', padding: '1rem 1.25rem', background: 'var(--bg-secondary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
             <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.9rem' }}>
               <input

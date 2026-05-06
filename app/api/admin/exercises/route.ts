@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
       skip: (page - 1) * limit,
       take: limit,
       select: {
-        id: true, name: true, isGlobal: true, createdAt: true,
+        id: true, name: true, isGlobal: true, hasWeight: true, measureUnit: true, createdAt: true,
         user: { select: { id: true, email: true, firstName: true } },
       },
     }),
@@ -45,13 +45,19 @@ export async function POST(request: NextRequest) {
   const auth = await authenticateAdmin(request);
   if (isAdminError(auth)) return adminErrorResponse(auth);
 
-  const { name } = await request.json();
+  const body = await request.json();
+  const { name, hasWeight, measureUnit } = body;
   if (!name?.trim()) {
     return NextResponse.json({ error: 'Название обязательно' }, { status: 400 });
   }
 
   const exercise = await prisma.exerciseDict.create({
-    data: { name: name.trim(), isGlobal: true },
+    data: {
+      name: name.trim(),
+      isGlobal: true,
+      hasWeight: hasWeight !== undefined ? Boolean(hasWeight) : true,
+      measureUnit: measureUnit || 'reps',
+    },
   });
 
   return NextResponse.json({ exercise }, { status: 201 });

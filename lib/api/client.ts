@@ -555,6 +555,10 @@ export const clubsApi = {
     return apiFetch<{ templates: ClubWorkoutTemplate[]; date: string }>(`/api/clubs/${id}/workouts/today${qs}`);
   },
 
+  async getTemplateDates(id: string) {
+    return apiFetch<{ dates: Record<string, { hasSkill: boolean; hasWod: boolean }> }>(`/api/clubs/${id}/workouts/dates`);
+  },
+
   async getWodLeaderboard(id: string, date: string, signature?: string) {
     const params = new URLSearchParams({ type: 'wod', date });
     if (signature) params.set('signature', signature);
@@ -654,6 +658,8 @@ export interface AdminExercise {
   id: string;
   name: string;
   isGlobal: boolean;
+  hasWeight: boolean;
+  measureUnit: string;
   createdAt: string;
   user: { id: string; email: string; firstName: string | null } | null;
 }
@@ -717,6 +723,13 @@ export const adminApi = {
     return apiFetch<{ message: string }>(`/api/admin/users/${userId}`, {
       method: 'PATCH',
       body: JSON.stringify({ removeFromClub: { clubId } }),
+    });
+  },
+
+  async updateMemberRoleInClub(userId: string, clubId: string, role: string) {
+    return apiFetch<{ message: string }>(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ updateRoleInClub: { clubId, role } }),
     });
   },
 
@@ -790,14 +803,14 @@ export const adminApi = {
     return apiFetch<{ exercises: AdminExercise[]; pagination: Pagination }>(`/api/admin/exercises${qs ? `?${qs}` : ''}`);
   },
 
-  async createExercise(name: string) {
+  async createExercise(name: string, options?: { hasWeight?: boolean; measureUnit?: string }) {
     return apiFetch<{ exercise: AdminExercise }>('/api/admin/exercises', {
       method: 'POST',
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name, ...options }),
     });
   },
 
-  async updateExercise(id: string, data: Partial<{ name: string; isGlobal: boolean }>) {
+  async updateExercise(id: string, data: Partial<{ name: string; isGlobal: boolean; hasWeight: boolean; measureUnit: string }>) {
     return apiFetch<{ exercise: unknown }>(`/api/admin/exercises/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),

@@ -14,6 +14,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const data: Record<string, unknown> = {};
   if (body.name !== undefined) data.name = body.name.trim();
   if (body.isGlobal !== undefined) data.isGlobal = body.isGlobal;
+  if (body.hasWeight !== undefined) data.hasWeight = Boolean(body.hasWeight);
+  if (body.measureUnit !== undefined) data.measureUnit = body.measureUnit;
 
   const exercise = await prisma.exerciseDict.update({ where: { id }, data });
   return NextResponse.json({ exercise });

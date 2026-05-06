@@ -1,13 +1,22 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { clubsApi } from '@/lib/api/client';
 
-export default function ClubJoinPage() {
+function ClubJoinPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState<'choose' | 'join' | 'create'>('choose');
   const [inviteCode, setInviteCode] = useState('');
+
+  useEffect(() => {
+    const code = searchParams.get('code');
+    if (code) {
+      setInviteCode(code.toUpperCase());
+      setMode('join');
+    }
+  }, []);
   const [clubName, setClubName] = useState('');
   const [clubCity, setClubCity] = useState('');
   const [clubDescription, setClubDescription] = useState('');
@@ -158,5 +167,13 @@ export default function ClubJoinPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function ClubJoinPage() {
+  return (
+    <Suspense fallback={<div className="loading-container"><div className="loading-spinner" /></div>}>
+      <ClubJoinPageInner />
+    </Suspense>
   );
 }

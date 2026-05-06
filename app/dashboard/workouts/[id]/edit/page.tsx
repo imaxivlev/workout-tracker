@@ -225,12 +225,18 @@ function workoutToBlocks(workout: Workout): BlockItem[] {
           ladderRepsPerRound: rxBlock.isLadder
             ? Array.from({ length: rounds }, () => ex.reps)
             : [],
+          ladderRepsPerRoundFemale: rxBlock.isLadder
+            ? Array.from({ length: rounds }, () => ex.repsFemale)
+            : [],
         })),
         scaledExercises: scBlock
           ? mapWodExercises(scBlock.exercises).map(ex => ({
               ...ex,
-              ladderRepsPerRound: scBlock.isLadder
+              ladderRepsPerRound: scBlock!.isLadder
                 ? Array.from({ length: rounds }, () => ex.reps)
+                : [],
+              ladderRepsPerRoundFemale: scBlock!.isLadder
+                ? Array.from({ length: rounds }, () => ex.repsFemale)
                 : [],
             }))
           : [emptyWodExercise()],
@@ -403,28 +409,109 @@ export default function EditWorkoutPage() {
   }
 
   function updateWodExercise(idx: number, exIdx: number, field: keyof WodExerciseForm, value: string) {
-    updateWodData(idx, b => ({
-      ...b,
-      exercises: b.exercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e),
-    }));
+    updateWodData(idx, b => {
+      const oldMaleVal = b.exercises[exIdx]?.[field] ?? '';
+      const newExercises = b.exercises.map((e, j) => j === exIdx ? { ...e, [field]: value } : e);
+      const result = { ...b, exercises: newExercises };
+
+      const femaleFieldMap: Partial<Record<string, keyof WodExerciseForm>> = {
+        exerciseName: 'exerciseNameFemale',
+        reps: 'repsFemale',
+        weight: 'weightFemale',
+      };
+      const femaleField = femaleFieldMap[field as string];
+
+      if (b.hasGenderSplit && femaleField) {
+        const currentFemaleVal = b.exercises[exIdx]?.[femaleField] ?? '';
+        if (!currentFemaleVal || currentFemaleVal === oldMaleVal) {
+          result.exercises = result.exercises.map((e, j) =>
+            j === exIdx ? { ...e, [femaleField]: value } : e
+          );
+        }
+      }
+
+      if (b.hasSeparateScaled && b.scaledExercises[exIdx]) {
+        const scVal = b.scaledExercises[exIdx][field];
+        if (scVal === oldMaleVal || scVal === '') {
+          result.scaledExercises = b.scaledExercises.map((e, j) =>
+            j === exIdx ? { ...e, [field]: value } : e
+          );
+        }
+      }
+
+      if (b.hasSeparateScaled && b.hasGenderSplit && femaleField && b.scaledExercises[exIdx]) {
+        const scExercises = result.scaledExercises ?? b.scaledExercises;
+        const currentScFemaleVal = b.scaledExercises[exIdx]?.[femaleField] ?? '';
+        if (!currentScFemaleVal || currentScFemaleVal === oldMaleVal) {
+          result.scaledExercises = scExercises.map((e, j) =>
+            j === exIdx ? { ...e, [femaleField]: value } : e
+          );
+        }
+      }
+
+      return result;
+    });
   }
 
   function updateWodLadderRep(idx: number, exIdx: number, roundIdx: number, value: string) {
-    updateWodData(idx, b => ({
-      ...b,
-      exercises: b.exercises.map((e, j) => {
-        if (j !== exIdx) return e;
-        const arr = [...(e.ladderRepsPerRound || [])];
-        const prevValue = arr[0] ?? '';
-        arr[roundIdx] = value;
+    updateWodData(idx, b => {
+      const oldRep = b.exercises[exIdx]?.ladderRepsPerRound?.[roundIdx] ?? '';
+
+      function applyLadder(arr: string[]): string[] {
+        const newArr = [...arr];
+        const prevValue = newArr[0] ?? '';
+        newArr[roundIdx] = value;
         if (roundIdx === 0) {
-          for (let r = 1; r < arr.length; r++) {
-            if (!arr[r] || arr[r] === prevValue) arr[r] = value;
+          for (let r = 1; r < newArr.length; r++) {
+            if (!newArr[r] || newArr[r] === prevValue) newArr[r] = value;
           }
         }
-        return { ...e, ladderRepsPerRound: arr };
-      }),
-    }));
+        return newArr;
+      }
+
+      const newExercises = b.exercises.map((e, j) => {
+        if (j !== exIdx) return e;
+        const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRound || [])[i] || '');
+        return { ...e, ladderRepsPerRound: applyLadder(arr) };
+      });
+      const result: WodBlockForm = { ...b, exercises: newExercises };
+
+      if (b.hasGenderSplit) {
+        const currentFemaleRep = b.exercises[exIdx]?.ladderRepsPerRoundFemale?.[roundIdx] ?? '';
+        if (!currentFemaleRep || currentFemaleRep === oldRep) {
+          result.exercises = result.exercises.map((e, j) => {
+            if (j !== exIdx) return e;
+            const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRoundFemale || [])[i] || '');
+            return { ...e, ladderRepsPerRoundFemale: applyLadder(arr) };
+          });
+        }
+      }
+
+      if (b.hasSeparateScaled && b.scaledExercises[exIdx]) {
+        const scRep = b.scaledExercises[exIdx]?.ladderRepsPerRound?.[roundIdx] ?? '';
+        if (scRep === oldRep || scRep === '') {
+          result.scaledExercises = b.scaledExercises.map((e, j) => {
+            if (j !== exIdx) return e;
+            const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRound || [])[i] || '');
+            return { ...e, ladderRepsPerRound: applyLadder(arr) };
+          });
+        }
+      }
+
+      if (b.hasSeparateScaled && b.hasGenderSplit && b.scaledExercises[exIdx]) {
+        const scExercises = result.scaledExercises ?? b.scaledExercises;
+        const currentScFemaleRep = b.scaledExercises[exIdx]?.ladderRepsPerRoundFemale?.[roundIdx] ?? '';
+        if (!currentScFemaleRep || currentScFemaleRep === oldRep) {
+          result.scaledExercises = scExercises.map((e, j) => {
+            if (j !== exIdx) return e;
+            const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRoundFemale || [])[i] || '');
+            return { ...e, ladderRepsPerRoundFemale: applyLadder(arr) };
+          });
+        }
+      }
+
+      return result;
+    });
   }
 
   function removeWodExercise(idx: number, exIdx: number) {
@@ -481,7 +568,32 @@ export default function EditWorkoutPage() {
   function copyRxToScaled(idx: number) {
     updateWodData(idx, b => ({
       ...b,
-      scaledExercises: b.exercises.map(ex => ({ ...ex, ladderRepsPerRound: [...(ex.ladderRepsPerRound || [])] })),
+      scaledExercises: b.exercises.map(ex => ({ ...ex, ladderRepsPerRound: [...(ex.ladderRepsPerRound || [])], ladderRepsPerRoundFemale: [...(ex.ladderRepsPerRoundFemale || [])] })),
+    }));
+  }
+
+  function updateFemaleField(blockIdx: number, exIdx: number, field: 'exerciseNameFemale' | 'repsFemale' | 'weightFemale', value: string, listKey: 'exercises' | 'scaledExercises' = 'exercises') {
+    updateWodData(blockIdx, b => ({
+      ...b,
+      [listKey]: (b as any)[listKey].map((e: WodExerciseForm, j: number) => j === exIdx ? { ...e, [field]: value } : e),
+    }));
+  }
+
+  function updateFemaleLadderRep(blockIdx: number, exIdx: number, roundIdx: number, value: string, listKey: 'exercises' | 'scaledExercises' = 'exercises') {
+    updateWodData(blockIdx, b => ({
+      ...b,
+      [listKey]: (b as any)[listKey].map((e: WodExerciseForm, j: number) => {
+        if (j !== exIdx) return e;
+        const arr = Array.from({ length: b.ladderRounds }, (_, i) => (e.ladderRepsPerRoundFemale || [])[i] || '');
+        const prevValue = arr[0] ?? '';
+        arr[roundIdx] = value;
+        if (roundIdx === 0) {
+          for (let r = 1; r < arr.length; r++) {
+            if (!arr[r] || arr[r] === prevValue) arr[r] = value;
+          }
+        }
+        return { ...e, ladderRepsPerRoundFemale: arr };
+      }),
     }));
   }
 
@@ -568,7 +680,11 @@ export default function EditWorkoutPage() {
       };
 
       await workoutsApi.update(id, payload);
-      router.push(`/dashboard/workouts/${id}`);
+      if (isClubTemplate) {
+        router.push('/dashboard/club');
+      } else {
+        router.push(`/dashboard/workouts/${id}`);
+      }
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.details?.length) {
@@ -853,7 +969,7 @@ export default function EditWorkoutPage() {
                       </select>
                     </div>
                     <div className="form-group">
-                      <label>Отдых мм:сс</label>
+                      <label>Отдых между раундами</label>
                       <input
                         type="text"
                         className="form-input"
@@ -869,7 +985,8 @@ export default function EditWorkoutPage() {
                   <label>{wod.hasSeparateScaled ? <span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Rx план</span> : (wod.hasGenderSplit ? <><span style={{ color: 'var(--color-primary)', fontWeight: 600 }}>М:</span> Упражнения</> : 'Упражнения')}</label>
                   <div className="wod-exercises-container">
                     {wod.exercises.map((ex, ei) => (
-                      <div key={ei}>
+                      <div key={ei} className={wod.hasGenderSplit ? 'wod-exercise-gender-group' : undefined}>
+                        <div className={wod.hasGenderSplit ? 'wod-exercise-gender-rows' : undefined}>
                         <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${getHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
                           {wod.hasGenderSplit && <span className="gender-label">М:</span>}
                           <div className="wod-row-scroller">
@@ -954,7 +1071,7 @@ export default function EditWorkoutPage() {
                             <div className="wod-row-scroller">
                               <ExerciseAutocomplete
                                 value={ex.exerciseNameFemale || ex.exerciseName}
-                                onChange={v => updateWodExercise(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v)}
+                                onChange={v => updateFemaleField(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v)}
                                 onExerciseSelect={handleExerciseSelect}
                                 onNewExercise={handleNewExercise}
                                 placeholder="Упражнение"
@@ -962,21 +1079,37 @@ export default function EditWorkoutPage() {
                                 wrapperClassName="wod-exercise-name"
                               />
                               <div className="wod-fields-scroll">
-                                <div className="single-reps-container" style={{ display: 'flex' }}>
-                                  <input
-                                    type="number"
-                                    value={ex.repsFemale}
-                                    onChange={e => updateWodExercise(bi, ei, 'repsFemale', e.target.value)}
-                                    className="form-input-sm"
-                                    placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
-                                    min="1"
-                                  />
-                                </div>
+                                {wod.isLadder ? (
+                                  <div className="ladder-reps-container" style={{ display: 'flex', gap: '0.5rem' }}>
+                                    {Array.from({ length: wod.ladderRounds }, (_, ri) => (
+                                      <input
+                                        key={ri}
+                                        type="number"
+                                        value={ex.ladderRepsPerRoundFemale?.[ri] || ''}
+                                        onChange={e => updateFemaleLadderRep(bi, ei, ri, e.target.value)}
+                                        className="form-input-sm"
+                                        placeholder={`R${ri + 1}`}
+                                        min="1"
+                                      />
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="single-reps-container" style={{ display: 'flex' }}>
+                                    <input
+                                      type="number"
+                                      value={ex.repsFemale}
+                                      onChange={e => updateFemaleField(bi, ei, 'repsFemale', e.target.value)}
+                                      className="form-input-sm"
+                                      placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
+                                      min="1"
+                                    />
+                                  </div>
+                                )}
                                 {!getHideWeight(ex.exerciseName) && (
                                   <input
                                     type="number"
                                     value={ex.weightFemale}
-                                    onChange={e => updateWodExercise(bi, ei, 'weightFemale', e.target.value)}
+                                    onChange={e => updateFemaleField(bi, ei, 'weightFemale', e.target.value)}
                                     className="form-input-sm wod-weight"
                                     placeholder="Вес, кг"
                                     min="0.5"
@@ -985,8 +1118,11 @@ export default function EditWorkoutPage() {
                                 )}
                               </div>
                             </div>
-                            <button type="button" className="btn-icon" onClick={() => removeWodExercise(bi, ei)}>❌</button>
                           </div>
+                        )}
+                        </div>
+                        {wod.hasGenderSplit && (
+                          <button type="button" className="btn-icon" onClick={() => removeWodExercise(bi, ei)}>❌</button>
                         )}
                       </div>
                     ))}
@@ -1002,7 +1138,8 @@ export default function EditWorkoutPage() {
                     <label><span style={{ color: 'var(--color-secondary)', fontWeight: 600 }}>Sc план</span></label>
                     <div className="wod-exercises-container">
                       {wod.scaledExercises.map((ex, ei) => (
-                        <div key={ei}>
+                        <div key={ei} className={wod.hasGenderSplit ? 'wod-exercise-gender-group' : undefined}>
+                          <div className={wod.hasGenderSplit ? 'wod-exercise-gender-rows' : undefined}>
                           <div className={`wod-exercise-row${wod.isLadder ? ' ladder-mode' : ''}${getHideWeight(ex.exerciseName) ? ' no-weight' : ''}${wod.hasGenderSplit ? ' has-gender-split' : ''}`}>
                             {wod.hasGenderSplit && <span className="gender-label">М:</span>}
                             <div className="wod-row-scroller">
@@ -1079,7 +1216,7 @@ export default function EditWorkoutPage() {
                               <div className="wod-row-scroller">
                                 <ExerciseAutocomplete
                                   value={ex.exerciseNameFemale || ex.exerciseName}
-                                  onChange={v => updateScaledExercise(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v)}
+                                  onChange={v => updateFemaleField(bi, ei, 'exerciseNameFemale', v === ex.exerciseName ? '' : v, 'scaledExercises')}
                                   onExerciseSelect={handleExerciseSelect}
                                   onNewExercise={handleNewExercise}
                                   placeholder="Упражнение"
@@ -1087,21 +1224,37 @@ export default function EditWorkoutPage() {
                                   wrapperClassName="wod-exercise-name"
                                 />
                                 <div className="wod-fields-scroll">
-                                  <div className="single-reps-container" style={{ display: 'flex' }}>
-                                    <input
-                                      type="number"
-                                      value={ex.repsFemale}
-                                      onChange={e => updateScaledExercise(bi, ei, 'repsFemale', e.target.value)}
-                                      className="form-input-sm"
-                                      placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
-                                      min="1"
-                                    />
-                                  </div>
+                                  {wod.isLadder ? (
+                                    <div className="ladder-reps-container" style={{ display: 'flex', gap: '0.5rem' }}>
+                                      {Array.from({ length: wod.ladderRounds }, (_, ri) => (
+                                        <input
+                                          key={ri}
+                                          type="number"
+                                          value={ex.ladderRepsPerRoundFemale?.[ri] || ''}
+                                          onChange={e => updateFemaleLadderRep(bi, ei, ri, e.target.value, 'scaledExercises')}
+                                          className="form-input-sm"
+                                          placeholder={`R${ri + 1}`}
+                                          min="1"
+                                        />
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div className="single-reps-container" style={{ display: 'flex' }}>
+                                      <input
+                                        type="number"
+                                        value={ex.repsFemale}
+                                        onChange={e => updateFemaleField(bi, ei, 'repsFemale', e.target.value, 'scaledExercises')}
+                                        className="form-input-sm"
+                                        placeholder={getMeasureUnit(ex.exerciseName) === 'calories' ? 'Cal' : getMeasureUnit(ex.exerciseName) === 'meters' ? 'м' : 'Повт.'}
+                                        min="1"
+                                      />
+                                    </div>
+                                  )}
                                   {!getHideWeight(ex.exerciseName) && (
                                     <input
                                       type="number"
                                       value={ex.weightFemale}
-                                      onChange={e => updateScaledExercise(bi, ei, 'weightFemale', e.target.value)}
+                                      onChange={e => updateFemaleField(bi, ei, 'weightFemale', e.target.value, 'scaledExercises')}
                                       className="form-input-sm wod-weight"
                                       placeholder="Вес, кг"
                                       min="0.5"
@@ -1110,8 +1263,11 @@ export default function EditWorkoutPage() {
                                   )}
                                 </div>
                               </div>
-                              <button type="button" className="btn-icon" onClick={() => removeScaledExercise(bi, ei)}>❌</button>
                             </div>
+                          )}
+                          </div>
+                          {wod.hasGenderSplit && (
+                            <button type="button" className="btn-icon" onClick={() => removeScaledExercise(bi, ei)}>❌</button>
                           )}
                         </div>
                       ))}
@@ -1122,7 +1278,7 @@ export default function EditWorkoutPage() {
                   </div>
                 )}
 
-                {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && (
+                {wod.wodType !== 'EMOM' && wod.wodType !== 'TABATA' && !isClubTemplate && (
                 <div className="form-group" style={{ paddingTop: '1rem', borderTop: '1px solid var(--border-color)' }}>
                   <label>Результат</label>
                   <div className="form-row" style={{ gap: '0.5rem' }}>
