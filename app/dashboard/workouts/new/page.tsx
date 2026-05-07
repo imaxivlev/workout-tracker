@@ -288,6 +288,8 @@ function NewWorkoutPage() {
                   exerciseName: ex.exerciseName || '',
                   reps: String(reps || ''),
                   weight: weight ? String(weight) : '',
+                  hasWeight: ex.hasWeight,
+                  measureUnit: ex.measureUnit,
                   ladderRepsPerRound: isLadder
                     ? Array.from({ length: rounds }, () => String(reps || ''))
                     : [],
