@@ -468,6 +468,7 @@ export interface WodLeaderboardEntry {
   resultSeconds: number | null;
   resultTotalReps: number | null;
   weightsUsed: string | null;
+  skillMaxWeight: string | null;
   rank?: number;
 }
 

@@ -531,6 +531,13 @@ export class ClubService {
     const entries: WodLeaderboardEntry[] = [];
 
     for (const w of matchingWorkouts) {
+      // Макс. абсолютный вес по всем скилл-блокам тренировки
+      const maxSkill = w.skillBlocks
+        .flatMap(sb => sb.sets)
+        .filter(s => !s.weightIsPercent && Number(s.weight) > 0)
+        .reduce((max, s) => Math.max(max, Number(s.weight)), 0);
+      const skillMaxWeight = maxSkill > 0 ? `${maxSkill} кг` : null;
+
       for (const wb of w.wodBlocks) {
         // Фильтрация по типу WOD (FOR_TIME, AMRAP и т.д.)
         if (wodType && wb.wodType !== wodType) continue;
@@ -552,6 +559,7 @@ export class ClubService {
           resultSeconds: wb.resultSeconds,
           resultTotalReps: wb.resultTotalReps,
           weightsUsed: weightsInfo || null,
+          skillMaxWeight,
         });
       }
     }
@@ -968,6 +976,7 @@ export interface WodLeaderboardEntry {
   resultSeconds: number | null;
   resultTotalReps: number | null;
   weightsUsed: string | null;
+  skillMaxWeight: string | null;
   rank?: number;
 }
 

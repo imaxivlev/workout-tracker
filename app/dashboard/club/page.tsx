@@ -602,9 +602,10 @@ export default function ClubPage() {
                         <tr>
                           <th className="cp-th-rank">#</th>
                           <th>Атлет</th>
-                          <th>Ур.</th>
-                          <th className="cp-th-result">Результат</th>
-                          <th className="cp-th-num">Вес</th>
+                          <th className="cp-th-level">Ур.</th>
+                          <th className="cp-th-result">Результат ВОД</th>
+                          <th className="cp-th-weight">Вес ВОД</th>
+                          <th className="cp-th-weight">Вес СКИЛЛ</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -612,13 +613,14 @@ export default function ClubPage() {
                           <tr key={`${e.userId}-${e.workoutId}`} className={i < 3 ? 'top3' : ''}>
                             <td><RankBadge rank={e.rank || i + 1} /></td>
                             <td><span className="cp-lb-name">{safeDisplayName(e.name)}</span></td>
-                            <td>
+                            <td style={{ textAlign: 'center' }}>
                               <span className={`cp-level-badge ${e.level === 'SCALED' ? 'scaled' : 'rx'}`}>
                                 {e.level === 'SCALED' ? 'SC' : 'RX'}
                               </span>
                             </td>
                             <td className="cp-td-result">{e.resultDisplay}</td>
                             <td className="cp-td-num">{e.weightsUsed || '—'}</td>
+                            <td className="cp-td-num">{e.skillMaxWeight || '—'}</td>
                           </tr>
                         ))}
                       </tbody>
