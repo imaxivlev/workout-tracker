@@ -401,6 +401,8 @@ export class ClubService {
           hasGenderSplit: wb.hasGenderSplit,
           exercises: wb.exercises.map(e => ({
             exerciseName: e.exercise.name,
+            hasWeight: e.exercise.hasWeight,
+            measureUnit: e.exercise.measureUnit,
             exerciseNameFemale: (e as any).exerciseFemale?.name ?? null,
             reps: e.reps,
             weight: e.weight ? Number(e.weight) : null,

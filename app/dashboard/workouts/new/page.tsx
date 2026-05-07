@@ -327,16 +327,26 @@ function NewWorkoutPage() {
 
           if (newBlocks.length > 0) {
             setBlocks(newBlocks);
-            // Populate exerciseSettings for REST exercises from template
-            const restSettings: Record<string, { hasWeight: boolean; measureUnit: string }> = {};
+
+            // Заполняем exerciseSettings из данных шаблона (hasWeight/measureUnit уже пришли с сервера)
+            const dictSettings: Record<string, { hasWeight: boolean; measureUnit: string }> = {};
             for (const b of newBlocks) {
               if (b.type === 'wod') {
                 for (const ex of [...b.data.exercises, ...b.data.scaledExercises]) {
-                  if (ex.durationSeconds) restSettings[ex.exerciseName] = { hasWeight: false, measureUnit: 'time' };
+                  const src = ex as any;
+                  if (ex.exerciseName) {
+                    if (src.hasWeight !== undefined) {
+                      dictSettings[ex.exerciseName] = { hasWeight: src.hasWeight, measureUnit: src.measureUnit ?? 'reps' };
+                    }
+                    if (src.durationSeconds) {
+                      dictSettings[ex.exerciseName] = { hasWeight: false, measureUnit: 'time' };
+                    }
+                  }
                 }
               }
             }
-            if (Object.keys(restSettings).length > 0) setExerciseSettings(prev => ({ ...prev, ...restSettings }));
+
+            if (Object.keys(dictSettings).length > 0) setExerciseSettings(prev => ({ ...prev, ...dictSettings }));
             setFromClubTemplate(true);
             setSaveAsClubTemplate(false);
             setToast('Шаблон тренировки загружен — заполните свой результат');
@@ -857,7 +867,7 @@ function NewWorkoutPage() {
       };
 
       await workoutsApi.create(payload);
-      if (saveAsClubTemplate && !fromClubTemplate && clubId) {
+      if (fromClubTemplate || (saveAsClubTemplate && clubId)) {
         router.push('/dashboard/club');
       } else {
         router.push('/dashboard/workouts');

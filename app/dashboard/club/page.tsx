@@ -592,6 +592,10 @@ export default function ClubPage() {
               {wodEntries.length > 0 && (
                 <div className="cp-lb-block">
                   <div className="cp-block-title">Результаты</div>
+                  <div className="cp-scroll-hint">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    прокрутите вправо
+                  </div>
                   <div className="cp-table-wrap">
                     <table className="cp-table">
                       <thead>

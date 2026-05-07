@@ -290,13 +290,20 @@ export class WorkoutService {
 
     // Создание нового пользовательского упражнения
     const settings = newExercisesMap?.get(normalizedName) ?? newExercisesMap?.get(enName);
+
+    // Наследуем hasWeight/measureUnit из любого существующего упражнения с таким именем
+    const anyExisting = await tx.exerciseDict.findFirst({
+      where: { name: { in: nameVariants } },
+      orderBy: [{ isGlobal: 'desc' }, { createdAt: 'asc' }],
+    });
+
     const newExercise = await tx.exerciseDict.create({
       data: {
         name: normalizedName,
         isGlobal: false,
         userId: userId,
-        hasWeight: settings?.hasWeight ?? true,
-        measureUnit: settings?.measureUnit ?? 'reps',
+        hasWeight: settings?.hasWeight ?? anyExisting?.hasWeight ?? true,
+        measureUnit: settings?.measureUnit ?? anyExisting?.measureUnit ?? 'reps',
       }
     });
 

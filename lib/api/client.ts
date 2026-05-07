@@ -446,6 +446,8 @@ export interface ClubWorkoutTemplate {
     hasGenderSplit?: boolean;
     exercises: Array<{
       exerciseName: string;
+      hasWeight?: boolean;
+      measureUnit?: string;
       exerciseNameFemale?: string | null;
       reps: number;
       weight: number | null;
