@@ -71,8 +71,17 @@ export class WorkoutService {
       return userExercise.id;
     }
 
-    // Шаг 3: Создание нового пользовательского упражнения
-    // Используем try-catch для обработки race condition при параллельных запросах
+    // Шаг 3: Поиск по имени среди упражнений любого пользователя
+    const anyExisting = await prisma.exerciseDict.findFirst({
+      where: { name: { in: enName !== normalizedName ? [normalizedName, enName] : [normalizedName] }, isGlobal: false },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+
+    if (anyExisting) {
+      return anyExisting.id;
+    }
+
+    // Шаг 4: Создание нового пользовательского упражнения
     try {
       const newExercise = await prisma.exerciseDict.create({
         data: {
@@ -288,22 +297,27 @@ export class WorkoutService {
       return userExercise.id;
     }
 
+    // Поиск по имени среди упражнений любого пользователя (для клубных шаблонов:
+    // упражнения тренера не являются глобальными, но атлет должен ссылаться на оригинал)
+    const anyExisting = await tx.exerciseDict.findFirst({
+      where: { name: { in: nameVariants }, isGlobal: false },
+      orderBy: [{ createdAt: 'asc' }],
+    });
+
+    if (anyExisting) {
+      return anyExisting.id;
+    }
+
     // Создание нового пользовательского упражнения
     const settings = newExercisesMap?.get(normalizedName) ?? newExercisesMap?.get(enName);
-
-    // Наследуем hasWeight/measureUnit из любого существующего упражнения с таким именем
-    const anyExisting = await tx.exerciseDict.findFirst({
-      where: { name: { in: nameVariants } },
-      orderBy: [{ isGlobal: 'desc' }, { createdAt: 'asc' }],
-    });
 
     const newExercise = await tx.exerciseDict.create({
       data: {
         name: normalizedName,
         isGlobal: false,
         userId: userId,
-        hasWeight: settings?.hasWeight ?? anyExisting?.hasWeight ?? true,
-        measureUnit: settings?.measureUnit ?? anyExisting?.measureUnit ?? 'reps',
+        hasWeight: settings?.hasWeight ?? true,
+        measureUnit: settings?.measureUnit ?? 'reps',
       }
     });
 
