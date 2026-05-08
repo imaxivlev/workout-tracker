@@ -3762,6 +3762,46 @@ body.auth-page {
     font-size: 0.85rem;
 }
 
+.template-weight-notice {
+    padding: 0.65rem 0.9rem;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1.5px solid rgba(245, 158, 11, 0.35);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text);
+    line-height: 1.4;
+}
+
+.weight-unit-badge {
+    font-size: 0.7rem;
+    color: rgba(245, 158, 11, 0.85);
+    font-weight: 600;
+    flex-shrink: 0;
+    align-self: center;
+    line-height: 1;
+}
+
+.weight-unit-badge--tip {
+    position: relative;
+}
+
+.weight-unit-badge--tip::after {
+    content: "проверь вес";
+    position: absolute;
+    bottom: calc(100% + 4px);
+    right: -2px;
+    background: #dc2626;
+    color: #fff;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 10;
+}
+
 /* WOD Footer */
 .club-wod-footer {
     padding: 0.85rem 1.1rem;

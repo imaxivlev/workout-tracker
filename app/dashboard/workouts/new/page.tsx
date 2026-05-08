@@ -708,15 +708,18 @@ function NewWorkoutPage() {
               </div>
             )}
             {!getHideWeight(ex.exerciseName) && (
-              <input
-                type="number"
-                value={ex.weightFemale}
-                onChange={e => updateFemaleField(bi, ei, 'weightFemale', e.target.value, listKey)}
-                className="form-input-sm wod-weight"
-                placeholder="Вес, кг"
-                min="0.5"
-                step="0.5"
-              />
+              <>
+                <input
+                  type="number"
+                  value={ex.weightFemale}
+                  onChange={e => updateFemaleField(bi, ei, 'weightFemale', e.target.value, listKey)}
+                  className="form-input-sm wod-weight"
+                  placeholder="Вес"
+                  min="0.5"
+                  step="0.5"
+                />
+                <span className={`weight-unit-badge${fromClubTemplate ? ' weight-unit-badge--tip' : ''}`}>кг</span>
+              </>
             )}
           </div>
         </div>
@@ -912,6 +915,11 @@ function NewWorkoutPage() {
 
         {/* Блоки тренировки — в порядке добавления */}
         <div className="added-blocks-list">
+          {fromClubTemplate && blocks.length > 0 && (
+            <div className="template-weight-notice">
+              Веса упражнений взяты из шаблона тренера — проверьте их и при необходимости скорректируйте.
+            </div>
+          )}
           {blocks.length === 0 && (
             <div className="empty-state" style={{ textAlign: 'center', padding: '2rem' }}>
               Пока пусто. Добавьте блок Скилл или ВОД.
@@ -1260,15 +1268,18 @@ function NewWorkoutPage() {
                                     </>
                                   )}
                                   {!getHideWeight(ex.exerciseName) && (
-                                    <input
-                                      type="number"
-                                      value={ex.weight}
-                                      onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
-                                      className="form-input-sm wod-weight"
-                                      placeholder="Вес, кг"
-                                      min="0.5"
-                                      step="0.5"
-                                    />
+                                    <>
+                                      <input
+                                        type="number"
+                                        value={ex.weight}
+                                        onChange={e => updateWodExercise(bi, ei, 'weight', e.target.value)}
+                                        className="form-input-sm wod-weight"
+                                        placeholder="Вес"
+                                        min="0.5"
+                                        step="0.5"
+                                      />
+                                      <span className={`weight-unit-badge${fromClubTemplate ? ' weight-unit-badge--tip' : ''}`}>кг</span>
+                                    </>
                                   )}
                                 </div>
                               </div>
@@ -1366,15 +1377,18 @@ function NewWorkoutPage() {
                                       </div>
                                     )}
                                     {!getHideWeight(ex.exerciseName) && (
-                                      <input
-                                        type="number"
-                                        value={ex.weight}
-                                        onChange={e => updateScaledExercise(bi, ei, 'weight', e.target.value)}
-                                        className="form-input-sm wod-weight"
-                                        placeholder="Вес, кг"
-                                        min="0.5"
-                                        step="0.5"
-                                      />
+                                      <>
+                                        <input
+                                          type="number"
+                                          value={ex.weight}
+                                          onChange={e => updateScaledExercise(bi, ei, 'weight', e.target.value)}
+                                          className="form-input-sm wod-weight"
+                                          placeholder="Вес"
+                                          min="0.5"
+                                          step="0.5"
+                                        />
+                                        <span className={`weight-unit-badge${fromClubTemplate ? ' weight-unit-badge--tip' : ''}`}>кг</span>
+                                      </>
                                     )}
                                   </div>
                                 </div>
