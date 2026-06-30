@@ -43,24 +43,31 @@ export function applySecurityHeaders(
   
   // Content-Security-Policy: контролирует источники контента
   // Требования: 21.7, 24.6
+  // Внешние интеграции: Яндекс.Метрика (mc.yandex.ru) и виджет Involveo.
   const csp = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js требует unsafe-inline и unsafe-eval
-    "style-src 'self' 'unsafe-inline'", // Для inline стилей
-    "img-src 'self' data: https:",
+    // Next.js требует unsafe-inline и unsafe-eval; плюс внешние скрипты
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mc.yandex.ru https://involveo.ru",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    "connect-src 'self' https://mc.yandex.ru https://mc.yandex.com https://involveo.ru",
+    "frame-src 'self' https://mc.yandex.ru https://involveo.ru",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'"
+    "form-action 'self'",
+    "object-src 'none'",
   ].join('; ');
-  
+
   headers.set('Content-Security-Policy', csp);
-  
+
   // Strict-Transport-Security: принудительное использование HTTPS
   // Требования: 24.6
-  // Применяется только для HTTPS соединений
-  if (request && request.url.startsWith('https://')) {
+  // За реверс-прокси (Timeweb) реальный протокол приходит в x-forwarded-proto.
+  const isHttps =
+    request?.headers.get('x-forwarded-proto') === 'https' ||
+    request?.nextUrl.protocol === 'https:';
+  if (isHttps) {
     headers.set(
       'Strict-Transport-Security',
       'max-age=31536000; includeSubDomains; preload'

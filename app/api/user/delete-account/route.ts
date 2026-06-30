@@ -2,16 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest, isAuthSuccess } from '@/lib/auth/middleware';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /**
  * Схема валидации для удаления аккаунта
  */
 const deleteAccountSchema = z.object({
-  password: z.string().min(1, 'Пароль обязателен для подтверждения'),
-  csrfToken: z.string().min(1, 'CSRF токен обязателен')
+  password: z.string().min(1, 'Пароль обязателен для подтверждения')
 });
 
 /**
@@ -58,17 +56,10 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const { password, csrfToken } = validationResult.data;
+    const { password } = validationResult.data;
 
-    // Проверка CSRF токена
-    const sessionCsrfToken = request.cookies.get('csrf-token')?.value;
-
-    if (!sessionCsrfToken || sessionCsrfToken !== csrfToken) {
-      return NextResponse.json(
-        { error: 'Невалидный CSRF токен' },
-        { status: 403 }
-      );
-    }
+    // CSRF защита обеспечивается проверкой Origin в middleware + sameSite cookie.
+    // Дополнительно требуем подтверждение паролем (ниже).
 
     // Получение пользователя из БД для проверки пароля
     const user = await prisma.user.findUnique({
@@ -109,9 +100,6 @@ export async function DELETE(request: NextRequest) {
 
     // Удаление JWT токена из cookie
     response.cookies.delete('auth-token');
-
-    // Удаление CSRF токена из cookie
-    response.cookies.delete('csrf-token');
 
     return response;
 
