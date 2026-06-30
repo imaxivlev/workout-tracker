@@ -48,9 +48,10 @@ export function applySecurityHeaders(
     "default-src 'self'",
     // Next.js требует unsafe-inline и unsafe-eval; плюс внешние скрипты
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://mc.yandex.ru https://involveo.ru",
-    "style-src 'self' 'unsafe-inline'",
+    // Google Fonts (стили + файлы шрифтов) подгружает виджет Involveo
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: blob: https:",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self' https://mc.yandex.ru https://mc.yandex.com https://involveo.ru",
     "frame-src 'self' https://mc.yandex.ru https://involveo.ru",
     "frame-ancestors 'none'",
