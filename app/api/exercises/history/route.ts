@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { ruToEnName } from '@/lib/exercise-names';
 
-const prisma = new PrismaClient();
 
 /**
  * GET /api/exercises/history?name=EXERCISE_NAME

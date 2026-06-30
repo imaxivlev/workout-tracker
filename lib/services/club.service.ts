@@ -1,7 +1,7 @@
-import { PrismaClient, ClubRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { ClubRole } from '@prisma/client';
 import crypto from 'crypto';
 
-const prisma = new PrismaClient();
 
 /**
  * Сервис для работы с клубами

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from './middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 type AdminAuthSuccess = { user: { id: string; email: string } };
 type AdminAuthError = { error: string; status: number };

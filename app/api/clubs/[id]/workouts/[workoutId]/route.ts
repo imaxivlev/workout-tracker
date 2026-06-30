@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /**
  * DELETE /api/clubs/[id]/workouts/[workoutId]

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateAdmin, adminErrorResponse, isAdminError } from '@/lib/auth/admin-middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /** PATCH /api/admin/exercises/[id] — редактирование упражнения */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

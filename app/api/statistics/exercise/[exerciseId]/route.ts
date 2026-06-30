@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/middleware';
 import { StatisticsService } from '@/lib/services/statistics.service';
+import { prisma } from '@/lib/prisma';
 
 const statisticsService = new StatisticsService();
 
@@ -45,8 +46,6 @@ export async function GET(
     );
 
     // Получение названия упражнения
-    const { PrismaClient } = await import('@prisma/client');
-    const prisma = new PrismaClient();
     const exercise = await prisma.exerciseDict.findUnique({
       where: { id: exerciseId },
       select: { name: true },

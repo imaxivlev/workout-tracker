@@ -1,8 +1,7 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /**
  * Интерфейс для данных регистрации пользователя

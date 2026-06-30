@@ -1,8 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /**
  * Интерфейс для JWT payload

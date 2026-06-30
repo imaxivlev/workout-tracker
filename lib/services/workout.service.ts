@@ -1,7 +1,7 @@
-import { PrismaClient, ResultType, ClubRole } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
+import { ResultType, ClubRole } from '@prisma/client';
 import { ruToEnName } from '@/lib/exercise-names';
 
-const prisma = new PrismaClient();
 
 /**
  * Сервис для работы с тренировками

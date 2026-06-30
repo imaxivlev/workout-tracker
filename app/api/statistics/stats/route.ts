@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest } from '@/lib/auth/middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 function getDateRange(period: string): { startDate: string; endDate: string } {
   const now = new Date();

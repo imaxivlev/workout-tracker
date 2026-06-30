@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateRequest, isAuthSuccess } from '@/lib/auth/middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { UserService } from '@/lib/services/user.service';
 
-const prisma = new PrismaClient();
 
 /**
  * Схема валидации для обновления профиля

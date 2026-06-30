@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authenticateAdmin, adminErrorResponse, isAdminError } from '@/lib/auth/admin-middleware';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 
-const prisma = new PrismaClient();
 
 /** GET /api/admin/users/[id] — детали пользователя */
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
