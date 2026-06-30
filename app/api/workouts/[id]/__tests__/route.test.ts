@@ -65,7 +65,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -86,7 +86,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -103,7 +103,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(429);
@@ -127,7 +127,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -148,7 +148,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -171,7 +171,7 @@ describe('GET /api/workouts/[id]', () => {
         method: 'GET'
       });
 
-      const response = await GET(request, { params: { id: mockWorkoutId } });
+      const response = await GET(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -240,7 +240,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -266,7 +266,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(partialUpdate)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
 
       expect(response.status).toBe(200);
       expect(mockUpdateWorkout).toHaveBeenCalledWith(mockWorkoutId, mockUserId, partialUpdate);
@@ -284,7 +284,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -302,7 +302,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(429);
@@ -323,7 +323,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(invalidData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -345,7 +345,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(invalidData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
@@ -368,7 +368,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(404);
@@ -390,7 +390,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -414,7 +414,7 @@ describe('PATCH /api/workouts/[id]', () => {
         body: JSON.stringify(updateData)
       });
 
-      const response = await PATCH(request, { params: { id: mockWorkoutId } });
+      const response = await PATCH(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(500);
@@ -458,7 +458,7 @@ describe('DELETE /api/workouts/[id]', () => {
         method: 'DELETE'
       });
 
-      const response = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(200);
@@ -482,11 +482,11 @@ describe('DELETE /api/workouts/[id]', () => {
       });
 
       // Первое удаление
-      const response1 = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response1 = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       expect(response1.status).toBe(200);
 
       // Повторное удаление (идемпотентность)
-      const response2 = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response2 = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       expect(response2.status).toBe(200);
       
       expect(mockDeleteWorkout).toHaveBeenCalledTimes(2);
@@ -503,7 +503,7 @@ describe('DELETE /api/workouts/[id]', () => {
         method: 'DELETE'
       });
 
-      const response = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(401);
@@ -520,7 +520,7 @@ describe('DELETE /api/workouts/[id]', () => {
         method: 'DELETE'
       });
 
-      const response = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(429);
@@ -544,7 +544,7 @@ describe('DELETE /api/workouts/[id]', () => {
         method: 'DELETE'
       });
 
-      const response = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(403);
@@ -567,7 +567,7 @@ describe('DELETE /api/workouts/[id]', () => {
         method: 'DELETE'
       });
 
-      const response = await DELETE(request, { params: { id: mockWorkoutId } });
+      const response = await DELETE(request, { params: Promise.resolve({ id: mockWorkoutId }) });
       const data = await response.json();
 
       expect(response.status).toBe(500);

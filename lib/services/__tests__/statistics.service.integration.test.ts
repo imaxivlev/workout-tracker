@@ -137,10 +137,9 @@ describe('StatisticsService Integration Tests', () => {
           wodType: 'FOR_TIME',
           level: 'RX',
           isLadder: false,
-          resultType: 'TIME',
           resultDisplay: '10:00',
           resultSeconds: 600,
-          exercises: [{ exerciseName: 'Test Stats Back Squat', reps: 21, weight: 42.5, orderIndex: 1 }],
+          exercises: [{ exerciseName: 'Test Stats Back Squat', reps: 21, weight: 42.5 }],
         }],
       });
 

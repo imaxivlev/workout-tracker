@@ -108,11 +108,10 @@ describe('WorkoutService CRUD Integration Tests', () => {
             wodType: 'FOR_TIME',
             level: 'RX',
             isLadder: false,
-            resultType: 'TIME',
             resultDisplay: '12:45',
             resultSeconds: 765,
             exercises: [
-              { exerciseName: 'Test CRUD Back Squat', reps: 21, weight: 42.5, orderIndex: 1 },
+              { exerciseName: 'Test CRUD Back Squat', reps: 21, weight: 42.5 },
             ],
           },
         ],
@@ -142,11 +141,10 @@ describe('WorkoutService CRUD Integration Tests', () => {
             wodType: 'AMRAP',
             level: 'SCALED',
             isLadder: false,
-            resultType: 'REPS',
             resultDisplay: '5+12',
             resultTotalReps: 87,
             exercises: [
-              { exerciseName: 'Test CRUD Back Squat', reps: 15, orderIndex: 1 },
+              { exerciseName: 'Test CRUD Back Squat', reps: 15 },
             ],
           },
         ],
@@ -289,10 +287,9 @@ describe('WorkoutService CRUD Integration Tests', () => {
           wodType: 'FOR_TIME',
           level: 'RX',
           isLadder: false,
-          resultType: 'TIME',
           resultDisplay: '10:00',
           resultSeconds: 600,
-          exercises: [{ exerciseName: 'Test CRUD Back Squat', reps: 21, orderIndex: 1 }],
+          exercises: [{ exerciseName: 'Test CRUD Back Squat', reps: 21 }],
         }],
       });
 

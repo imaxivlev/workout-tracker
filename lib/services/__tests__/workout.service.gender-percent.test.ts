@@ -135,8 +135,8 @@ describe('Раздельные М/Ж в ВОД-блоках (hasGenderSplit)', (
       wodBlocks: [{
         wodType: 'FOR_TIME',
         level: 'RX',
+        isLadder: false,
         hasGenderSplit: true,
-        resultType: 'TIME',
         resultDisplay: '10:00',
         resultSeconds: 600,
         exercises: [{
@@ -167,8 +167,8 @@ describe('Раздельные М/Ж в ВОД-блоках (hasGenderSplit)', (
       wodBlocks: [{
         wodType: 'FOR_TIME',
         level: 'RX',
+        isLadder: false,
         hasGenderSplit: true,
-        resultType: 'TIME',
         resultDisplay: '05:00',
         resultSeconds: 300,
         exercises: [{
@@ -195,8 +195,8 @@ describe('Раздельные М/Ж в ВОД-блоках (hasGenderSplit)', (
       wodBlocks: [{
         wodType: 'AMRAP',
         level: 'RX',
+        isLadder: false,
         hasGenderSplit: false,
-        resultType: 'REPS',
         resultDisplay: '100',
         resultTotalReps: 100,
         exercises: [{
@@ -220,8 +220,8 @@ describe('Раздельные М/Ж в ВОД-блоках (hasGenderSplit)', (
       wodBlocks: [{
         wodType: 'FOR_TIME',
         level: 'RX',
+        isLadder: false,
         hasGenderSplit: false,
-        resultType: 'TIME',
         resultDisplay: '08:00',
         resultSeconds: 480,
         exercises: [{ exerciseName: 'Трастеры', reps: 21, weight: 43 }],
@@ -232,8 +232,8 @@ describe('Раздельные М/Ж в ВОД-блоках (hasGenderSplit)', (
       wodBlocks: [{
         wodType: 'FOR_TIME',
         level: 'RX',
+        isLadder: false,
         hasGenderSplit: true,
-        resultType: 'TIME',
         resultDisplay: '08:00',
         resultSeconds: 480,
         exercises: [{

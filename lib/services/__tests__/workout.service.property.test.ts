@@ -1772,10 +1772,10 @@ describe('WorkoutService - Property-Based Tests', () => {
               ),
               { nil: undefined }
             )
-          }).filter(data => 
+          }).filter(data =>
             // Убеждаемся, что есть хотя бы один блок
-            (data.skillBlocks && data.skillBlocks.length > 0) || 
-            (data.wodBlocks && data.wodBlocks.length > 0)
+            (data.skillBlocks?.length ?? 0) > 0 ||
+            (data.wodBlocks?.length ?? 0) > 0
           ),
           async (email, workoutData) => {
             // Создаем тестового пользователя
