@@ -1,365 +1,271 @@
 /**
  * Service Worker для Workout Tracker PWA
- * 
- * Реализует:
- * - Cache-first стратегию для статических ресурсов
- * - Network-first стратегию для API запросов с fallback на кэш
- * - Оффлайн создание тренировок с постановкой в очередь
- * - Фоновую синхронизацию при восстановлении сети
- * 
+ *
+ * Консервативная стратегия: SW вмешивается ТОЛЬКО в те запросы, которые
+ * безопасно кэшировать. Всё остальное (навигация, RSC-пейлоады Next.js,
+ * кросс-доменные запросы — Яндекс.Метрика, Involveo и т.п.) пропускается
+ * напрямую в сеть, чтобы не ломать гидрацию и не отдавать устаревшие ассеты.
+ *
+ * - app-shell + content-hashed чанки Next.js → cache-first
+ * - GET /api/* → network-first с fallback на кэш
+ * - POST /api/workouts офлайн → очередь в IndexedDB + background sync
+ *
  * Требования: 18.2-18.4, 19.1-19.5
  */
 
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const STATIC_CACHE = `workout-tracker-static-${CACHE_VERSION}`;
 const API_CACHE = `workout-tracker-api-${CACHE_VERSION}`;
-const EXERCISES_CACHE = `workout-tracker-exercises-${CACHE_VERSION}`;
 
-// Статические ресурсы для кэширования
+// Минимальный app-shell. Навигации обрабатывает сеть, поэтому HTML тут не нужен.
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/workout-tracker/icon-192.png',
-  '/workout-tracker/icon-512.png'
+  '/workout-tracker/icon-512.png',
 ];
 
-// Установка Service Worker
+// Установка: прекэшируем app-shell. НЕ вызываем skipWaiting автоматически —
+// активацией новой версии управляет клиент через сообщение SKIP_WAITING.
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Service Worker...');
-  
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('[SW] Caching static assets');
-        return cache.addAll(STATIC_ASSETS);
+    caches.open(STATIC_CACHE).then((cache) =>
+      cache.addAll(STATIC_ASSETS).catch((err) => {
+        console.error('[SW] Не удалось прекэшировать app-shell:', err);
       })
-      .then(() => self.skipWaiting())
+    )
   );
 });
 
-// Активация Service Worker
+// Активация: удаляем кэши старых версий и берём контроль над клиентами.
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Service Worker...');
-  
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
+    caches
+      .keys()
+      .then((cacheNames) =>
+        Promise.all(
           cacheNames
-            .filter((name) => {
-              // Удаляем старые версии кэша
-              return name.startsWith('workout-tracker-') && 
-                     !name.includes(CACHE_VERSION);
-            })
-            .map((name) => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
-        );
-      })
+            .filter(
+              (name) =>
+                name.startsWith('workout-tracker-') && !name.includes(CACHE_VERSION)
+            )
+            .map((name) => caches.delete(name))
+        )
+      )
       .then(() => self.clients.claim())
   );
 });
 
-// Обработка fetch запросов
+// Сообщение от клиента: применить ожидающую версию SW немедленно.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
+// Маршрутизация fetch-запросов.
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Навигационные запросы (HTML-страницы) — пропускаем напрямую к серверу
-  // Иначе iOS Safari в PWA режиме падает на редиректах
+  // 1. Кросс-домен (Яндекс.Метрика, Involveo, внешние шрифты) — не трогаем.
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 2. Навигационные запросы — напрямую в сеть.
+  //    Иначе iOS Safari в PWA-режиме падает на редиректах.
   if (request.mode === 'navigate') {
     return;
   }
 
-  // API запросы - network-first с fallback на кэш
+  // 3. RSC-пейлоады клиентской навигации Next.js — только сеть, без кэша,
+  //    иначе после деплоя страница не гидрируется (вечный лоадер).
+  if (url.searchParams.has('_rsc') || request.headers.get('RSC') === '1') {
+    return;
+  }
+
+  // 4. Внутренние ресурсы Next.js.
+  if (url.pathname.startsWith('/_next/')) {
+    // Чанки со встроенным хэшем безопасно кэшировать навсегда.
+    if (url.pathname.startsWith('/_next/static/')) {
+      event.respondWith(cacheFirst(request, STATIC_CACHE));
+    }
+    // _next/data, оптимизатор изображений и т.п. — пропускаем в сеть.
+    return;
+  }
+
+  // 5. API.
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(handleApiRequest(request));
+    if (request.method === 'GET') {
+      event.respondWith(networkFirst(request));
+      return;
+    }
+    if (request.method === 'POST' && url.pathname === '/api/workouts') {
+      event.respondWith(handleWorkoutPost(request));
+      return;
+    }
+    // Прочие мутации (PATCH/DELETE/PUT) — напрямую, без перехвата.
     return;
   }
-  
-  // Справочник упражнений - кэшируем отдельно
-  if (url.pathname === '/api/exercises') {
-    event.respondWith(handleExercisesRequest(request));
-    return;
+
+  // 6. Остальная статика того же origin (иконки, svg, manifest) — cache-first.
+  if (request.method === 'GET') {
+    event.respondWith(cacheFirst(request, STATIC_CACHE));
   }
-  
-  // Статические ресурсы - cache-first
-  event.respondWith(handleStaticRequest(request));
 });
 
 /**
- * Cache-first стратегия для статических ресурсов
- * Требования: 18.3
+ * Cache-first: отдаём из кэша, иначе сеть + кэшируем успешный ответ.
  */
-async function handleStaticRequest(request) {
+async function cacheFirst(request, cacheName) {
+  const cached = await caches.match(request);
+  if (cached) {
+    return cached;
+  }
   try {
-    const cachedResponse = await caches.match(request);
-    
-    if (cachedResponse) {
-      console.log('[SW] Serving from cache:', request.url);
-      return cachedResponse;
+    const response = await fetch(request);
+    if (response.ok && response.type === 'basic') {
+      const cache = await caches.open(cacheName);
+      cache.put(request, response.clone()).catch(() => {});
     }
-    
-    console.log('[SW] Fetching from network:', request.url);
-    const networkResponse = await fetch(request);
-    
-    // Кэшируем успешные ответы
-    if (networkResponse.ok) {
-      const cache = await caches.open(STATIC_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-    
+    return response;
   } catch (error) {
-    console.error('[SW] Static request failed:', error);
-    
-    // Возвращаем оффлайн страницу, если есть
-    const cachedResponse = await caches.match('/offline.html');
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
     return new Response('Offline', { status: 503 });
   }
 }
 
 /**
- * Network-first стратегия для API запросов с fallback на кэш
- * Требования: 18.4
+ * Network-first для GET /api/*: свежие данные, fallback на кэш при офлайне.
  */
-async function handleApiRequest(request) {
+async function networkFirst(request) {
   try {
-    console.log('[SW] API request:', request.url);
-    
-    // Попытка выполнить запрос к сети
-    const networkResponse = await fetch(request);
-    
-    // Кэшируем успешные GET запросы
-    if (request.method === 'GET' && networkResponse.ok) {
+    const response = await fetch(request);
+    if (response.ok) {
       const cache = await caches.open(API_CACHE);
-      cache.put(request, networkResponse.clone());
+      cache.put(request, response.clone()).catch(() => {});
     }
-    
-    return networkResponse;
-    
+    return response;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache:', request.url);
-    
-    // Fallback на кэш для GET запросов
-    if (request.method === 'GET') {
-      const cachedResponse = await caches.match(request);
-      
-      if (cachedResponse) {
-        console.log('[SW] Serving API from cache:', request.url);
-        return cachedResponse;
-      }
+    const cached = await caches.match(request);
+    if (cached) {
+      return cached;
     }
-    
-    // Для POST запросов (создание тренировок) - сохраняем в очередь
-    if (request.method === 'POST' && request.url.includes('/api/workouts')) {
-      return handleOfflineWorkoutCreation(request);
-    }
-    
-    return new Response(
-      JSON.stringify({ error: 'Нет подключения к сети' }),
-      { 
-        status: 503,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return new Response(JSON.stringify({ error: 'Нет подключения к сети' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
 
 /**
- * Кэширование справочника упражнений
- * Требования: 18.4
+ * POST /api/workouts: пробуем сеть, при офлайне ставим в очередь синхронизации.
  */
-async function handleExercisesRequest(request) {
+async function handleWorkoutPost(request) {
   try {
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      const cache = await caches.open(EXERCISES_CACHE);
-      cache.put(request, networkResponse.clone());
-    }
-    
-    return networkResponse;
-    
+    return await fetch(request.clone());
   } catch (error) {
-    console.log('[SW] Exercises network failed, trying cache');
-    
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    return new Response(
-      JSON.stringify({ exercises: [] }),
-      { 
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    return handleOfflineWorkoutCreation(request);
   }
 }
 
 /**
- * Обработка оффлайн создания тренировок
+ * Сохранение тренировки в очередь IndexedDB для последующей синхронизации.
  * Требования: 19.1
  */
 async function handleOfflineWorkoutCreation(request) {
   try {
-    // Читаем тело запроса
     const requestData = await request.json();
-    
-    // Открываем IndexedDB
     const db = await openIndexedDB();
-    
-    // Сохраняем тренировку в очередь ожидающих синхронизации
+
     const pendingWorkout = {
       id: generateUUID(),
       data: requestData,
       timestamp: Date.now(),
-      status: 'pending'
+      status: 'pending',
     };
-    
+
     await addPendingWorkout(db, pendingWorkout);
-    
-    console.log('[SW] Workout saved to pending queue:', pendingWorkout.id);
-    
-    // Регистрируем фоновую синхронизацию
+
     if ('sync' in self.registration) {
-      await self.registration.sync.register('sync-workouts');
-      console.log('[SW] Background sync registered');
+      try {
+        await self.registration.sync.register('sync-workouts');
+      } catch {
+        // Background Sync недоступен — синхронизируем при следующем заходе.
+      }
     }
-    
-    // Возвращаем 202 Accepted
+
     return new Response(
       JSON.stringify({
-        message: 'Тренировка сохранена и будет синхронизирована при восстановлении сети',
+        message:
+          'Тренировка сохранена и будет синхронизирована при восстановлении сети',
         id: pendingWorkout.id,
-        status: 'pending'
+        status: 'pending',
       }),
-      {
-        status: 202,
-        headers: { 'Content-Type': 'application/json' }
-      }
+      { status: 202, headers: { 'Content-Type': 'application/json' } }
     );
-    
   } catch (error) {
-    console.error('[SW] Failed to save offline workout:', error);
-    
+    console.error('[SW] Не удалось сохранить тренировку офлайн:', error);
     return new Response(
       JSON.stringify({ error: 'Не удалось сохранить тренировку оффлайн' }),
-      {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-      }
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
     );
   }
 }
 
-/**
- * Фоновая синхронизация ожидающих тренировок
- * Требования: 19.2-19.5
- */
+// Фоновая синхронизация ожидающих тренировок. Требования: 19.2-19.5
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Sync event triggered:', event.tag);
-  
   if (event.tag === 'sync-workouts') {
     event.waitUntil(syncPendingWorkouts());
   }
 });
 
-/**
- * Синхронизация всех ожидающих тренировок
- */
 async function syncPendingWorkouts() {
-  try {
-    console.log('[SW] Starting workout synchronization...');
-    
-    const db = await openIndexedDB();
-    const pendingWorkouts = await getPendingWorkouts(db);
-    
-    if (pendingWorkouts.length === 0) {
-      console.log('[SW] No pending workouts to sync');
-      return;
-    }
-    
-    console.log(`[SW] Found ${pendingWorkouts.length} pending workouts`);
-    
-    let successCount = 0;
-    let failCount = 0;
-    
-    for (const workout of pendingWorkouts) {
-      try {
-        // Попытка отправить тренировку на сервер
-        const response = await fetch('/api/workouts', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(workout.data)
-        });
-        
-        if (response.ok) {
-          // Успешная синхронизация - удаляем из очереди
-          await deletePendingWorkout(db, workout.id);
-          successCount++;
-          console.log('[SW] Workout synced successfully:', workout.id);
-        } else {
-          // Ошибка сервера - оставляем в очереди для повторной попытки
-          failCount++;
-          console.error('[SW] Server error syncing workout:', workout.id, response.status);
-        }
-        
-      } catch (error) {
-        // Сетевая ошибка - оставляем в очереди
-        failCount++;
-        console.error('[SW] Network error syncing workout:', workout.id, error);
+  const db = await openIndexedDB();
+  const pendingWorkouts = await getPendingWorkouts(db);
+
+  if (pendingWorkouts.length === 0) {
+    return;
+  }
+
+  let successCount = 0;
+  for (const workout of pendingWorkouts) {
+    try {
+      const response = await fetch('/api/workouts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workout.data),
+      });
+      if (response.ok) {
+        await deletePendingWorkout(db, workout.id);
+        successCount++;
       }
+      // Ошибка сервера/сети — оставляем в очереди для повторной попытки.
+    } catch (error) {
+      // Сеть недоступна — прерываем, попробуем при следующем sync.
+      break;
     }
-    
-    console.log(`[SW] Sync completed: ${successCount} success, ${failCount} failed`);
-    
-    // Уведомляем пользователя о результатах
-    if (successCount > 0) {
-      await notifyUser(`Синхронизировано тренировок: ${successCount}`);
-    }
-    
-    if (failCount > 0) {
-      await notifyUser(`Не удалось синхронизировать: ${failCount}. Попробуем позже.`);
-    }
-    
-  } catch (error) {
-    console.error('[SW] Sync failed:', error);
+  }
+
+  if (successCount > 0) {
+    await notifyUser(`Синхронизировано тренировок: ${successCount}`);
   }
 }
 
-/**
- * Открытие IndexedDB
- */
+// --- IndexedDB helpers ---
+
 function openIndexedDB() {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open('WorkoutTrackerDB', 1);
-    
     request.onerror = () => reject(request.error);
     request.onsuccess = () => resolve(request.result);
-    
     request.onupgradeneeded = (event) => {
       const db = event.target.result;
-      
-      // Создаем object stores если их нет
       if (!db.objectStoreNames.contains('workouts')) {
         db.createObjectStore('workouts', { keyPath: 'id' });
       }
-      
       if (!db.objectStoreNames.contains('pending-workouts')) {
         db.createObjectStore('pending-workouts', { keyPath: 'id' });
       }
-      
       if (!db.objectStoreNames.contains('exercises')) {
         db.createObjectStore('exercises', { keyPath: 'id' });
       }
@@ -367,51 +273,33 @@ function openIndexedDB() {
   });
 }
 
-/**
- * Добавление тренировки в очередь ожидающих синхронизации
- */
 function addPendingWorkout(db, workout) {
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pending-workouts'], 'readwrite');
-    const store = transaction.objectStore('pending-workouts');
-    const request = store.add(workout);
-    
+    const tx = db.transaction(['pending-workouts'], 'readwrite');
+    const request = tx.objectStore('pending-workouts').add(workout);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-/**
- * Получение всех ожидающих синхронизации тренировок
- */
 function getPendingWorkouts(db) {
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pending-workouts'], 'readonly');
-    const store = transaction.objectStore('pending-workouts');
-    const request = store.getAll();
-    
+    const tx = db.transaction(['pending-workouts'], 'readonly');
+    const request = tx.objectStore('pending-workouts').getAll();
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-/**
- * Удаление тренировки из очереди после успешной синхронизации
- */
 function deletePendingWorkout(db, workoutId) {
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(['pending-workouts'], 'readwrite');
-    const store = transaction.objectStore('pending-workouts');
-    const request = store.delete(workoutId);
-    
+    const tx = db.transaction(['pending-workouts'], 'readwrite');
+    const request = tx.objectStore('pending-workouts').delete(workoutId);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
   });
 }
 
-/**
- * Отправка уведомления пользователю
- */
 async function notifyUser(message) {
   try {
     if ('Notification' in self && Notification.permission === 'granted') {
@@ -419,23 +307,21 @@ async function notifyUser(message) {
         body: message,
         icon: '/workout-tracker/icon-192.png',
         badge: '/workout-tracker/icon-192.png',
-        tag: 'sync-notification'
+        tag: 'sync-notification',
       });
     }
   } catch (error) {
-    console.error('[SW] Failed to show notification:', error);
+    // Уведомления недоступны — не критично.
   }
 }
 
-/**
- * Генерация UUID для оффлайн тренировок
- */
 function generateUUID() {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-    const r = Math.random() * 16 | 0;
-    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+  if (self.crypto && self.crypto.randomUUID) {
+    return self.crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
 }
-
-console.log('[SW] Service Worker loaded');

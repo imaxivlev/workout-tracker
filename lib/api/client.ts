@@ -17,13 +17,17 @@ export class ApiError extends Error {
 
 interface FetchOptions extends RequestInit {
   retries?: number;
+  timeoutMs?: number;
 }
+
+// Таймаут запроса по умолчанию: защищает от «вечного лоадера» при зависшей сети.
+const DEFAULT_TIMEOUT_MS = 15000;
 
 async function apiFetch<T>(
   url: string,
   options: FetchOptions = {}
 ): Promise<T> {
-  const { retries = 2, ...fetchOptions } = options;
+  const { retries = 2, timeoutMs = DEFAULT_TIMEOUT_MS, ...fetchOptions } = options;
 
   const defaultOptions: RequestInit = {
     credentials: 'include', // автоматически передаёт HTTP-only cookies
@@ -38,8 +42,10 @@ async function apiFetch<T>(
   let lastError: Error = new Error('Неизвестная ошибка');
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(url, config);
+      const response = await fetch(url, { ...config, signal: controller.signal });
 
       if (!response.ok) {
         let errorData: { error?: string; code?: string; details?: Array<{ field: string; message: string }> } = {};
@@ -71,13 +77,19 @@ async function apiFetch<T>(
         }
       }
 
-      lastError = error as Error;
+      // Прерывание по таймауту — нормализуем сообщение об ошибке.
+      lastError =
+        error instanceof DOMException && error.name === 'AbortError'
+          ? new Error('Превышено время ожидания ответа сервера')
+          : (error as Error);
 
       // Ретраим только при сетевых ошибках или 5xx
       if (attempt < retries) {
         await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)));
         continue;
       }
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -382,11 +394,10 @@ export const userApi = {
     });
   },
 
-  async deleteAccount(password: string, csrfToken: string) {
+  async deleteAccount(password: string) {
     return apiFetch<void>('/api/user/delete-account', {
       method: 'DELETE',
       body: JSON.stringify({ password }),
-      headers: { 'X-CSRF-Token': csrfToken },
     });
   },
 };
@@ -604,13 +615,6 @@ export const clubsApi = {
     });
   },
 };
-
-// --- CSRF ---
-
-export async function getCsrfToken(): Promise<string> {
-  const data = await apiFetch<{ csrfToken: string }>('/api/csrf-token');
-  return data.csrfToken;
-}
 
 // --- Admin ---
 
